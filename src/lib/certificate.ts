@@ -8,7 +8,7 @@ interface CertificateData {
   certificateType: string;
 }
 
-export function generateCertificatePDF(data: CertificateData) {
+export function generateCertificatePDF(data: CertificateData, action: 'download' | 'view' = 'download') {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const w = doc.internal.pageSize.getWidth();
   const h = doc.internal.pageSize.getHeight();
@@ -152,6 +152,12 @@ export function generateCertificatePDF(data: CertificateData) {
   doc.setTextColor(160, 150, 140);
   doc.text('Verify this certificate at academisthan.lovable.app/verify', w / 2, h - 18, { align: 'center' });
 
-  // Save
-  doc.save(`${data.certificateNumber}.pdf`);
+  // Output based on action
+  if (action === 'view') {
+    const blob = doc.output('blob');
+    const blobURL = URL.createObjectURL(blob);
+    window.open(blobURL, '_blank');
+  } else {
+    doc.save(`${data.certificateNumber}.pdf`);
+  }
 }

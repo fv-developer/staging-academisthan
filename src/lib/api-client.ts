@@ -287,6 +287,23 @@ export const admin = {
       body: JSON.stringify({ adminNotes }),
     });
   },
+
+  getToolResults: async () => {
+    return apiRequest('/admin/tool-results');
+  },
+
+  deleteToolResult: async (id: string) => {
+    return apiRequest(`/admin/tool-results/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  bulkDeleteToolResults: async (ids: string[]) => {
+    return apiRequest('/admin/tool-results/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    });
+  },
 };
 
 // Institutions API
@@ -337,6 +354,7 @@ export const institutions = {
 export const tools = {
   saveResult: async (data: {
     tool_name: string;
+    tool_type?: string;
     input_data?: any;
     result_data?: any;
     score?: number;
@@ -567,8 +585,18 @@ export const connections = {
     return apiRequest('/connections/received-requests');
   },
 
+  getSentRequests: async () => {
+    return apiRequest('/connections/sent-requests');
+  },
+
   getConnections: async () => {
     return apiRequest('/connections/my-connections');
+  },
+
+  cancelRequest: async (id: string) => {
+    return apiRequest(`/connections/cancel/${id}`, {
+      method: 'DELETE',
+    });
   },
 
   respond: async (id: string, status: 'accepted' | 'rejected') => {

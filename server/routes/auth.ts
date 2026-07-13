@@ -68,9 +68,9 @@ router.post('/signup', async (req: Request, res: Response) => {
       );
       for (const adminUser of admins) {
         await pool.execute(
-          `INSERT INTO notifications (id, user_id, type, title, message, link)
-           VALUES (?, ?, 'general', 'New User Registration 👤', ?, '/admin/fellows')`,
-          [uuidv4(), adminUser.id, `${fullName} has registered a new account.`]
+          `INSERT INTO notifications (id, user_id, trigger_user_id, type, title, message, link)
+           VALUES (?, ?, ?, 'general', 'New User Registration 👤', ?, '/admin/fellows')`,
+          [uuidv4(), adminUser.id, userId, `${fullName} has registered a new account.`]
         );
         if (adminUser.email) {
           sendAdminNewFellowEmail(adminUser.email, adminUser.full_name || 'Admin', fullName).catch(err => {

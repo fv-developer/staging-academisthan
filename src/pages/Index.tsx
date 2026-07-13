@@ -235,25 +235,29 @@ const getProgramIcon = (title: string) => {
 
 /* ─────────────────── MAIN PAGE ─────────────────── */
 export default function Index() {
-  const [dbPrograms, setDbPrograms] = useState<any[]>([]);
-
-  useEffect(() => {
-    async function fetchPrograms() {
-      try {
-        const { data } = await supabase
-          .from('programs')
-          .select('*')
-          .eq('is_published', true)
-          .limit(3);
-        if (data && data.length > 0) {
-          setDbPrograms(data);
-        }
-      } catch (err) {
-        console.error('Error fetching programs:', err);
-      }
-    }
-    fetchPrograms();
-  }, []);
+  const staticPrograms = [
+    {
+      title: "AI for Educators",
+      desc: "Master AI tools for teaching, research, and administration with cutting-edge techniques",
+      icon: Lightbulb,
+      image: aiEducatorsStage,
+      href: "/programs/ai-for-educators",
+    },
+    {
+      title: "Research Methodology Workshop",
+      desc: "Master modern research methods, paper writing, and journal publication strategies",
+      icon: BookOpen,
+      image: research,
+      href: "/events",
+    },
+    {
+      title: "NEP 2020 Implementation",
+      desc: "Hands-on training for implementing Outcome-Based Education and curriculum design",
+      icon: Target,
+      image: teacherClassroom,
+      href: "/programs/nep-2020-roundtable",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden website-page">
@@ -334,49 +338,17 @@ export default function Index() {
           </ScrollSection>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {dbPrograms.length > 0 ? (
-              dbPrograms.map((prog, index) => (
-                <ScrollSection key={prog.id} animation="fade-up" delay={index * 150}>
-                  <ProgramCard
-                    title={prog.title}
-                    desc={prog.description || ""}
-                    icon={getProgramIcon(prog.title)}
-                    image={prog.image_url || "/assets/teacher-classroom.jpg"}
-                    href={`/learn/${prog.slug}`}
-                  />
-                </ScrollSection>
-              ))
-            ) : (
-              <>
-                <ScrollSection animation="fade-up" delay={0}>
-                  <ProgramCard
-                    title="AI for Educators"
-                    desc="Master AI tools for teaching, research, and administration with cutting-edge techniques"
-                    icon={Lightbulb}
-                    image={aiEducatorsStage}
-                    href="/programs/ai-for-educators"
-                  />
-                </ScrollSection>
-                <ScrollSection animation="fade-up" delay={150}>
-                  <ProgramCard
-                    title="Research Methodology Workshop"
-                    desc="Master modern research methods, paper writing, and journal publication strategies"
-                    icon={BookOpen}
-                    image={research}
-                    href="/events"
-                  />
-                </ScrollSection>
-                <ScrollSection animation="fade-up" delay={300}>
-                  <ProgramCard
-                    title="NEP 2020 Implementation"
-                    desc="Hands-on training for implementing Outcome-Based Education and curriculum design"
-                    icon={Target}
-                    image={teacherClassroom}
-                    href="/programs/nep-2020-roundtable"
-                  />
-                </ScrollSection>
-              </>
-            )}
+            {staticPrograms.map((prog, index) => (
+              <ScrollSection key={prog.title} animation="fade-up" delay={index * 150}>
+                <ProgramCard
+                  title={prog.title}
+                  desc={prog.desc}
+                  icon={prog.icon}
+                  image={prog.image}
+                  href={prog.href}
+                />
+              </ScrollSection>
+            ))}
           </div>
 
           <div className="text-center mt-12">

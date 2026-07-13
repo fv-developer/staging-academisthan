@@ -326,6 +326,7 @@ CREATE TABLE certificates (
   user_id CHAR(36) NOT NULL,
   program_id CHAR(36),
   event_id CHAR(36),
+  tool_result_id CHAR(36),
   certificate_number VARCHAR(100) UNIQUE,
   certificate_type VARCHAR(50),
   issued_date DATE,
@@ -336,9 +337,11 @@ CREATE TABLE certificates (
   FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE,
   FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE SET NULL,
   FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL,
+  FOREIGN KEY (tool_result_id) REFERENCES tool_results(id) ON DELETE CASCADE,
   INDEX idx_user_id (user_id),
   INDEX idx_program_id (program_id),
   INDEX idx_event_id (event_id),
+  INDEX idx_tool_result_id (tool_result_id),
   INDEX idx_certificate_number (certificate_number)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -350,9 +353,13 @@ CREATE TABLE tool_results (
   id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
   user_id CHAR(36),
   tool_name VARCHAR(100),
+  tool_type VARCHAR(100),
   input_data JSON,
   result_data JSON,
   score DECIMAL(5,2),
+  passing_score DECIMAL(5,2) DEFAULT 50.00,
+  result VARCHAR(50) DEFAULT 'Fail',
+  certificate_status VARCHAR(50) DEFAULT 'None',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE SET NULL,
   INDEX idx_user_id (user_id),

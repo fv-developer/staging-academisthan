@@ -126,9 +126,12 @@ router.get('/saved', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const [saved]: any = await pool.execute(
-      `SELECT p.* FROM blog_posts p
+      `SELECT p.*, s.created_at as saved_at, pr.full_name as author_name, pr.avatar_url as author_avatar
+       FROM blog_posts p
        JOIN blog_saved_posts s ON s.post_id = p.id
-       WHERE s.user_id = ?`,
+       LEFT JOIN profiles pr ON p.author_id = pr.id
+       WHERE s.user_id = ?
+       ORDER BY s.created_at DESC`,
       [userId]
     );
 
@@ -376,9 +379,9 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
         );
         for (const adminRow of admins) {
           await pool.execute(
-            `INSERT INTO notifications (id, user_id, type, title, message, link)
-             VALUES (?, ?, 'blog', 'Blog Pending Review 📝', ?, '/admin/blogs')`,
-            [uuidv4(), adminRow.user_id, `A new blog post "${title}" has been submitted for review by ${authorName}.`]
+            `INSERT INTO notifications (id, user_id, trigger_user_id, type, title, message, link)
+             VALUES (?, ?, ?, 'blog', 'Blog Pending Review 📝', ?, '/admin/blogs')`,
+            [uuidv4(), adminRow.user_id, authorId, `A new blog post "${title}" has been submitted for review by ${authorName}.`]
           );
           if (adminRow.email) {
             sendAdminBlogSubmittedEmail(adminRow.email, adminRow.full_name || 'Admin', title, authorName).catch(err => {
@@ -517,9 +520,9 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
 
         for (const adminRow of admins) {
           await pool.execute(
-            `INSERT INTO notifications (id, user_id, type, title, message, link)
-             VALUES (?, ?, 'blog', 'Blog Pending Review 📝', ?, '/admin/blogs')`,
-            [uuidv4(), adminRow.user_id, `The blog post "${finalTitle}" has been resubmitted for review by ${authorName}.`]
+            `INSERT INTO notifications (id, user_id, trigger_user_id, type, title, message, link)
+             VALUES (?, ?, ?, 'blog', 'Blog Pending Review 📝', ?, '/admin/blogs')`,
+            [uuidv4(), adminRow.user_id, post.author_id, `The blog post "${finalTitle}" has been resubmitted for review by ${authorName}.`]
           );
           if (adminRow.email) {
             sendAdminBlogSubmittedEmail(adminRow.email, adminRow.full_name || 'Admin', finalTitle, authorName).catch(err => {

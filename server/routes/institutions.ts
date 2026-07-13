@@ -153,9 +153,9 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     );
     for (const adminRow of admins) {
       await pool.execute(
-        `INSERT INTO notifications (id, user_id, type, title, message, link)
-         VALUES (?, ?, 'institution_status', 'New Institution Submission 🏛️', ?, '/admin/institutions')`,
-        [uuidv4(), adminRow.user_id, `A new institution registration for "${name}" has been submitted.`]
+        `INSERT INTO notifications (id, user_id, trigger_user_id, type, title, message, link)
+         VALUES (?, ?, ?, 'institution_status', 'New Institution Submission 🏛️', ?, '/admin/institutions')`,
+        [uuidv4(), adminRow.user_id, userId, `A new institution registration for "${name}" has been submitted.`]
       );
       if (adminRow.email) {
         sendAdminNewInstitutionEmail(adminRow.email, adminRow.full_name || 'Admin', name).catch(err => {
@@ -291,9 +291,9 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
       );
       for (const adminRow of admins) {
         await pool.execute(
-          `INSERT INTO notifications (id, user_id, type, title, message, link)
-           VALUES (?, ?, 'institution_status', 'Pending Change Request 📝', ?, '/admin/institutions')`,
-          [uuidv4(), adminRow.user_id, `A change request for "${current[0].name}" is awaiting admin review.`]
+          `INSERT INTO notifications (id, user_id, trigger_user_id, type, title, message, link)
+           VALUES (?, ?, ?, 'institution_status', 'Pending Change Request 📝', ?, '/admin/institutions')`,
+          [uuidv4(), adminRow.user_id, userId, `A change request for "${current[0].name}" is awaiting admin review.`]
         );
       }
 

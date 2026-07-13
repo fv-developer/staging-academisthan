@@ -377,3 +377,139 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* ==========================================================================
+   DASHBOARD BUTTON STANDARDIZATION OVERRIDES
+   ========================================================================== */
+.btn-primary,
+.btn-success,
+.btn-warning,
+.btn-danger,
+.btn-secondary,
+.btn-info,
+.btn-outline {
+  border-radius: 5px !important;
+  font-size: 11px !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  height: 36px !important;
+  padding: 0 16px !important;
+  transition: all 0.2s ease-in-out !important;
+  flex-shrink: 0 !important;
+}
+
+/* Small / Extra Small Button Override */
+.btn-sm,
+.btn-xs {
+  height: 28px !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
+}
+
+/* Icon / SVG sizes inside standardized buttons */
+.btn-primary svg,
+.btn-success svg,
+.btn-warning svg,
+.btn-danger svg,
+.btn-secondary svg,
+.btn-info svg,
+.btn-outline svg {
+  width: 14px !important;
+  height: 14px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Primary Button Styling */
+.btn-primary {
+  background-color: hsl(var(--navy)) !important;
+  color: hsl(var(--warm)) !important;
+  border: 1px solid hsl(var(--navy)) !important;
+}
+.btn-primary:hover {
+  background-color: hsl(var(--navy) / 0.9) !important;
+  color: hsl(var(--warm)) !important;
+  opacity: 0.95;
+}
+
+/* Success Button Styling (Approve, Save, Submit) */
+.btn-success {
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+  border: 1px solid #10b981 !important;
+}
+.btn-success:hover {
+  background-color: #059669 !important;
+  color: #ffffff !important;
+}
+
+/* Warning Button Styling (Edit, Review, Pending) */
+.btn-warning {
+  background-color: #f59e0b !important;
+  color: #ffffff !important;
+  border: 1px solid #f59e0b !important;
+}
+.btn-warning:hover {
+  background-color: #d97706 !important;
+  color: #ffffff !important;
+}
+
+/* Danger Button Styling (Delete, Reject, Suspend) */
+.btn-danger {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+  border: 1px solid #ef4444 !important;
+}
+.btn-danger:hover {
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+/* Secondary Button Styling */
+.btn-secondary {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+.btn-secondary:hover {
+  background-color: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+/* Info Button Styling */
+.btn-info {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+  border: 1px solid #0284c7 !important;
+}
+.btn-info:hover {
+  background-color: #0369a1 !important;
+  color: #ffffff !important;
+}
+
+/* Outline Button Styling */
+.btn-outline {
+  background-color: transparent !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+.btn-outline:hover {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Scoped fallback rules for all buttons inside the dashboard-theme container */
+.dashboard-theme button, .dashboard-theme .Button, .dashboard-theme [role="dialog"] button, .dashboard-theme [role="dialog"] .Button {
+    border-radius: 5px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+   }
+
+/* Sidebar menu font size override */
+.dashboard-theme button.sidebar-menu-btn,
+.dashboard-theme a.sidebar-menu-btn,
+.sidebar-menu-btn {
+  font-size: 13px !important;
+}

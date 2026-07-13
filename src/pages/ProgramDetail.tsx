@@ -15,7 +15,7 @@ import {
   ChevronRight, Download, ArrowLeft, BookOpen,
   LayoutDashboard, User, Calendar, Calculator, TrendingUp,
   Settings, RefreshCw, X, Maximize2, Minimize2, Check, ChevronLeft,
-  Building2, Target, Globe, FileText, Sparkles, Copy, Users, Briefcase, Shield, Loader2, ArrowRight
+  Building2, Target, Globe, FileText, Sparkles, Copy, Users, Briefcase, Shield, Loader2, ArrowRight, Bookmark
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -1474,7 +1474,7 @@ provider: {
                 <div className="space-y-1">
                   <Link
                     to="/dashboard?tool=institute"
-                    className="w-full flex items-center justify-between p-2.5 rounded-xl text-left text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors group"
+                    className="sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors group"
                   >
                     <div className="flex items-center gap-2.5">
                       <Building2 className="w-4 h-4 text-muted-foreground group-hover:text-gold transition-colors" />
@@ -1485,7 +1485,7 @@ provider: {
 
                   <Link
                     to="/dashboard?tool=enroll-program"
-                    className="w-full flex items-center justify-between p-2.5 rounded-xl text-left text-sm bg-gold/10 text-gold font-semibold transition-colors group"
+                    className="sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left bg-gold/10 text-gold font-semibold transition-colors group"
                   >
                     <div className="flex items-center gap-2.5">
                       <GraduationCap className="w-4 h-4 text-gold" />
@@ -1496,7 +1496,7 @@ provider: {
 
                   <Link
                     to="/dashboard?tool=certification"
-                    className="w-full flex items-center justify-between p-2.5 rounded-xl text-left text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors group"
+                    className="sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors group"
                   >
                     <div className="flex items-center gap-2.5">
                       <Award className="w-4 h-4 text-muted-foreground group-hover:text-gold transition-colors" />
@@ -1507,7 +1507,7 @@ provider: {
 
                   <Link
                     to="/dashboard?tool=blog"
-                    className="w-full flex items-center justify-between p-2.5 rounded-xl text-left text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors group"
+                    className="sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors group"
                   >
                     <div className="flex items-center gap-2.5">
                       <BookOpen className="w-4 h-4 text-muted-foreground group-hover:text-gold transition-colors" />
@@ -1517,8 +1517,19 @@ provider: {
                   </Link>
 
                   <Link
+                    to="/dashboard?tool=saved-blogs"
+                    className="sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Bookmark className="w-4 h-4 text-muted-foreground group-hover:text-gold transition-colors" />
+                      <span>Saved Blogs</span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-0.5 transition-all" />
+                  </Link>
+
+                  <Link
                     to="/dashboard?tool=connections"
-                    className="w-full flex items-center justify-between p-2.5 rounded-xl text-left text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors group"
+                    className="sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors group"
                   >
                     <div className="flex items-center gap-2.5">
                       <Users className="w-4 h-4 text-muted-foreground group-hover:text-gold transition-colors" />

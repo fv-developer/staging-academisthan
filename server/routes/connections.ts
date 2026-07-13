@@ -183,6 +183,71 @@ router.get('/received-requests', authenticate, async (req: AuthRequest, res: Res
   }
 });
 
+// 3.5. Get sent connection requests
+router.get('/sent-requests', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+
+    const [requests]: any = await pool.execute(`
+      SELECT 
+        fc.id as connection_id,
+        fc.receiver_id,
+        fc.status,
+        fc.created_at,
+        p.full_name,
+        p.designation,
+        p.department,
+        p.institution,
+        p.city,
+        p.state,
+        p.avatar_url
+      FROM fellow_connections fc
+      JOIN profiles p ON fc.receiver_id = p.id
+      WHERE fc.sender_id = ?
+      ORDER BY fc.created_at DESC
+    `, [userId]);
+
+    res.json(requests);
+  } catch (error) {
+    console.error('Get sent requests error:', error);
+    res.status(500).json({ error: 'Failed to fetch sent requests' });
+  }
+});
+
+// 3.6. Cancel a pending connection request
+router.delete('/cancel/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const connectionId = req.params.id;
+
+    // Check if request exists, is pending, and was sent by this user
+    const [connRow]: any = await pool.execute(
+      'SELECT * FROM fellow_connections WHERE id = ? AND sender_id = ? AND status = \'pending\'',
+      [connectionId, userId]
+    );
+
+    if (connRow.length === 0) {
+      return res.status(404).json({ error: 'Pending connection request not found or unauthorized' });
+    }
+
+    // Delete request
+    await pool.execute('DELETE FROM fellow_connections WHERE id = ?', [connectionId]);
+
+    // Log activity
+    await logUserActivity(
+      userId,
+      'cancel_connection_request',
+      `Cancelled connection request ${connectionId}`,
+      { connectionId }
+    );
+
+    res.json({ message: 'Connection request cancelled successfully' });
+  } catch (error) {
+    console.error('Cancel connection request error:', error);
+    res.status(500).json({ error: 'Failed to cancel connection request' });
+  }
+});
+
 // 4. Get accepted connections
 router.get('/my-connections', authenticate, async (req: AuthRequest, res: Response) => {
   try {

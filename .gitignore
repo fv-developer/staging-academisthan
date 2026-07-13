@@ -23,6 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# Env files
 .env
 .env.*
+
+# Scratch and test results
+scratch/
+test-results/
+public/uploads/

@@ -17,7 +17,7 @@ import {
   Calculator, FileText, GraduationCap, Sparkles, Copy, Check,
   TrendingUp, Clock, Newspaper, Star, Target, Zap,
   ExternalLink, ChevronRight, Briefcase, Globe, FlaskConical, Microscope,
-  Search, ChevronDown, Loader2, Home, Upload, Users, AlertTriangle, ShieldAlert
+  Search, ChevronDown, Loader2, Home, Upload, Users, AlertTriangle, ShieldAlert, Bookmark, Trash2
 } from 'lucide-react';
 import { NewsFeed } from '@/components/dashboard/NewsFeed';
 import { MyCertificates } from '@/components/dashboard/MyCertificates';
@@ -628,7 +628,7 @@ export default function Dashboard() {
   const tier = getCompletionTier();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background dashboard-theme">
       <Navbar />
 
       {/* ═══ Hero Header ═══ */}
@@ -652,7 +652,7 @@ export default function Dashboard() {
                 {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
             </div>
-            <Button variant="outline" onClick={signOut} className="rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10 self-start">
+            <Button onClick={signOut} className="btn-danger btn-sm self-start">
               Sign Out
             </Button>
           </div>
@@ -830,7 +830,7 @@ export default function Dashboard() {
                   <button
                     onClick={() => setActiveTool('institute')}
                     className={cn(
-                      "w-full flex items-center justify-between p-2.5 rounded-xl text-left text-sm transition-all duration-250 group",
+                      "sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all duration-250 group",
                       activeTool === 'institute' 
                         ? "bg-gold/10 text-gold font-semibold" 
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -846,7 +846,7 @@ export default function Dashboard() {
                   <button
                     onClick={() => setActiveTool('enroll-program')}
                     className={cn(
-                      "w-full flex items-center justify-between p-2.5 rounded-xl text-left text-sm transition-all duration-250 group",
+                      "sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all duration-250 group",
                       activeTool === 'enroll-program' 
                         ? "bg-gold/10 text-gold font-semibold" 
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -862,7 +862,7 @@ export default function Dashboard() {
                   <button
                     onClick={() => setActiveTool('certification')}
                     className={cn(
-                      "w-full flex items-center justify-between p-2.5 rounded-xl text-left text-sm transition-all duration-250 group",
+                      "sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all duration-250 group",
                       activeTool === 'certification' 
                         ? "bg-gold/10 text-gold font-semibold" 
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -878,7 +878,7 @@ export default function Dashboard() {
                   <button
                     onClick={() => setActiveTool('blog')}
                     className={cn(
-                      "w-full flex items-center justify-between p-2.5 rounded-xl text-left text-sm transition-all duration-250 group",
+                      "sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all duration-250 group",
                       activeTool === 'blog' 
                         ? "bg-gold/10 text-gold font-semibold" 
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -892,9 +892,25 @@ export default function Dashboard() {
                   </button>
 
                   <button
+                    onClick={() => setActiveTool('saved-blogs')}
+                    className={cn(
+                      "sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all duration-250 group",
+                      activeTool === 'saved-blogs' 
+                        ? "bg-gold/10 text-gold font-semibold" 
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    )}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Bookmark className={cn("w-4 h-4", activeTool === 'saved-blogs' ? "text-gold" : "text-muted-foreground group-hover:text-gold")} />
+                      <span>Saved Blogs</span>
+                    </div>
+                    <ChevronRight className={cn("w-3.5 h-3.5 transition-transform duration-250", activeTool === 'saved-blogs' ? "text-gold translate-x-0.5" : "text-muted-foreground group-hover:translate-x-0.5")} />
+                  </button>
+
+                  <button
                     onClick={() => setActiveTool('connections')}
                     className={cn(
-                      "w-full flex items-center justify-between p-2.5 rounded-xl text-left text-sm transition-all duration-250 group",
+                      "sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all duration-250 group",
                       activeTool === 'connections' 
                         ? "bg-gold/10 text-gold font-semibold" 
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -990,6 +1006,7 @@ export default function Dashboard() {
                       {activeTool === 'enroll-program' && 'Academic Programs Enrollment'}
                       {activeTool === 'certification' && 'Teacher Tools Certifications'}
                       {activeTool === 'blog' && 'Blog Publisher Panel'}
+                      {activeTool === 'saved-blogs' && 'Saved Blogs'}
                       {activeTool === 'connections' && 'Fellow Connections'}
                     </span>
                     <Button
@@ -1014,6 +1031,7 @@ export default function Dashboard() {
                     {activeTool === 'enroll-program' && <EnrollProgramModule />}
                     {activeTool === 'certification' && <CertificationModule />}
                     {activeTool === 'blog' && <BlogModule />}
+                    {activeTool === 'saved-blogs' && <SavedBlogsModule />}
                     {activeTool === 'connections' && <ConnectionsModule />}
                   </div>
                 </div>
@@ -1026,16 +1044,16 @@ export default function Dashboard() {
                         <User className="w-5 h-5 text-gold" /> Fellow Profile
                       </h2>
                   {!editing ? (
-                    <Button onClick={startEditing} variant="outline" size="sm" className="rounded-xl gap-2">
-                      <Edit3 className="h-4 w-4" /> Edit Profile
+                    <Button onClick={startEditing} className="btn-warning btn-sm">
+                      <Edit3 className="h-3.5 w-3.5" /> Edit Profile
                     </Button>
                   ) : (
                     <div className="flex gap-2">
-                      <Button onClick={() => setEditing(false)} variant="ghost" size="sm" className="rounded-xl gap-1">
-                        <X className="h-4 w-4" /> Cancel
+                      <Button onClick={() => setEditing(false)} className="btn-outline btn-sm">
+                        <X className="h-3.5 w-3.5" /> Cancel
                       </Button>
-                      <Button onClick={saveProfile} disabled={saving} size="sm" className="rounded-xl gap-1 bg-gold text-gold-foreground hover:bg-gold/90">
-                        <Save className="h-4 w-4" /> {saving ? 'Saving...' : 'Save'}
+                      <Button onClick={saveProfile} disabled={saving} className="btn-success btn-sm">
+                        <Save className="h-3.5 w-3.5" /> {saving ? 'Saving...' : 'Save'}
                       </Button>
                     </div>
                   )}
@@ -1044,11 +1062,9 @@ export default function Dashboard() {
                 {/* Profile Photo Action Component */}
                 <div className="flex items-center gap-3 pb-6 mb-6 border-b border-border">
                   <Button
-                    variant="outline"
-                    size="sm"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingPhoto}
-                    className="h-8 text-xs rounded-xl gap-1.5 border-gold/20 text-gold hover:bg-gold/10 hover:text-gold"
+                    className="btn-outline btn-sm"
                   >
                     {uploadingPhoto ? (
                       <>
@@ -1062,10 +1078,8 @@ export default function Dashboard() {
                   </Button>
                   {profile?.avatar_url && !uploadingPhoto && (
                     <Button
-                      variant="outline"
-                      size="sm"
                       onClick={handleRemovePhoto}
-                      className="h-8 text-xs rounded-xl gap-1.5 border-destructive/20 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      className="btn-danger btn-sm"
                     >
                       <X className="w-3.5 h-3.5" /> Remove Photo
                     </Button>
@@ -1496,6 +1510,170 @@ function ProfileField({ icon: Icon, label, value }: { icon: any; label: string; 
         <span className="text-xs text-muted-foreground">{label}</span>
         <p className="text-sm font-medium text-foreground">{value || '—'}</p>
       </div>
+    </div>
+  );
+}
+
+/* ─── Saved Blogs Module ─── */
+import { blogs as blogsApi } from '@/lib/api-client';
+
+function SavedBlogsModule() {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [savedBlogs, setSavedBlogs] = useState<any[]>([]);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const fetchSavedBlogs = async () => {
+    setLoading(true);
+    try {
+      const list = await blogsApi.getSaved();
+      setSavedBlogs(list || []);
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: 'Failed to load saved blogs',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSavedBlogs();
+  }, []);
+
+  const handleRemoveBookmark = async (id: string, title: string) => {
+    if (!window.confirm(`Are you sure you want to remove "${title}" from your bookmarks?`)) {
+      return;
+    }
+
+    setActionLoading(id);
+    try {
+      await blogsApi.toggleBookmark(id);
+      toast({ title: 'Bookmark removed', description: `"${title}" has been removed from your saved list.` });
+      await fetchSavedBlogs();
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: 'Failed to remove bookmark',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  if (loading && savedBlogs.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
+        <Loader2 className="w-8 h-8 text-gold animate-spin" />
+        <p className="text-sm font-medium">Loading Saved Blogs...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-5 md:p-6 space-y-6">
+      {/* Title */}
+      <div className="text-left border-b border-slate-100 pb-4">
+        <h3 className="font-serif text-base font-bold text-slate-900">Saved Blogs</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">Access and manage all articles you've bookmarked.</p>
+      </div>
+
+      {savedBlogs.length === 0 ? (
+        <div className="border border-dashed border-border rounded-2xl p-10 text-center flex flex-col items-center gap-3 bg-white">
+          <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100/50">
+            <Bookmark className="w-5 h-5 text-slate-400" />
+          </div>
+          <div className="space-y-1">
+            <h4 className="font-bold text-xs text-foreground">No saved blogs yet</h4>
+            <p className="text-[11px] text-muted-foreground max-w-xs mx-auto leading-relaxed">
+              Bookmark blogs from the <a href="/blog" className="text-gold font-semibold hover:underline">Academisthan Blog</a> section to read them later.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-6">
+          {savedBlogs.map((blog) => (
+            <div 
+              key={blog.id} 
+              className="bg-white border border-slate-100 rounded-2xl overflow-hidden hover:shadow-md transition-all flex flex-col justify-between"
+            >
+              <div>
+                {/* Cover Image */}
+                <div className="h-40 w-full bg-slate-100 relative">
+                  {blog.cover_image ? (
+                    <img src={blog.cover_image} alt={blog.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gold/5 text-gold/30">
+                      <BookOpen className="w-12 h-12" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4 text-left space-y-2">
+                  {/* Category */}
+                  {blog.category && (
+                    <span className="inline-flex items-center text-[9px] font-bold text-gold uppercase tracking-wider bg-gold/10 px-2 py-0.5 rounded-full">
+                      {blog.category}
+                    </span>
+                  )}
+
+                  {/* Title */}
+                  <h4 className="font-serif text-sm font-bold text-slate-900 leading-snug line-clamp-2">
+                    <a href={`/blog/${blog.slug}`} className="hover:text-gold transition-colors">{blog.title}</a>
+                  </h4>
+
+                  {/* Excerpt */}
+                  {blog.excerpt && (
+                    <p className="text-slate-500 text-xs line-clamp-2 leading-relaxed">
+                      {blog.excerpt}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="px-4 pb-4 pt-3 border-t border-slate-50 flex items-center justify-between text-left">
+                {/* Author & Save date */}
+                <div className="flex gap-2 items-center min-w-0">
+                  <div className="w-7 h-7 rounded-full bg-gold/10 text-gold flex items-center justify-center font-bold text-[10px] overflow-hidden flex-shrink-0">
+                    {blog.author_avatar ? (
+                      <img src={blog.author_avatar} alt={blog.author_name} className="w-full h-full object-cover" />
+                    ) : (
+                      blog.author_name?.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold text-slate-700 truncate">{blog.author_name}</p>
+                    <p className="text-[9px] text-slate-400">
+                      Saved {new Date(blog.saved_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Remove bookmark */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={actionLoading === blog.id}
+                  onClick={() => handleRemoveBookmark(blog.id, blog.title)}
+                  className="text-destructive hover:bg-destructive/10 text-[10px] font-semibold gap-1.5 h-8 rounded-lg"
+                >
+                  {actionLoading === blog.id ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3 h-3" />
+                  )}
+                  Remove
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

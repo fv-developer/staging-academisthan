@@ -172,7 +172,7 @@ function NewsCard({ item }: { item: any }) {
         <div className="flex-1 min-w-0">
           {/* Top row: pinned badge + category */}
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            {isPinned && (
+            {!!isPinned && (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gold uppercase tracking-wider">
                 <Pin className="w-3 h-3" />
                 Pinned

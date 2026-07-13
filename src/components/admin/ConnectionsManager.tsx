@@ -95,13 +95,11 @@ export function ConnectionsManager() {
           <p className="text-xs text-muted-foreground mt-0.5">Monitor and manage professional connection requests between fellows.</p>
         </div>
         <Button
-          variant="outline"
-          size="sm"
           onClick={fetchAdminData}
           disabled={loading}
-          className="h-8 gap-1.5 rounded-lg border-gold/20 text-gold hover:bg-gold/10 text-xs"
+          className="btn-outline btn-sm"
         >
-          <RefreshCw className={cn("w-3 h-3", loading && "animate-spin")} />
+          <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
           Reload
         </Button>
       </div>
@@ -139,15 +137,8 @@ export function ConnectionsManager() {
           {(['all', 'accepted', 'pending', 'rejected'] as const).map((status) => (
             <Button
               key={status}
-              variant="outline"
-              size="sm"
               onClick={() => setStatusFilter(status)}
-              className={cn(
-                "h-10 rounded-xl text-xs px-3 font-semibold",
-                statusFilter === status
-                  ? "bg-gold/10 text-gold border-gold/30 hover:bg-gold/15"
-                  : "border-slate-200 text-slate-600 hover:bg-slate-50"
-              )}
+              className={statusFilter === status ? "btn-primary" : "btn-outline"}
             >
               {status.toUpperCase()}
             </Button>
@@ -252,11 +243,9 @@ export function ConnectionsManager() {
                     {/* Actions */}
                     <td className="p-4 text-right">
                       <Button
-                        variant="ghost"
-                        size="icon"
                         disabled={actionLoading === conn.id}
                         onClick={() => handleAdminRemove(conn.id, conn.sender_name, conn.receiver_name)}
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 w-8 rounded-lg"
+                        className="btn-danger btn-sm"
                       >
                         {actionLoading === conn.id ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />

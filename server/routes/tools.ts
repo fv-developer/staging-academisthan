@@ -10,7 +10,7 @@ const router = express.Router();
 router.post('/results', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { tool_name, input_data, result_data, score } = req.body;
+    const { tool_name, tool_type, input_data, result_data, score } = req.body;
 
     // Validation
     if (!tool_name) {
@@ -18,21 +18,59 @@ router.post('/results', authenticate, async (req: AuthRequest, res: Response) =>
     }
 
     const resultId = uuidv4();
+    const numericScore = score !== undefined && score !== null ? Number(score) : 0;
+    const isCas = tool_name.toLowerCase().includes('promotion') || (tool_type && tool_type.toLowerCase().includes('promotion'));
+    let result = 'Fail';
+    let passingScore = 50.00;
+
+    if (isCas) {
+      const isEligible = result_data && (result_data.eligible === true || result_data.eligible === 'true');
+      result = isEligible ? 'Pass' : 'Fail';
+      passingScore = 1.00;
+    } else {
+      result = numericScore >= passingScore ? 'Pass' : 'Fail';
+    }
+
+    const certStatus = result === 'Pass' ? 'Issued' : 'None';
 
     // Insert tool result
     await pool.execute(
       `INSERT INTO tool_results (
-        id, user_id, tool_name, input_data, result_data, score
-      ) VALUES (?, ?, ?, ?, ?, ?)`,
+        id, user_id, tool_name, tool_type, input_data, result_data, score, passing_score, result, certificate_status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         resultId,
         userId,
         tool_name,
+        tool_type || null,
         JSON.stringify(input_data || {}),
         JSON.stringify(result_data || {}),
-        score || null,
+        score !== undefined && score !== null ? score : null,
+        passingScore,
+        result,
+        certStatus
       ]
     );
+
+    // If passed, automatically issue a certificate
+    if (result === 'Pass') {
+      const certId = uuidv4();
+      const prefix = (tool_type || 'TOOL').replace(/[^a-zA-Z]/g, '').slice(0, 4).toUpperCase();
+      const certificateNumber = `ACAD-${prefix}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 90 + 10)}`;
+
+      await pool.execute(
+        `INSERT INTO certificates (
+          id, user_id, certificate_number, certificate_type, issued_at, tool_result_id
+        ) VALUES (?, ?, ?, ?, NOW(), ?)`,
+        [
+          certId,
+          userId,
+          certificateNumber,
+          `tool_${tool_type || 'result'}`,
+          resultId
+        ]
+      );
+    }
 
     // Get the created result
     const [results]: any = await pool.execute(
@@ -91,15 +129,20 @@ router.get('/results', authenticate, async (req: AuthRequest, res: Response) => 
     const userId = req.user!.id;
     const { tool_name } = req.query;
 
-    let query = 'SELECT * FROM tool_results WHERE user_id = ?';
+    let query = `
+      SELECT tr.*, c.certificate_number, c.id as certificate_id, c.issued_at as certificate_issued_at, c.pdf_url as certificate_pdf_url
+      FROM tool_results tr
+      LEFT JOIN certificates c ON tr.id = c.tool_result_id
+      WHERE tr.user_id = ?
+    `;
     const params: any[] = [userId];
 
     if (tool_name) {
-      query += ' AND tool_name = ?';
+      query += ' AND tr.tool_name = ?';
       params.push(tool_name);
     }
 
-    query += ' ORDER BY created_at DESC';
+    query += ' ORDER BY tr.created_at DESC';
 
     const [results] = await pool.execute(query, params);
     res.json(results);

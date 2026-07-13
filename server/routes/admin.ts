@@ -210,7 +210,7 @@ router.get('/institutions/:id', authenticate, isAdmin, async (req: AuthRequest, 
 router.put('/institutions/:id/approve', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { notes } = req.body;
+    const { notes } = req.body || {};
     const adminId = req.user!.id;
 
     const connection = await pool.getConnection();
@@ -296,7 +296,7 @@ router.put('/institutions/:id/approve', authenticate, isAdmin, async (req: AuthR
 router.put('/institutions/:id/reject', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { reason, notes } = req.body;
+    const { reason, notes } = req.body || {};
     const adminId = req.user!.id;
 
     if (!reason) {
@@ -906,6 +906,7 @@ router.get('/stats', authenticate, isAdmin, async (req: AuthRequest, res: Respon
     const [
       [profiles],
       [users],
+      [fellows],
       [institutions],
       [pending],
       [approved],
@@ -920,6 +921,7 @@ router.get('/stats', authenticate, isAdmin, async (req: AuthRequest, res: Respon
     ] = await Promise.all([
       pool.execute('SELECT COUNT(*) as count FROM profiles'),
       pool.execute('SELECT COUNT(*) as count FROM users'),
+      pool.execute('SELECT COUNT(*) as count FROM users u LEFT JOIN admin_roles ar ON u.id = ar.user_id WHERE ar.user_id IS NULL'),
       pool.execute('SELECT COUNT(*) as count FROM institutions'),
       pool.execute("SELECT COUNT(*) as count FROM institutions WHERE status = 'pending'"),
       pool.execute("SELECT COUNT(*) as count FROM institutions WHERE status = 'approved'"),
@@ -930,13 +932,13 @@ router.get('/stats', authenticate, isAdmin, async (req: AuthRequest, res: Respon
       pool.execute('SELECT COUNT(*) as count FROM enrollments'),
       pool.execute('SELECT COUNT(*) as count FROM blog_posts'),
       pool.execute("SELECT COUNT(*) as count FROM blog_posts WHERE status = 'pending_review'"),
-      pool.execute('SELECT COUNT(*) as count FROM notifications'),
+      pool.execute('SELECT COUNT(*) as count FROM notifications WHERE user_id = ?', [req.user!.id]),
     ]);
 
     res.json({
       totalUsers: (users as any)[0].count,
       totalProfiles: (profiles as any)[0].count,
-      totalFellows: (users as any)[0].count,
+      totalFellows: (fellows as any)[0].count,
       totalInstitutions: (institutions as any)[0].count,
       pendingInstitutions: (pending as any)[0].count,
       approvedInstitutions: (approved as any)[0].count,
@@ -1167,6 +1169,47 @@ router.get('/tool-results', authenticate, isAdmin, async (req: AuthRequest, res:
   } catch (error) {
     console.error('Get admin tool results error:', error);
     res.status(500).json({ error: 'Failed to get tool results' });
+  }
+});
+
+// Delete single tool result (Admin)
+router.delete('/tool-results/:id', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const [result] = await pool.execute(
+      'DELETE FROM tool_results WHERE id = ?',
+      [id]
+    );
+
+    if ((result as any).affectedRows === 0) {
+      return res.status(404).json({ error: 'Tool result not found' });
+    }
+
+    res.json({ message: 'Tool result deleted successfully' });
+  } catch (error) {
+    console.error('Delete admin tool result error:', error);
+    res.status(500).json({ error: 'Failed to delete tool result' });
+  }
+});
+
+// Bulk delete tool results (Admin)
+router.post('/tool-results/bulk-delete', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'List of IDs is required' });
+    }
+
+    const placeholders = ids.map(() => '?').join(', ');
+    await pool.execute(
+      `DELETE FROM tool_results WHERE id IN (${placeholders})`,
+      ids
+    );
+
+    res.json({ message: 'Tool results deleted successfully' });
+  } catch (error) {
+    console.error('Bulk delete admin tool results error:', error);
+    res.status(500).json({ error: 'Failed to delete tool results' });
   }
 });
 
@@ -1401,13 +1444,18 @@ router.post('/notifications/send-selected', authenticate, isAdmin, async (req: A
 // Get notification history (admin logs)
 router.get('/notifications/history', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
   try {
+    const adminId = req.user!.id;
     const [rows]: any = await pool.execute(`
-      SELECT n.*, u.full_name AS fellow_name, u.email AS fellow_email
+      SELECT n.*, 
+             COALESCE(trigger_p.full_name, recipient_p.full_name, 'System') AS fellow_name,
+             COALESCE(trigger_p.email, recipient_p.email) AS fellow_email
       FROM notifications n
-      JOIN users u ON n.user_id = u.id
+      LEFT JOIN profiles recipient_p ON n.user_id = recipient_p.id
+      LEFT JOIN profiles trigger_p ON n.trigger_user_id = trigger_p.id
+      WHERE n.user_id = ?
       ORDER BY n.created_at DESC
       LIMIT 100
-    `);
+    `, [adminId]);
     res.json(rows);
   } catch (error) {
     console.error('Get notification history error:', error);
@@ -1415,7 +1463,56 @@ router.get('/notifications/history', authenticate, isAdmin, async (req: AuthRequ
   }
 });
 
-// Delete notification
+// Get unread notification count for admin
+router.get('/notifications/unread-count', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const adminId = req.user!.id;
+    const [rows]: any = await pool.execute(
+      'SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = FALSE',
+      [adminId]
+    );
+    res.json({ count: rows[0].count });
+  } catch (error) {
+    console.error('Get unread count error:', error);
+    res.status(500).json({ error: 'Failed to get unread notifications count' });
+  }
+});
+
+// Mark all unread notifications as read for admin
+router.put('/notifications/mark-read', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const adminId = req.user!.id;
+    await pool.execute(
+      'UPDATE notifications SET is_read = TRUE, read_at = NOW() WHERE user_id = ? AND is_read = FALSE',
+      [adminId]
+    );
+    res.json({ success: true, message: 'All notifications marked as read' });
+  } catch (error) {
+    console.error('Mark read error:', error);
+    res.status(500).json({ error: 'Failed to mark notifications as read' });
+  }
+});
+
+// Bulk delete notifications for admin (permanent deletion)
+router.post('/notifications/bulk-delete', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids } = req.body || {};
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'Invalid or empty ids list' });
+    }
+    const placeholders = ids.map(() => '?').join(',');
+    await pool.execute(
+      `DELETE FROM notifications WHERE id IN (${placeholders})`,
+      ids
+    );
+    res.json({ success: true, message: `Successfully deleted ${ids.length} notifications` });
+  } catch (error) {
+    console.error('Bulk delete notifications error:', error);
+    res.status(500).json({ error: 'Failed to bulk delete notifications' });
+  }
+});
+
+// Delete single notification (permanent deletion)
 router.delete('/notifications/:id', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
   try {
     await pool.execute('DELETE FROM notifications WHERE id = ?', [req.params.id]);

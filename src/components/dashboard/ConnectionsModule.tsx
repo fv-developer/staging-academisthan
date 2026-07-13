@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import {
   Users, Mail, Phone, MapPin, Building2, GraduationCap,
-  Clock, Check, X, Loader2, Save, Trash2, ShieldAlert
+  Clock, Check, X, Loader2, Save, Trash2, ShieldAlert, Send
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -14,10 +14,11 @@ export default function ConnectionsModule() {
   const { profile, refreshProfile } = useAuth();
   const { toast } = useToast();
   
-  const [activeTab, setActiveTab] = useState<'my-connections' | 'pending-requests'>('my-connections');
+  const [activeTab, setActiveTab] = useState<'my-connections' | 'pending-requests' | 'sent-requests'>('my-connections');
   const [loading, setLoading] = useState(true);
   const [myConnections, setMyConnections] = useState<any[]>([]);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [sentRequests, setSentRequests] = useState<any[]>([]);
   
   // Work email state
   const [workEmail, setWorkEmail] = useState(profile?.work_email || '');
@@ -34,12 +35,14 @@ export default function ConnectionsModule() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [connectionsList, requestsList] = await Promise.all([
+      const [connectionsList, requestsList, sentList] = await Promise.all([
         connectionsApi.getConnections(),
-        connectionsApi.getReceivedRequests()
+        connectionsApi.getReceivedRequests(),
+        connectionsApi.getSentRequests()
       ]);
       setMyConnections(connectionsList || []);
       setPendingRequests(requestsList || []);
+      setSentRequests(sentList || []);
     } catch (err: any) {
       console.error(err);
       toast({ 
@@ -49,6 +52,28 @@ export default function ConnectionsModule() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelRequest = async (connectionId: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to cancel your connection request to ${name}?`)) {
+      return;
+    }
+    
+    setActionLoading(connectionId);
+    try {
+      await connectionsApi.cancelRequest(connectionId);
+      toast({ title: `Cancelled connection request to ${name}.` });
+      await fetchData();
+    } catch (err: any) {
+      console.error(err);
+      toast({ 
+        title: 'Failed to cancel request', 
+        description: err.message, 
+        variant: 'destructive' 
+      });
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -171,6 +196,20 @@ export default function ConnectionsModule() {
                   {pendingRequests.length}
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => setActiveTab('sent-requests')}
+              className={cn(
+                "pb-3 text-xs font-semibold px-4 border-b-2 transition-all flex items-center gap-1.5",
+                activeTab === 'sent-requests'
+                  ? "border-gold text-gold"
+                  : "border-transparent text-muted-foreground hover:text-slate-950"
+              )}
+            >
+              Sent Requests
+              <span className="bg-slate-100 text-slate-700 rounded-full px-1.5 py-0.5 text-[10px] font-bold">
+                {sentRequests.length}
+              </span>
             </button>
           </div>
 
@@ -317,6 +356,82 @@ export default function ConnectionsModule() {
                           Decline
                         </Button>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: Sent Requests */}
+          {activeTab === 'sent-requests' && (
+            <div className="space-y-3">
+              {sentRequests.length === 0 ? (
+                <div className="border border-dashed border-border rounded-2xl p-10 text-center flex flex-col items-center gap-3 bg-white">
+                  <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100/50">
+                    <Send className="w-5 h-5 text-slate-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-bold text-xs text-foreground">No sent requests</h4>
+                    <p className="text-[11px] text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                      You have not sent any connection requests yet. Find fellows in the <a href="/directory" className="text-gold font-semibold hover:underline">Fellow Directory</a>.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4">
+                  {sentRequests.map((req) => (
+                    <div 
+                      key={req.connection_id} 
+                      className="bg-white border border-slate-100 rounded-2xl p-5 hover:shadow-md transition-all flex flex-col justify-between"
+                    >
+                      <div className="flex gap-3 items-start text-left mb-4">
+                        <div className="w-12 h-12 rounded-full flex-shrink-0 bg-gold/15 text-gold border flex items-center justify-center font-serif font-bold overflow-hidden">
+                          {req.avatar_url ? (
+                            <img src={req.avatar_url} alt={req.full_name} className="w-full h-full object-cover" />
+                          ) : (
+                            req.full_name?.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs font-bold text-slate-900 truncate">{req.full_name}</h4>
+                          <p className="text-gold text-[10px] font-semibold truncate">{req.designation || 'Educator'}</p>
+                          <p className="text-slate-500 text-[10px] truncate">{req.department} • {req.institution}</p>
+                          <div className="flex flex-wrap gap-2 items-center mt-2">
+                            <span className="inline-flex items-center gap-1 text-[9px] text-muted-foreground bg-slate-50 rounded-full px-2 py-0.5 border">
+                              <Clock className="w-2.5 h-2.5" />
+                              {new Date(req.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                            </span>
+                            <span className={cn(
+                              "inline-flex items-center text-[9px] font-semibold rounded-full px-2 py-0.5 border",
+                              req.status === 'accepted' && "bg-green-50 text-green-700 border-green-200",
+                              req.status === 'pending' && "bg-amber-50 text-amber-700 border-amber-200",
+                              req.status === 'rejected' && "bg-rose-50 text-rose-700 border-rose-200"
+                            )}>
+                              {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {req.status === 'pending' && (
+                        <div className="mt-2 pt-3 border-t border-slate-50 flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={actionLoading === req.connection_id}
+                            onClick={() => handleCancelRequest(req.connection_id, req.full_name)}
+                            className="text-destructive hover:bg-destructive/10 text-[10px] font-semibold gap-1.5 h-8 rounded-lg"
+                          >
+                            {actionLoading === req.connection_id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <X className="w-3 h-3" />
+                            )}
+                            Cancel Request
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

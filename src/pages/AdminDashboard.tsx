@@ -13,12 +13,14 @@ import { DataTable, ColumnDef } from '@/components/admin/DataTable';
 import { ConnectionsManager } from '@/components/admin/ConnectionsManager';
 import { LmsMonitor } from '@/components/admin/LmsMonitor';
 import { ProgramManager } from '@/components/admin/ProgramManager';
+import { CertificationsManager } from '@/components/admin/CertificationsManager';
 import CKEditor from '@/components/ui/CKEditor';
 import {
   Shield, Users, Building2, GraduationCap, FileText, Bell, BarChart3, Settings, Key, LogOut,
   CheckCircle2, XCircle, AlertTriangle, Search, Filter, Edit, Plus, Trash2,
   Calendar, Mail, Phone, Download, Eye, RefreshCw, Clock, BookOpen,
-  Loader2, Sparkles, Info, ChevronRight, ArrowRight, Upload, Tag, Check, ArrowLeft
+  Loader2, Sparkles, Info, ChevronRight, ArrowRight, Upload, Tag, Check, ArrowLeft,
+  Award
 } from 'lucide-react';
 
 interface Stats {
@@ -31,6 +33,46 @@ interface Stats {
   pendingBlogApprovals: number;
   activeNotifications: number;
 }
+
+const isToday = (dateStr: string) => {
+  if (!dateStr) return false;
+  const date = new Date(dateStr);
+  const today = new Date();
+  return date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear();
+};
+
+const timeAgo = (dateStr: string) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  return `${days}d ago`;
+};
+
+const getInitials = (name: string) => {
+  if (!name) return 'S';
+  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+};
+
+const getAvatarColor = (type: string) => {
+  switch (type) {
+    case 'institution_status': return 'bg-sky-100 text-sky-700';
+    case 'blog': return 'bg-amber-100 text-amber-700';
+    case 'course': return 'bg-indigo-100 text-indigo-700';
+    case 'general': return 'bg-emerald-100 text-emerald-700';
+    default: return 'bg-slate-100 text-slate-700';
+  }
+};
 
 export default function AdminDashboard() {
   const { user, profile } = useAuth();
@@ -50,6 +92,7 @@ export default function AdminDashboard() {
     if (path.includes('/admin/change-password')) return 'change-password';
     if (path.includes('/admin/connections')) return 'connections';
     if (path.includes('/admin/lms-monitor')) return 'lms-monitor';
+    if (path.includes('/admin/certifications')) return 'certifications';
     return 'dashboard';
   });
 
@@ -300,6 +343,9 @@ export default function AdminDashboard() {
     link: ''
   });
   const [notificationsHistory, setNotificationsHistory] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [selectedNotifIds, setSelectedNotifIds] = useState<string[]>([]);
+  const [activeSubTab, setActiveSubTab] = useState<'today' | 'previous'>('today');
 
   // Settings states
   const [settingsForm, setSettingsForm] = useState({
@@ -389,41 +435,41 @@ export default function AdminDashboard() {
       className: 'text-right whitespace-nowrap',
       cell: (row) => (
         <div className="flex justify-end items-center gap-1.5">
-          <button
+          <Button
             onClick={() => setViewingFellow(row)}
-            className="h-7 w-7 flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-navy rounded-lg transition-colors"
+            className="btn-outline btn-xs"
           >
-            <Eye className="w-4 h-4" />
-          </button>
+            <Eye className="w-3.5 h-3.5" />
+          </Button>
           {row.membership_status === 'pending' || row.membership_status === 'pending_review' ? (
             <>
-              <Button size="xs" className="bg-emerald-500 text-white hover:bg-emerald-600 rounded-lg text-[10px] h-7 px-2" onClick={() => handleUpdateFellowStatus(row.id, 'active')}>
+              <Button className="btn-success btn-xs" onClick={() => handleUpdateFellowStatus(row.id, 'active')}>
                 Approve
               </Button>
-              <Button size="xs" className="bg-rose-500 text-white hover:bg-rose-600 rounded-lg text-[10px] h-7 px-2" onClick={() => handleUpdateFellowStatus(row.id, 'rejected')}>
+              <Button className="btn-danger btn-xs" onClick={() => handleUpdateFellowStatus(row.id, 'rejected')}>
                 Reject
               </Button>
             </>
           ) : row.membership_status === 'rejected' ? (
-            <Button size="xs" className="bg-emerald-500 text-white hover:bg-emerald-600 rounded-lg text-[10px] h-7 px-2" onClick={() => handleUpdateFellowStatus(row.id, 'active')}>
+            <Button className="btn-success btn-xs" onClick={() => handleUpdateFellowStatus(row.id, 'active')}>
               Approve
             </Button>
           ) : row.membership_status === 'suspended' ? (
-            <Button size="xs" className="bg-emerald-500 text-white hover:bg-emerald-600 rounded-lg text-[10px] h-7 px-2" onClick={() => handleUpdateFellowStatus(row.id, 'active')}>
+            <Button className="btn-success btn-xs" onClick={() => handleUpdateFellowStatus(row.id, 'active')}>
               Activate
             </Button>
           ) : (
-            <Button size="xs" className="bg-slate-400 text-white hover:bg-slate-500 rounded-lg text-[10px] h-7 px-2" onClick={() => handleUpdateFellowStatus(row.id, 'suspended')}>
+            <Button className="btn-danger btn-xs" onClick={() => handleUpdateFellowStatus(row.id, 'suspended')}>
               Suspend
             </Button>
           )}
-          <button
+          <Button
             onClick={() => handleDeleteFellow(row.id, row.full_name)}
-            className="h-7 w-7 flex items-center justify-center text-rose-500 hover:bg-rose-50 hover:text-rose-700 rounded-lg transition-colors"
+            className="btn-danger btn-xs"
             title="Delete Fellow"
           >
-            <Trash2 className="w-4 h-4" />
-          </button>
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
         </div>
       )
     }
@@ -491,28 +537,28 @@ export default function AdminDashboard() {
       cell: (row) => (
         <div className="flex justify-end items-center gap-1.5">
           {row.status === 'pending' ? (
-            <Button size="xs" className="bg-navy hover:bg-navy/95 text-warm rounded-lg text-[10px] h-7 px-2.5 font-semibold" onClick={() => setViewingInst(row)}>
+            <Button className="btn-warning btn-xs" onClick={() => setViewingInst(row)}>
               Review
             </Button>
           ) : row.status === 'pending_change_approval' ? (
-            <Button size="xs" className="bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg text-[10px] h-7 px-2.5 font-semibold" onClick={() => { setViewingInst(row); handleFetchChangeRequest(row.id); }}>
+            <Button className="btn-warning btn-xs" onClick={() => { setViewingInst(row); handleFetchChangeRequest(row.id); }}>
               Review Changes
             </Button>
           ) : (
-            <button
+            <Button
               onClick={() => setViewingInst(row)}
-              className="h-7 w-7 flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-navy rounded-lg transition-colors"
+              className="btn-outline btn-xs"
             >
-              <Eye className="w-4 h-4" />
-            </button>
+              <Eye className="w-3.5 h-3.5" />
+            </Button>
           )}
-          <button
+          <Button
             onClick={() => handleDeleteInst(row.id, row.name)}
-            className="h-7 w-7 flex items-center justify-center text-rose-500 hover:bg-rose-50 hover:text-rose-700 rounded-lg transition-colors"
+            className="btn-danger btn-xs"
             title="Delete Institution"
           >
-            <Trash2 className="w-4 h-4" />
-          </button>
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
         </div>
       )
     }
@@ -785,6 +831,10 @@ export default function AdminDashboard() {
       const notifRes = await api.apiRequest('/admin/notifications/history');
       if (notifRes) setNotificationsHistory(notifRes);
 
+      // Fetch unread notifications count
+      const countRes = await api.apiRequest('/admin/notifications/unread-count');
+      if (countRes) setUnreadCount(countRes.count);
+
       // Fetch recent log results
       const logRes = await api.apiRequest('/admin/tool-results');
       if (logRes) setRecentActivities(logRes.slice(0, 10));
@@ -802,6 +852,24 @@ export default function AdminDashboard() {
       fetchData();
     }
   }, [isAdmin]);
+
+  // Mark all unread notifications as read when visiting the notifications tab
+  useEffect(() => {
+    if (activeTab === 'notifications' && isAdmin) {
+      const markNotificationsRead = async () => {
+        try {
+          await api.apiRequest('/admin/notifications/mark-read', { method: 'PUT' });
+          setUnreadCount(0);
+          // Refresh logs
+          const notifRes = await api.apiRequest('/admin/notifications/history');
+          if (notifRes) setNotificationsHistory(notifRes);
+        } catch (err) {
+          console.error('Failed to mark notifications as read:', err);
+        }
+      };
+      markNotificationsRead();
+    }
+  }, [activeTab, isAdmin]);
 
   // View state synchronizer
   useEffect(() => {
@@ -847,7 +915,7 @@ export default function AdminDashboard() {
         label: 'Reason for Rejection (Mandatory)',
         placeholder: 'Specify what revisions are required or reasons for rejection.',
         confirmText: 'Confirm Rejection',
-        confirmClass: 'bg-rose-500 hover:bg-rose-600 text-white border-none',
+        confirmClass: 'btn-danger',
         value: '',
         error: '',
         onSubmit: performStatusUpdate,
@@ -862,7 +930,7 @@ export default function AdminDashboard() {
         label: 'Reason for Suspension (Mandatory)',
         placeholder: 'Specify violation reasons or administrative blocks.',
         confirmText: 'Confirm Suspension',
-        confirmClass: 'bg-slate-500 hover:bg-slate-600 text-white border-none',
+        confirmClass: 'btn-danger',
         value: '',
         error: '',
         onSubmit: performStatusUpdate,
@@ -1143,7 +1211,7 @@ export default function AdminDashboard() {
         label: 'Reason for Rejection (Mandatory)',
         placeholder: 'Specify what revisions are required for this blog post.',
         confirmText: 'Confirm Rejection',
-        confirmClass: 'bg-rose-500 hover:bg-rose-600 text-white border-none',
+        confirmClass: 'btn-danger',
         value: '',
         error: '',
         onSubmit: performBlogRejection,
@@ -1277,9 +1345,28 @@ export default function AdminDashboard() {
     try {
       await api.apiRequest(`/admin/notifications/${id}`, { method: 'DELETE' });
       toast({ title: 'Notification Deleted', description: 'Notification removed from history logs.' });
+      setSelectedNotifIds(prev => prev.filter(item => item !== id));
       fetchData();
     } catch (err: any) {
       toast({ title: 'Delete failed', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const handleBulkDeleteNotification = async () => {
+    if (selectedNotifIds.length === 0) return;
+    try {
+      await api.apiRequest('/admin/notifications/bulk-delete', {
+        method: 'POST',
+        body: { ids: selectedNotifIds }
+      });
+      toast({ 
+        title: 'Notifications Deleted', 
+        description: `Permanently deleted ${selectedNotifIds.length} notifications.` 
+      });
+      setSelectedNotifIds([]);
+      fetchData();
+    } catch (err: any) {
+      toast({ title: 'Bulk delete failed', description: err.message, variant: 'destructive' });
     }
   };
 
@@ -1407,7 +1494,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-slate-800 flex flex-col justify-between font-sans">
+    <div className="min-h-screen bg-background text-slate-800 flex flex-col justify-between font-sans dashboard-theme">
       <div>
         <Navbar />
 
@@ -1504,11 +1591,12 @@ export default function AdminDashboard() {
                       { id: 'fellows', label: 'Fellow List', icon: Users },
                       { id: 'connections', label: 'Fellow Connections', icon: Users },
                       { id: 'lms-monitor', label: 'LMS Progress', icon: GraduationCap },
+                      { id: 'certifications', label: 'Teacher Tools Certifications', icon: Award },
                       { id: 'institutions', label: 'Institution Management', icon: Building2 },
                       { id: 'programs', label: 'Program Management', icon: GraduationCap },
                       { id: 'enrollments', label: 'Program Enrollments', icon: BookOpen },
                       { id: 'blogs', label: 'Blog Management', icon: FileText },
-                      { id: 'notifications', label: 'Notifications', icon: Bell },
+                      { id: 'notifications', label: 'Notifications', icon: Bell, badge: unreadCount },
                       { id: 'reports', label: 'Reports', icon: Download },
                       { id: 'settings', label: 'Settings', icon: Settings },
                       { id: 'change-password', label: 'Change Password', icon: Key },
@@ -1520,7 +1608,7 @@ export default function AdminDashboard() {
                           key={item.id}
                           onClick={() => navigateTo(item.id)}
                           className={cn(
-                            "w-full flex items-center justify-between p-2.5 rounded-xl text-left text-sm transition-all duration-250 group",
+                            "sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all duration-250 group",
                             isActive 
                               ? "bg-gold/10 text-gold font-semibold" 
                               : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -1529,6 +1617,11 @@ export default function AdminDashboard() {
                           <div className="flex items-center gap-2.5">
                             <Icon className={cn("w-4 h-4", isActive ? "text-gold" : "text-muted-foreground group-hover:text-gold")} />
                             <span>{item.label}</span>
+                            {item.badge !== undefined && item.badge > 0 && (
+                              <span className="ml-1.5 bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0">
+                                {item.badge}
+                              </span>
+                            )}
                           </div>
                           <ChevronRight className={cn("w-3.5 h-3.5 transition-transform duration-250", isActive ? "text-gold translate-x-0.5" : "text-muted-foreground group-hover:translate-x-0.5")} />
                         </button>
@@ -1555,6 +1648,7 @@ export default function AdminDashboard() {
                       {activeTab === 'change-password' && 'Password Security Panel'}
                       {activeTab === 'connections' && 'Fellow Connections'}
                       {activeTab === 'lms-monitor' && 'LMS Student Progress Auditing'}
+                      {activeTab === 'certifications' && 'Teacher Tools Certifications'}
                     </span>
                     <Button
                       variant="outline"
@@ -1818,8 +1912,8 @@ export default function AdminDashboard() {
             <div className="space-y-4 bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm">
               <div className="flex justify-between items-center border-b border-slate-100 pb-4">
                 <h3 className="font-serif text-sm font-bold text-navy">Enrollment Registry</h3>
-                <Button className="bg-gold text-gold-foreground hover:bg-gold/90 rounded-xl text-xs gap-1.5 font-semibold px-4 h-9" onClick={() => setShowEnrollModal(true)}>
-                  <Plus className="w-4 h-4" /> Enroll Fellow
+                <Button className="btn-primary" onClick={() => setShowEnrollModal(true)}>
+                  <Plus className="w-3.5 h-3.5" /> Enroll Fellow
                 </Button>
               </div>
 
@@ -2183,13 +2277,172 @@ export default function AdminDashboard() {
 
               {/* Notification logs history */}
               <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm lg:col-span-2 space-y-4">
-                <h3 className="font-serif text-sm font-bold text-navy border-b border-slate-100 pb-3">Notifications History Logs</h3>
-                <DataTable
-                  data={notificationsHistory}
-                  columns={notificationColumns}
-                  searchPlaceholder="Search notifications..."
-                  exportFilename="academisthan_notifications"
-                />
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="font-serif text-sm font-bold text-navy">Notifications History Logs</h3>
+                  {selectedNotifIds.length > 0 && (
+                    <Button 
+                      size="sm" 
+                      variant="destructive" 
+                      onClick={handleBulkDeleteNotification}
+                      className="text-[10px] h-7 px-3 rounded-lg font-semibold flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white shrink-0"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Bulk Delete Selected ({selectedNotifIds.length})
+                    </Button>
+                  )}
+                </div>
+
+                {/* Sub-tabs header matching the reference design */}
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={() => {
+                        setActiveSubTab('today');
+                        setSelectedNotifIds([]);
+                      }}
+                      className={`text-xs font-bold pb-2 transition-all border-b-2 ${
+                        activeSubTab === 'today' 
+                          ? 'border-gold text-navy font-semibold' 
+                          : 'border-transparent text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      Today <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1">
+                        {notificationsHistory.filter(n => isToday(n.created_at)).length}
+                      </span>
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setActiveSubTab('previous');
+                        setSelectedNotifIds([]);
+                      }}
+                      className={`text-xs font-bold pb-2 transition-all border-b-2 ${
+                        activeSubTab === 'previous' 
+                          ? 'border-gold text-navy font-semibold' 
+                          : 'border-transparent text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      Previous <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1">
+                        {notificationsHistory.filter(n => !isToday(n.created_at)).length}
+                      </span>
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    {/* Select All Checkbox */}
+                    {((activeSubTab === 'today' ? notificationsHistory.filter(n => isToday(n.created_at)) : notificationsHistory.filter(n => !isToday(n.created_at))).length > 0) && (
+                      <label className="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer select-none">
+                        <input 
+                          type="checkbox"
+                          checked={
+                            (activeSubTab === 'today' ? notificationsHistory.filter(n => isToday(n.created_at)) : notificationsHistory.filter(n => !isToday(n.created_at)))
+                              .every(n => selectedNotifIds.includes(n.id))
+                          }
+                          onChange={() => {
+                            const subtabNotifs = activeSubTab === 'today' 
+                              ? notificationsHistory.filter(n => isToday(n.created_at)) 
+                              : notificationsHistory.filter(n => !isToday(n.created_at));
+                            const allSelected = subtabNotifs.every(n => selectedNotifIds.includes(n.id));
+                            if (allSelected) {
+                              setSelectedNotifIds(prev => prev.filter(id => !subtabNotifs.some(n => n.id === id)));
+                            } else {
+                              setSelectedNotifIds(prev => Array.from(new Set([...prev, ...subtabNotifs.map(n => n.id)])));
+                            }
+                          }}
+                          className="w-3.5 h-3.5 rounded border-slate-300 text-gold focus:ring-gold"
+                        />
+                        Select All
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                {/* Notifications list */}
+                <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto pr-1">
+                  {(activeSubTab === 'today' 
+                    ? notificationsHistory.filter(n => isToday(n.created_at)) 
+                    : notificationsHistory.filter(n => !isToday(n.created_at))
+                  ).length === 0 ? (
+                    <div className="text-center py-10 text-slate-400 text-xs">
+                      No notifications in this section.
+                    </div>
+                  ) : (
+                    (activeSubTab === 'today' 
+                      ? notificationsHistory.filter(n => isToday(n.created_at)) 
+                      : notificationsHistory.filter(n => !isToday(n.created_at))
+                    ).map((n) => (
+                      <div key={n.id} className="flex items-center gap-3 py-3 px-1 hover:bg-slate-50 transition-all rounded-xl">
+                        {/* Checkbox */}
+                        <input 
+                          type="checkbox" 
+                          checked={selectedNotifIds.includes(n.id)}
+                          onChange={() => {
+                            if (selectedNotifIds.includes(n.id)) {
+                              setSelectedNotifIds(prev => prev.filter(id => id !== n.id));
+                            } else {
+                              setSelectedNotifIds(prev => [...prev, n.id]);
+                            }
+                          }}
+                          className="w-3.5 h-3.5 rounded border-slate-300 text-gold focus:ring-gold"
+                        />
+
+                        {/* Unread blue dot */}
+                        <div className="w-2 flex justify-center">
+                          {!n.is_read && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 block shrink-0" />
+                          )}
+                        </div>
+
+                        {/* Avatar */}
+                        <div className={`w-9 h-9 rounded-full ${getAvatarColor(n.type)} flex items-center justify-center font-bold text-xs shrink-0`}>
+                          {getInitials(n.fellow_name)}
+                        </div>
+
+                        {/* Info Block */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="font-semibold text-slate-800 text-xs truncate">
+                              {n.fellow_name || 'Fellow'}
+                            </span>
+                            <span className="text-[10px] text-slate-400 whitespace-nowrap shrink-0">
+                              {timeAgo(n.created_at)}
+                            </span>
+                          </div>
+                          <p className="text-slate-600 text-xs leading-normal mt-0.5">
+                            {n.message}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className="text-[9px] uppercase px-1.5 py-0.5 rounded font-bold border border-slate-100 bg-slate-50 text-slate-500 shrink-0">
+                              {n.type}
+                            </span>
+                            {n.link && (
+                              <button 
+                                onClick={() => {
+                                  const tab = n.link.startsWith('/admin/') ? n.link.replace('/admin/', '') : 'dashboard';
+                                  navigateTo(tab);
+                                }} 
+                                className="text-[10px] text-gold hover:underline font-semibold shrink-0"
+                              >
+                                View details →
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Trash Action */}
+                        <div className="shrink-0 flex items-center gap-1">
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="w-7 h-7 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg" 
+                            onClick={() => handleDeleteNotification(n.id)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -2318,6 +2571,11 @@ export default function AdminDashboard() {
           {/* 12. LMS PROGRESS MONITOR */}
           {activeTab === 'lms-monitor' && (
             <LmsMonitor />
+          )}
+
+          {/* 13. TEACHER TOOLS CERTIFICATIONS */}
+          {activeTab === 'certifications' && (
+            <CertificationsManager />
           )}
                 </div>
               </div>
@@ -2617,18 +2875,18 @@ export default function AdminDashboard() {
             <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
               <span className="text-[10px] text-slate-400 font-semibold">Registered: {viewingInst.created_at ? new Date(viewingInst.created_at).toLocaleDateString() : ''}</span>
               <div className="flex gap-2">
-                <Button variant="outline" className="rounded-xl text-xs h-9" onClick={() => setViewingInst(null)}>Close</Button>
+                <Button className="btn-outline" onClick={() => setViewingInst(null)}>Close</Button>
                 {viewingInst.status === 'pending' && (
                   <>
-                    <Button className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs h-9" onClick={() => handleApproveInstitution(viewingInst.id)}>Approve</Button>
-                    <Button className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs h-9" onClick={() => setShowRejectDialog(true)}>Reject</Button>
+                    <Button className="btn-success" onClick={() => handleApproveInstitution(viewingInst.id)}>Approve</Button>
+                    <Button className="btn-danger" onClick={() => setShowRejectDialog(true)}>Reject</Button>
                   </>
                 )}
                 {viewingInst.status === 'approved' && (
-                  <Button className="bg-slate-400 hover:bg-slate-500 text-white rounded-xl text-xs h-9" onClick={() => setShowSuspendDialog(true)}>Suspend</Button>
+                  <Button className="btn-danger" onClick={() => setShowSuspendDialog(true)}>Suspend</Button>
                 )}
                 {viewingInst.status === 'pending_change_approval' && (
-                  <Button className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl text-xs h-9" onClick={() => handleFetchChangeRequest(viewingInst.id)}>Review Changes</Button>
+                  <Button className="btn-warning" onClick={() => handleFetchChangeRequest(viewingInst.id)}>Review Changes</Button>
                 )}
               </div>
             </div>
@@ -2651,8 +2909,8 @@ export default function AdminDashboard() {
               />
             </div>
             <div className="flex justify-end gap-2.5">
-              <Button variant="outline" className="rounded-xl text-xs" onClick={() => setShowRejectDialog(false)}>Cancel</Button>
-              <Button className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs" onClick={handleRejectInstitution}>Submit Rejection</Button>
+              <Button className="btn-outline" onClick={() => setShowRejectDialog(false)}>Cancel</Button>
+              <Button className="btn-danger" onClick={handleRejectInstitution}>Submit Rejection</Button>
             </div>
           </div>
         </div>
@@ -2673,8 +2931,8 @@ export default function AdminDashboard() {
               />
             </div>
             <div className="flex justify-end gap-2.5">
-              <Button variant="outline" className="rounded-xl text-xs" onClick={() => setShowSuspendDialog(false)}>Cancel</Button>
-              <Button className="bg-slate-500 hover:bg-slate-600 text-white rounded-xl text-xs" onClick={handleSuspendInstitution}>Confirm Suspension</Button>
+              <Button className="btn-outline" onClick={() => setShowSuspendDialog(false)}>Cancel</Button>
+              <Button className="btn-danger" onClick={handleSuspendInstitution}>Confirm Suspension</Button>
             </div>
           </div>
         </div>
@@ -2726,9 +2984,9 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex justify-end gap-2.5 pt-2">
-              <Button variant="outline" className="rounded-xl text-xs" onClick={() => setShowChangeReqDialog(false)}>Close</Button>
-              <Button className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs" onClick={() => handleApproveChangeRequest(selectedChangeReq.id)}>Approve Changes</Button>
-              <Button className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs" onClick={() => handleRejectChangeRequest(selectedChangeReq.id)}>Reject Changes</Button>
+              <Button className="btn-outline" onClick={() => setShowChangeReqDialog(false)}>Close</Button>
+              <Button className="btn-success" onClick={() => handleApproveChangeRequest(selectedChangeReq.id)}>Approve Changes</Button>
+              <Button className="btn-danger" onClick={() => handleRejectChangeRequest(selectedChangeReq.id)}>Reject Changes</Button>
             </div>
           </div>
         </div>
@@ -2800,8 +3058,8 @@ export default function AdminDashboard() {
               </div>
 
               <div className="flex justify-end gap-2.5 pt-2">
-                <Button type="button" variant="outline" className="rounded-xl text-xs" onClick={() => setShowProgramModal(false)}>Cancel</Button>
-                <Button type="submit" className="bg-navy hover:bg-navy/95 text-warm rounded-xl text-xs font-semibold px-4">Save Program</Button>
+                <Button type="button" className="btn-outline" onClick={() => setShowProgramModal(false)}>Cancel</Button>
+                <Button type="submit" className="btn-success">Save Program</Button>
               </div>
             </form>
           </div>
@@ -2940,8 +3198,8 @@ export default function AdminDashboard() {
               </div>
 
               <div className="flex justify-end gap-2.5 pt-2">
-                <Button type="button" variant="outline" className="rounded-xl text-xs" onClick={() => setShowEnrollModal(false)}>Cancel</Button>
-                <Button type="submit" className="bg-navy hover:bg-navy/95 text-warm rounded-xl text-xs font-semibold px-4">Enroll Fellow</Button>
+                <Button type="button" className="btn-outline" onClick={() => setShowEnrollModal(false)}>Cancel</Button>
+                <Button type="submit" className="btn-success">Enroll Fellow</Button>
               </div>
             </form>
           </div>
@@ -2981,14 +3239,13 @@ export default function AdminDashboard() {
             
             <div className="flex justify-end gap-2.5">
               <Button 
-                variant="outline" 
-                className="rounded-xl text-xs" 
+                className="btn-outline" 
                 onClick={() => setActionReasonDialog(prev => ({ ...prev, isOpen: false }))}
               >
                 Cancel
               </Button>
               <Button 
-                className={cn("rounded-xl text-xs", actionReasonDialog.confirmClass)}
+                className={actionReasonDialog.confirmClass}
                 onClick={async () => {
                   if (!actionReasonDialog.value.trim()) {
                     setActionReasonDialog(prev => ({ ...prev, error: 'Reason is required.' }));

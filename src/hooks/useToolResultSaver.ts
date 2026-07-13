@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { tools } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
 
 type SaveParams = {
@@ -18,26 +18,26 @@ export function useToolResultSaver() {
     if (!user) return; // silently skip for unauthenticated users
 
     try {
-      const { error } = await supabase.from('tool_results').insert([{
-        user_id: user.id,
-        tool_type: params.toolType,
+      await tools.saveResult({
         tool_name: params.toolName,
-        input_data: params.inputData as any,
-        result_data: params.resultData as any,
-        score: params.score,
-      }]);
+        tool_type: params.toolType,
+        input_data: params.inputData,
+        result_data: params.resultData,
+        score: params.score !== null ? params.score : undefined,
+      });
 
-      if (error) {
-        console.error('Failed to save tool result:', error);
-      } else {
-        toast({
-          title: '✓ Result saved',
-          description: 'Your score has been saved to your progress history.',
-          duration: 2000,
-        });
-      }
-    } catch (e) {
+      toast({
+        title: '✓ Result saved',
+        description: 'Your score has been saved to your progress history.',
+        duration: 2000,
+      });
+    } catch (e: any) {
       console.error('Error saving tool result:', e);
+      toast({
+        title: 'Failed to save result',
+        description: e.message || 'Please try again later.',
+        variant: 'destructive',
+      });
     }
   };
 

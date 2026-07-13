@@ -9,7 +9,7 @@ async function main() {
   });
 
   try {
-    const [programs] = await connection.execute('SELECT id, title, slug FROM academic_programs');
+    const [programs] = await connection.execute('SELECT id, title, slug FROM programs');
     console.log('--- Academic Programs ---');
     console.log(programs);
 
@@ -19,7 +19,7 @@ async function main() {
       console.log(modules);
 
       for (const m of modules as any[]) {
-        const [steps] = await connection.execute('SELECT id, title, content_type, sort_order FROM syllabus_steps WHERE module_id = ? ORDER BY sort_order', [m.id]);
+        const [steps] = await connection.execute('SELECT id, title, content_type, sort_order FROM lms_syllabus_steps WHERE module_id = ? ORDER BY sort_order', [m.id]);
         console.log(`  Steps for module: ${m.title}`);
         console.log(steps.map((s: any) => `    - ${s.title} (${s.content_type})`));
       }
