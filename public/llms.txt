@@ -1,0 +1,46 @@
+# Academisthan
+
+> India's premier community for college and university teachers — UGC API Score calculators, CAS promotion checker, academic CV generator, events, and a national directory of educators.
+
+Academisthan helps Indian higher-education faculty track API scores, plan CAS promotions, build academic CVs, find jobs, and discover NEP 2020 resources. The platform is built "Of the Teachers, By the Teachers, For the Teachers."
+
+## Pages
+
+- [Home](/): Overview of Academisthan and the educator community.
+- [About](/about): Mission, founders, and the story behind Academisthan.
+- [Contact](/contact): Reach the Academisthan team.
+
+## Teacher Tools
+
+- [Teacher Tools](/tools): All career and research tools for Indian faculty.
+- [UGC API Score Calculator](/tools/api-score): Calculate your UGC API score with a free downloadable certificate.
+- [CAS Promotion Checker](/tools/promotion-check): Check eligibility for Career Advancement Scheme promotions.
+- [Research Score Calculator](/tools/research-score): Compute research scores per UGC 2018 regulations.
+- [Academic CV Generator](/tools/academic-cv): Build a UGC-format academic CV.
+- [Notable Contributions](/tools/notable-contributions): Document notable academic contributions.
+- [Scholar Impact](/tools/scholar-impact): Track citations and scholarly impact.
+
+## Content
+
+- [Blog](/blog): Guides on UGC rules, NEP 2020, research, AI tools and more.
+- [News](/news): Latest higher-education news for Indian educators.
+- [Gazette](/gazette): UGC and government gazette notifications.
+- [Events](/events): Conferences, roundtables, and faculty events.
+- [Programs](/programs): Professional development programs.
+- [Resources](/resources): Curated resources for faculty.
+- [Jobs](/jobs): Teaching and research job openings.
+
+## Directories
+
+- [Fellow Directory](/directory): Search registered Academisthan Fellows.
+- [Autonomous Colleges](/autonomous): Directory of UGC-recognised autonomous colleges in India.
+- [Institution Registration](/institution-register): Register your institution with Academisthan.
+
+## Verification
+
+- [Verify Certificate](/verify): Verify an Academisthan-issued certificate.
+
+## Optional
+
+- [Privacy Policy](/privacy): How Academisthan handles your data.
+- [Terms of Use](/terms): Terms governing use of the platform.
