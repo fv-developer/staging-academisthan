@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   full_name VARCHAR(255),
-  email_confirmed BOOLEAN DEFAULT FALSE,
-  email_confirmed_at DATETIME,
+  email_verified BOOLEAN DEFAULT FALSE,
+  email_verified_at DATETIME,
   reset_token VARCHAR(255),
   reset_token_expires DATETIME,
   last_sign_in_at DATETIME,
@@ -442,7 +442,7 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 -- CREATE SAMPLE ADMIN USER
 -- ============================================================================
 
-INSERT INTO users (id, email, password_hash, full_name, email_confirmed, email_confirmed_at)
+INSERT INTO users (id, email, password_hash, full_name, email_verified, email_verified_at)
 VALUES (
   'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   'ravindra.pal@futurevarsity.edu.in',
