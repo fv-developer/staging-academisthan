@@ -94,13 +94,14 @@ router.get('/directory', async (req: AuthRequest, res: Response) => {
 router.post('/request', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const senderId = req.user!.id;
-    const { receiverId } = req.body;
+    const { receiverId, targetUserId } = req.body;
+    const finalReceiverId = receiverId || targetUserId;
 
-    if (!receiverId) {
+    if (!finalReceiverId) {
       return res.status(400).json({ error: 'Receiver ID is required' });
     }
 
-    if (senderId === receiverId) {
+    if (senderId === finalReceiverId) {
       return res.status(400).json({ error: 'You cannot connect with yourself' });
     }
 
@@ -108,7 +109,7 @@ router.post('/request', authenticate, async (req: AuthRequest, res: Response) =>
     const [existing]: any = await pool.execute(`
       SELECT * FROM fellow_connections 
       WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
-    `, [senderId, receiverId, receiverId, senderId]);
+    `, [senderId, finalReceiverId, finalReceiverId, senderId]);
 
     if (existing.length > 0) {
       const conn = existing[0];
@@ -126,7 +127,7 @@ router.post('/request', authenticate, async (req: AuthRequest, res: Response) =>
     await pool.execute(`
       INSERT INTO fellow_connections (id, sender_id, receiver_id, status)
       VALUES (?, ?, ?, 'pending')
-    `, [connectionId, senderId, receiverId]);
+    `, [connectionId, senderId, finalReceiverId]);
 
     // Fetch sender details for notification message
     const [senderProfile]: any = await pool.execute('SELECT full_name FROM profiles WHERE id = ?', [senderId]);
@@ -136,14 +137,14 @@ router.post('/request', authenticate, async (req: AuthRequest, res: Response) =>
     await pool.execute(`
       INSERT INTO notifications (id, user_id, type, title, message, link)
       VALUES (?, ?, 'connection_request', 'New Connection Request 🤝', ?, '/dashboard/connections')
-    `, [uuidv4(), receiverId, `${senderName} sent you a connection request.`]);
+    `, [uuidv4(), finalReceiverId, `${senderName} sent you a connection request.`]);
 
     // Log activity
     await logUserActivity(
       senderId,
       'send_connection_request',
-      `Sent connection request to ${receiverId}`,
-      { receiverId, connectionId }
+      `Sent connection request to ${finalReceiverId}`,
+      { receiverId: finalReceiverId, connectionId }
     );
 
     res.status(201).json({ message: 'Connection request sent successfully', connectionId });

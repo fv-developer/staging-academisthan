@@ -29,7 +29,7 @@ export function MyCertificates() {
         if (programIds.length > 0) {
           const { data: progs } = await supabase
             .from('programs')
-            .select('id, title, program_type')
+            .select('id, title')
             .in('id', programIds);
           const map: Record<string, any> = {};
           (progs || []).forEach((p: any) => { map[p.id] = p; });

@@ -1,3 +1,12 @@
+import { webcrypto } from 'crypto';
+if (!globalThis.crypto) {
+  Object.defineProperty(globalThis, 'crypto', {
+    value: webcrypto,
+    writable: true,
+    configurable: true
+  });
+}
+
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';

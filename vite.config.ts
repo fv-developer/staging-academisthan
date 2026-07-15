@@ -41,6 +41,6 @@ export default defineConfig(({ mode }) => ({
   },
   // Environment variable handling
   define: mode === 'production' ? {
-    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'https://api.staging.academisthan.org')
+    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'https://api.staging.academisthan.org/api')
   } : {}
 }));

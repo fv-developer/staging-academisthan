@@ -328,6 +328,46 @@ export const connections = {
     }
     return response.json();
   },
+
+  getAdminConnectionsList: async () => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/connections/admin/all`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch admin connections list');
+    }
+    return response.json();
+  },
+
+  getAdminStats: async () => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/connections/admin/stats`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch admin stats');
+    }
+    return response.json();
+  },
+
+  adminRemoveConnection: async (connectionId: string) => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/connections/admin/remove/${connectionId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to remove connection');
+    }
+    return response.json();
+  },
 };
 
 // ============================================================================
@@ -760,7 +800,7 @@ export const blogs = {
         return [];
       }
       const data = await response.json();
-      return data.categories || [];
+      return Array.isArray(data) ? data : (data.categories || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
       return [];
@@ -1217,6 +1257,54 @@ export const admin = {
       body: JSON.stringify({ ids }),
     });
     if (!response.ok) throw new Error('Failed to delete institutions');
+    return response.json();
+  },
+
+  getRole: async () => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/admin/role`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) throw new Error('Failed to fetch admin role');
+    return response.json();
+  },
+
+  getToolResults: async () => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/admin/tool-results`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) throw new Error('Failed to fetch tool results');
+    return response.json();
+  },
+
+  deleteToolResult: async (id: string) => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/admin/tool-results/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) throw new Error('Failed to delete tool result');
+    return response.json();
+  },
+
+  bulkDeleteToolResults: async (ids: string[]) => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/admin/tool-results/bulk-delete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ ids }),
+    });
+    if (!response.ok) throw new Error('Failed to bulk delete tool results');
     return response.json();
   },
 };
