@@ -273,11 +273,9 @@ export default function ConnectionsModule() {
 
                       <div className="mt-4 pt-3 border-t border-slate-50 flex justify-end">
                         <Button
-                          variant="ghost"
-                          size="sm"
                           disabled={actionLoading === conn.connection_id}
                           onClick={() => handleRemoveConnection(conn.connection_id, conn.full_name)}
-                          className="text-destructive hover:bg-destructive/10 text-[10px] font-semibold gap-1.5 h-8 rounded-lg"
+                          className="btn-danger text-[10px] font-semibold gap-1.5 h-8 rounded-lg"
                         >
                           {actionLoading === conn.connection_id ? (
                             <Loader2 className="w-3 h-3 animate-spin" />
@@ -337,20 +335,17 @@ export default function ConnectionsModule() {
                       
                       <div className="flex gap-2 mt-2 pt-3 border-t border-slate-50">
                         <Button 
-                          size="sm"
                           disabled={actionLoading === req.connection_id}
                           onClick={() => handleRespond(req.connection_id, 'accepted')}
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-[10px] h-9 font-bold gap-1 shadow-sm"
+                          className="flex-1 btn-success text-white rounded-lg text-[10px] h-9 font-bold gap-1 shadow-sm"
                         >
                           {actionLoading === req.connection_id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                           Accept
                         </Button>
                         <Button 
-                          size="sm"
-                          variant="outline"
                           disabled={actionLoading === req.connection_id}
                           onClick={() => handleRespond(req.connection_id, 'rejected')}
-                          className="flex-1 border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg text-[10px] h-9 font-bold gap-1 shadow-sm bg-white"
+                          className="flex-1 btn-danger text-white rounded-lg text-[10px] h-9 font-bold gap-1 shadow-sm"
                         >
                           <X className="w-3 h-3" />
                           Decline
@@ -417,11 +412,9 @@ export default function ConnectionsModule() {
                       {req.status === 'pending' && (
                         <div className="mt-2 pt-3 border-t border-slate-50 flex justify-end">
                           <Button
-                            variant="ghost"
-                            size="sm"
                             disabled={actionLoading === req.connection_id}
                             onClick={() => handleCancelRequest(req.connection_id, req.full_name)}
-                            className="text-destructive hover:bg-destructive/10 text-[10px] font-semibold gap-1.5 h-8 rounded-lg"
+                            className="btn-danger text-white text-[10px] font-semibold gap-1.5 h-8 rounded-lg"
                           >
                             {actionLoading === req.connection_id ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
@@ -469,7 +462,7 @@ export default function ConnectionsModule() {
               <Button
                 type="submit"
                 disabled={savingEmail || workEmail.trim() === (profile?.work_email || '')}
-                className="w-full bg-[#8B1538] hover:bg-[#6B1028] text-white rounded-xl text-[11px] font-bold h-10 shadow-sm gap-1.5"
+                className="w-full btn-success text-white rounded-xl text-[11px] font-bold h-10 shadow-sm gap-1.5"
               >
                 {savingEmail ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />

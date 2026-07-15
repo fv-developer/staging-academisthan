@@ -1,39 +1,45 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 export type AppRole = 'super_admin' | 'admin' | 'user';
 
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
 export function useUserRole() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !session) {
       setRole(null);
       setLoading(false);
       return;
     }
 
     const fetchRole = async () => {
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .order('role')
-        .limit(1);
+      try {
+        const response = await fetch(`${API_URL}/admin/role`, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
 
-      if (data && data.length > 0) {
-        setRole(data[0].role as AppRole);
-      } else {
+        if (response.ok) {
+          const data = await response.json();
+          setRole(data.role as AppRole);
+        } else {
+          setRole('user');
+        }
+      } catch (error) {
+        console.error('Failed to fetch role:', error);
         setRole('user');
       }
       setLoading(false);
     };
 
     fetchRole();
-  }, [user]);
+  }, [user, session]);
 
   const isSuperAdmin = role === 'super_admin';
   const isAdmin = role === 'super_admin' || role === 'admin';

@@ -112,7 +112,7 @@ export default function ResendVerification() {
               >
                 Send to Different Email
               </Button>
-              <Link to="/auth/signin">
+              <Link to="/auth/signin" className="block w-full">
                 <Button variant="outline" className="w-full rounded-xl">
                   Back to Sign In
                 </Button>

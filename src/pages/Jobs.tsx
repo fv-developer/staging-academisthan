@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+import { supabase } from '@/lib/api-client';
 import {
   Briefcase, Search, ExternalLink, MapPin, Clock, Building2,
   GraduationCap, FlaskConical, FileText, TrendingUp, Filter,

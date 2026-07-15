@@ -10,7 +10,7 @@ import {
   generateResetToken,
   AuthRequest,
 } from '../utils/auth';
-import { sendVerificationEmail, sendVerificationSuccessEmail, sendPasswordChangedEmail, sendAdminNewFellowEmail } from '../services/email';
+import { sendVerificationEmail, sendVerificationSuccessEmail, sendPasswordChangedEmail, sendAdminNewFellowEmail, sendWelcomeEmail } from '../services/email';
 import { frontendUrl } from '../config/email';
 import { logUserActivity } from '../utils/logger';
 
@@ -329,8 +329,9 @@ router.get('/verify-email/:token', async (req: Request, res: Response) => {
       console.error('Failed to notify admins on verification:', err);
     }
 
-    // Send success email
+    // Send success and welcome email
     await sendVerificationSuccessEmail(user.email, user.full_name);
+    await sendWelcomeEmail(user.email, user.full_name);
 
     res.json({ 
       message: 'Email verified successfully! You can now sign in.',

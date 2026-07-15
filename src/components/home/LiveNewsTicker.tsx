@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/api-client';
 import { ScrollSection } from '@/components/ScrollSection';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

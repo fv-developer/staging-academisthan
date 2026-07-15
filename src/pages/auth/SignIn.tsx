@@ -198,6 +198,18 @@ export default function SignIn() {
               Become a Fellow
             </Link>
           </p>
+
+          <div className="mt-8 pt-6 border-t border-border/50 text-center">
+            <p className="text-xs text-muted-foreground mb-3">Are you registering on behalf of an institution?</p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/institution-register')}
+              className="w-full h-11 border-gold/30 hover:border-gold hover:bg-gold/5 text-gold rounded-xl font-medium text-sm transition-all"
+            >
+              Register Your Institution
+            </Button>
+          </div>
         </div>
       </div>
     </div>

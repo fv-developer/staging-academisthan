@@ -703,8 +703,8 @@ router.post('/enrollments/:enrollmentId/steps/:stepId/complete', authenticate, a
         const certId = uuidv4();
         const certNum = `ACAD-CERT-${Math.floor(100000 + Math.random() * 900000)}`;
         await pool.execute(
-          `INSERT INTO certificates (id, user_id, program_id, certificate_number, certificate_type, issued_date)
-           VALUES (?, ?, ?, ?, 'program', CURDATE())`,
+          `INSERT INTO certificates (id, user_id, program_id, certificate_number, certificate_type, issued_at)
+           VALUES (?, ?, ?, ?, 'program', NOW())`,
           [certId, enrollment.user_id, enrollment.program_id, certNum]
         );
       }

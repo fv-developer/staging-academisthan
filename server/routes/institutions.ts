@@ -4,7 +4,7 @@ import { authenticate, AuthRequest } from '../utils/auth';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import fs from 'fs';
-import { sendAdminNewInstitutionEmail, sendAdminInstitutionResubmittedEmail } from '../services/email';
+import { sendAdminNewInstitutionEmail, sendAdminInstitutionResubmittedEmail, sendInstitutionRegistrationConfirmationEmail, sendInstitutionResubmittedConfirmationEmail, sendInstitutionDeletedEmail } from '../services/email';
 
 const router = express.Router();
 
@@ -58,6 +58,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     const userId = req.user!.id;
     const {
       name,
+      institute_code,
       type,
       address,
       city,
@@ -104,14 +105,15 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     // Insert institution
     await pool.execute(
       `INSERT INTO institutions (
-        id, name, type, address, city, state, country, pincode,
+        id, name, institute_code, type, address, city, state, country, pincode,
         contact_person, contact_email, contact_phone,
         website, established_year, student_count, faculty_count, accreditation, document_url, logo_url, description,
         status, membership_status, email_verified, registered_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'inactive', FALSE, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'inactive', FALSE, ?)`,
       [
         institutionId,
         name,
+        institute_code || null,
         type || null,
         address || null,
         city || null,
@@ -144,6 +146,13 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
         'UPDATE profiles SET institution_id = ? WHERE id = ?',
         [institutionId, userId]
       );
+    }
+
+    // Send confirmation email to the user
+    try {
+      await sendInstitutionRegistrationConfirmationEmail(contact_email, contact_person || 'Representative', name);
+    } catch (err) {
+      console.error('Failed to send user institution registration confirmation email:', err);
     }
 
     // Notify admins about new registration
@@ -187,6 +196,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const {
       name,
+      institute_code,
       type,
       address,
       city,
@@ -307,12 +317,13 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
 
       await pool.execute(
         `UPDATE institutions SET
-          name = ?, type = ?, address = ?, city = ?, state = ?, country = ?, pincode = ?, contact_phone = ?, 
+          name = ?, institute_code = ?, type = ?, address = ?, city = ?, state = ?, country = ?, pincode = ?, contact_phone = ?, 
           website = ?, established_year = ?, accreditation = ?, document_url = ?, logo_url = ?, description = ?,
           student_count = ?, faculty_count = ?, status = ?, rejection_reason = NULL, suspension_reason = NULL
          WHERE id = ?`,
         [
           name !== undefined ? name.trim() : current[0].name,
+          institute_code !== undefined ? (institute_code.trim() || null) : current[0].institute_code,
           type !== undefined ? type : current[0].type,
           address !== undefined ? address.trim() : current[0].address,
           city !== undefined ? city : current[0].city,
@@ -340,6 +351,13 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
 
       if (wasResubmitted) {
         const instName = name !== undefined ? name.trim() : current[0].name;
+        // Send confirmation email to the user
+        try {
+          await sendInstitutionResubmittedConfirmationEmail(current[0].contact_email, current[0].contact_person || 'Representative', instName);
+        } catch (err) {
+          console.error('Failed to send user institution resubmission confirmation email:', err);
+        }
+
         try {
           const [admins]: any = await pool.execute(
             `SELECT ar.user_id, p.email, p.full_name FROM admin_roles ar
@@ -370,6 +388,72 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Update institution error:', error);
     res.status(500).json({ error: 'Failed to update institution' });
+  }
+});
+
+// Delete institution (Fellow owner)
+router.delete('/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+
+    // Retrieve active details to check ownership
+    const [rows]: any = await pool.execute(
+      'SELECT * FROM institutions WHERE id = ?',
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Institution not found' });
+    }
+
+    const institution = rows[0];
+
+    // Auth check: Must be owner/registrant
+    if (institution.registered_by !== userId) {
+      return res.status(403).json({ error: 'Unauthorized to delete this institution' });
+    }
+
+    // Delete associated records first (cascade keys/logs/change requests)
+    await pool.execute(
+      'DELETE FROM institution_change_requests WHERE institution_id = ?',
+      [id]
+    );
+
+    await pool.execute(
+      'DELETE FROM approval_logs WHERE institution_id = ?',
+      [id]
+    );
+
+    // Update profiles referencing this institution
+    await pool.execute(
+      'UPDATE profiles SET institution_id = NULL WHERE institution_id = ?',
+      [id]
+    );
+
+    // Delete the institution itself
+    await pool.execute(
+      'DELETE FROM institutions WHERE id = ?',
+      [id]
+    );
+
+    // Send deletion confirmation email to the user
+    if (institution.contact_email) {
+      try {
+        await sendInstitutionDeletedEmail(
+          institution.contact_email,
+          institution.contact_person || 'Representative',
+          institution.name
+        );
+      } catch (err) {
+        console.error('Failed to send deletion email:', err);
+      }
+    }
+
+    res.json({ message: 'Institution deleted successfully' });
+  } catch (error) {
+    console.error('Delete institution error:', error);
+    res.status(500).json({ error: 'Failed to delete institution' });
   }
 });
 

@@ -497,4 +497,76 @@ export const sendBlogRejectedEmail = async (email: string, name: string, blogTit
   return sendEmail({ to: email, subject, html: getEmailWrapper(subject, content) });
 };
 
+// 13. sendWelcomeEmail
+export const sendWelcomeEmail = async (email: string, name: string): Promise<boolean> => {
+  const subject = 'Welcome to Academisthan! 🎓';
+  const content = `
+    <h2 style="margin: 0 0 20px; color: hsl(228, 45%, 16%); font-size: 24px;">
+      Welcome to Academisthan, ${name}! 🎓
+    </h2>
+    <p style="margin: 0 0 15px; color: #555; font-size: 16px; line-height: 1.6;">
+      We are thrilled to welcome you to Academisthan—India's premier academic community, built of the teachers, by the teachers, and for the teachers.
+    </p>
+    <p style="margin: 0 0 20px; color: #555; font-size: 16px; line-height: 1.6;">
+      Your account has been successfully verified! Here are a few things you can do to get started on your dashboard:
+    </p>
+    <ul style="margin: 0 0 25px; padding-left: 20px; color: #555; font-size: 15px; line-height: 1.8;">
+      <li><strong>Complete Your Profile:</strong> Reach 100% completion to activate your Fellowship status.</li>
+      <li><strong>Academic CV Builder:</strong> Generate a professional CV tailored for educators.</li>
+      <li><strong>UGC API & CAS Promotion Tools:</strong> Check your eligibility and calculate your API scores.</li>
+      <li><strong>Enroll in Programs:</strong> Join advanced training programs such as "AI for Educators".</li>
+      <li><strong>Register Your Institution:</strong> Link your college or university to connect it with the community.</li>
+    </ul>
+    <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+      <tr>
+        <td align="center">
+          <a href="${frontendUrl}/dashboard" style="display: inline-block; padding: 15px 40px; background-color: hsl(38, 55%, 58%); color: hsl(228, 45%, 16%); text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px hsla(38, 55%, 58%, 0.3);">
+            Go to Your Dashboard
+          </a>
+        </td>
+      </tr>
+    </table>
+    <p style="margin: 0; color: #555; font-size: 15px; line-height: 1.6;">If you have any questions or need assistance, feel free to contact us at any time.</p>
+    <p style="margin: 20px 0 0; color: #555; font-size: 15px; line-height: 1.6;">Best regards,<br><strong>The Academisthan Team</strong></p>
+  `;
+  return sendEmail({ to: email, subject, html: getEmailWrapper(subject, content) });
+};
+
+// 14. sendInstitutionRegistrationConfirmationEmail
+export const sendInstitutionRegistrationConfirmationEmail = async (email: string, name: string, instName: string): Promise<boolean> => {
+  const subject = `Institution Registration Submitted - ${instName}`;
+  const content = `
+    <h2 style="margin: 0 0 20px; color: hsl(228, 45%, 16%); font-size: 22px;">Registration Submitted</h2>
+    <p style="margin: 0 0 15px; color: #555; font-size: 15px; line-height: 1.6;">Dear ${name},</p>
+    <p style="margin: 0 0 20px; color: #555; font-size: 15px; line-height: 1.6;">
+      Thank you for registering <strong>${instName}</strong> on Academisthan!
+    </p>
+    <p style="margin: 0 0 20px; color: #555; font-size: 15px; line-height: 1.6;">
+      Your submission has been received and is currently undergoing administrative review. We will verify your details and supporting documents, and notify you as soon as the review is complete.
+    </p>
+    <p style="margin: 0 0 20px; color: #555; font-size: 15px; line-height: 1.6;">
+      In the meantime, you can track the status of your application on your Fellow Dashboard.
+    </p>
+    <p style="margin: 0; color: #555; font-size: 15px; line-height: 1.6;">Best regards,<br>Academisthan Team</p>
+  `;
+  return sendEmail({ to: email, subject, html: getEmailWrapper(subject, content) });
+};
+
+// 15. sendInstitutionResubmittedConfirmationEmail
+export const sendInstitutionResubmittedConfirmationEmail = async (email: string, name: string, instName: string): Promise<boolean> => {
+  const subject = `Institution Details Resubmitted - ${instName}`;
+  const content = `
+    <h2 style="margin: 0 0 20px; color: hsl(228, 45%, 16%); font-size: 22px;">Details Resubmitted</h2>
+    <p style="margin: 0 0 15px; color: #555; font-size: 15px; line-height: 1.6;">Dear ${name},</p>
+    <p style="margin: 0 0 20px; color: #555; font-size: 15px; line-height: 1.6;">
+      We have received the updated details you resubmitted for <strong>${instName}</strong>.
+    </p>
+    <p style="margin: 0 0 20px; color: #555; font-size: 15px; line-height: 1.6;">
+      Your application is once again under review by our admin team. We will notify you immediately once the review is completed.
+    </p>
+    <p style="margin: 0; color: #555; font-size: 15px; line-height: 1.6;">Best regards,<br>Academisthan Team</p>
+  `;
+  return sendEmail({ to: email, subject, html: getEmailWrapper(subject, content) });
+};
+
 

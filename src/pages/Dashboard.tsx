@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/api-client';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -113,7 +113,7 @@ function MembershipCard({ profile }: { profile: any }) {
 function QuickAction({ icon: Icon, title, desc, href, accent, badge, onClick, active }: { icon: any; title: string; desc: string; href: string; accent: string; badge?: string; onClick?: () => void; active?: boolean }) {
   const content = (
     <div className={cn(
-      "relative overflow-hidden bg-card border rounded-2xl p-5 hover:shadow-[0_8px_30px_hsl(38_55%_58%/0.08)] transition-all duration-300 hover:-translate-y-1 h-full cursor-pointer",
+      "relative overflow-hidden bg-card border rounded-2xl p-4 md:p-5 hover:shadow-[0_8px_30px_hsl(38_55%_58%/0.08)] transition-all duration-300 hover:-translate-y-1 h-full cursor-pointer",
       active ? "border-gold bg-gold/5 shadow-[0_8px_30px_hsl(38_55%_58%/0.08)] -translate-y-1" : "border-border hover:border-gold/40"
     )}>
       {/* Subtle gradient overlay on hover */}
@@ -128,15 +128,17 @@ function QuickAction({ icon: Icon, title, desc, href, accent, badge, onClick, ac
         </span>
       )}
 
-      <div className="relative z-10">
+      <div className="relative z-10 flex sm:flex-col items-center sm:items-start gap-4 sm:gap-0">
         <div className={cn(
-          `w-11 h-11 rounded-xl ${accent} flex items-center justify-center mb-4 transition-transform duration-300`,
+          `w-11 h-11 rounded-xl ${accent} flex items-center justify-center sm:mb-4 transition-transform duration-300 shrink-0`,
           active ? "scale-110" : "group-hover:scale-110"
         )}>
           <Icon className="w-5 h-5" />
         </div>
-        <h3 className={cn("font-serif text-sm font-bold mb-0.5 transition-colors", active ? "text-gold" : "text-foreground group-hover:text-gold")}>{title}</h3>
-        <p className="text-muted-foreground text-[11px] leading-relaxed">{desc}</p>
+        <div className="flex-1 min-w-0">
+          <h3 className={cn("font-serif text-sm font-bold mb-0.5 transition-colors", active ? "text-gold" : "text-foreground group-hover:text-gold")}>{title}</h3>
+          <p className="text-muted-foreground text-[11px] leading-relaxed">{desc}</p>
+        </div>
       </div>
 
       {/* Arrow indicator */}
@@ -169,27 +171,14 @@ function useUpcomingDates() {
   const [items, setItems] = useState<Array<{ date: string; title: string; type: string; color: string; url: string | null }>>([]);
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from('news_updates')
-        .select('title, published_at, last_date, category, source_url')
-        .eq('is_published', true)
-        .in('category', ['event', 'job_opening', 'scholarship', 'announcement'])
-        .gte('published_at', new Date(Date.now() - 30 * 86400000).toISOString())
-        .order('published_at', { ascending: false })
-        .limit(5);
-      const colorMap: Record<string, string> = {
-        event: 'bg-gold',
-        job_opening: 'bg-accent',
-        scholarship: 'bg-teal',
-        announcement: 'bg-destructive',
-      };
-      setItems((data || []).map((n: any) => ({
-        date: new Date(n.last_date || n.published_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-        title: n.title,
-        type: n.category,
-        color: colorMap[n.category] || 'bg-gold',
-        url: n.source_url ?? null,
-      })));
+      try {
+        // TODO: Implement news_updates API endpoint in MySQL backend
+        // For now, returning empty array
+        setItems([]);
+      } catch (error) {
+        console.error('Failed to fetch news updates:', error);
+        setItems([]);
+      }
     })();
   }, []);
   return items;
@@ -324,6 +313,8 @@ export default function Dashboard() {
     work_email: '',
   });
 
+  const [fieldErrors, setFieldErrors] = useState<{ linkedin?: string; scholar?: string }>({});
+
   const startEditing = () => {
     if (profile) {
       const activeCountry = countries.find(c => c.name === (profile.country || 'India')) || countries.find(c => c.code === 'IN') || countries[0];
@@ -356,8 +347,21 @@ export default function Dashboard() {
         pincode: profile.pincode || '',
         work_email: profile.work_email || '',
       });
+      setFieldErrors({});
     }
     setEditing(true);
+  };
+
+  const handleWorkspaceNav = (tool: string) => {
+    setActiveTool(tool);
+    setTimeout(() => {
+      const element = document.getElementById('dashboard-content');
+      if (element) {
+        const yOffset = -90; // Fixed navbar offset
+        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }, 100);
   };
 
   const saveProfile = async () => {
@@ -443,6 +447,43 @@ export default function Dashboard() {
       }
     }
 
+    let linkedinUrl = form.linkedin_url.trim();
+    let hasError = false;
+    const newFieldErrors: { linkedin?: string; scholar?: string } = {};
+
+    if (linkedinUrl) {
+      const linkedinPattern = /^(https?:\/\/)?([a-z]{2,3}\.)?linkedin\.com\/.*$/i;
+      if (!linkedinPattern.test(linkedinUrl)) {
+        newFieldErrors.linkedin = 'Please enter a valid LinkedIn profile URL (e.g. https://linkedin.com/in/username).';
+        hasError = true;
+      } else {
+        if (!/^https?:\/\//i.test(linkedinUrl)) {
+          linkedinUrl = `https://${linkedinUrl}`;
+        }
+      }
+    }
+
+    let scholarUrl = form.google_scholar_url.trim();
+    if (scholarUrl) {
+      const scholarPattern = /^(https?:\/\/)?(www\.)?scholar\.google\.(com|co\.[a-z]{2}|[a-z]{2,3})\/.*$/i;
+      if (!scholarPattern.test(scholarUrl)) {
+        newFieldErrors.scholar = 'Please enter a valid Google Scholar profile URL (e.g. https://scholar.google.com/citations?user=...).';
+        hasError = true;
+      } else {
+        if (!/^https?:\/\//i.test(scholarUrl)) {
+          scholarUrl = `https://${scholarUrl}`;
+        }
+      }
+    }
+
+    if (hasError) {
+      setFieldErrors(newFieldErrors);
+      toast({ title: 'Validation Error', description: 'Please correct the highlighted errors before saving.', variant: 'destructive' });
+      return;
+    } else {
+      setFieldErrors({});
+    }
+
     setSaving(true);
     const fullPhone = `${selectedCountry.dialCode} ${phoneVal.trim()}`;
 
@@ -469,8 +510,8 @@ export default function Dashboard() {
       specialization: form.specialization.trim().slice(0, 200),
       experience_years: Math.max(0, Math.min(60, form.experience_years)),
       bio: form.bio.trim().slice(0, 500),
-      linkedin_url: form.linkedin_url.trim().slice(0, 300),
-      google_scholar_url: form.google_scholar_url.trim().slice(0, 300),
+      linkedin_url: linkedinUrl ? linkedinUrl.slice(0, 300) : '',
+      google_scholar_url: scholarUrl ? scholarUrl.slice(0, 300) : '',
       country: selectedCountry.name,
       address: form.address.trim() || null,
       pincode: form.pincode.trim(),
@@ -482,19 +523,15 @@ export default function Dashboard() {
       updatePayload.status = 'active';
     }
 
-    const { error } = await supabase
-      .from('profiles')
-      .update(updatePayload)
-      .eq('id', profile.id);
-
-    setSaving(false);
-
-    if (error) {
-      toast({ title: 'Failed to update profile', description: error.message, variant: 'destructive' });
-    } else {
+    try {
+      await api.profiles.update(profile.id, updatePayload);
       toast({ title: 'Profile updated! ✨' });
       await refreshProfile();
       setEditing(false);
+    } catch (error: any) {
+      toast({ title: 'Failed to update profile', description: error.message, variant: 'destructive' });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -573,12 +610,7 @@ export default function Dashboard() {
 
         const { avatarUrl } = data;
 
-        const { error: dbError } = await supabase
-          .from('profiles')
-          .update({ avatar_url: avatarUrl } as any)
-          .eq('id', profile!.id);
-
-        if (dbError) throw dbError;
+        await api.profiles.update(profile!.id, { avatar_url: avatarUrl });
 
         toast({ title: 'Profile photo updated! ✨' });
         await refreshProfile();
@@ -598,12 +630,7 @@ export default function Dashboard() {
     if (!profile) return;
     setUploadingPhoto(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ avatar_url: null } as any)
-        .eq('id', profile.id);
-
-      if (error) throw error;
+      await api.profiles.update(profile.id, { avatar_url: null });
 
       toast({ title: 'Profile photo removed' });
       await refreshProfile();
@@ -766,7 +793,7 @@ export default function Dashboard() {
                 View All & History <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <QuickAction icon={Calculator} title="API Score" desc="UGC score calculator" href="/tools/api-score" accent="bg-gold/15 text-gold" onClick={() => setActiveTool('api-score')} active={activeTool === 'api-score'} />
               <QuickAction icon={Award} title="CAS Check" desc="Promotion eligibility" href="/tools/promotion-check" accent="bg-teal/15 text-teal" onClick={() => setActiveTool('promotion-check')} active={activeTool === 'promotion-check'} />
               <QuickAction icon={FlaskConical} title="Research Score" desc="Research output" href="/tools/research-score" accent="bg-accent/15 text-accent" onClick={() => setActiveTool('research-score')} active={activeTool === 'research-score'} />
@@ -777,7 +804,7 @@ export default function Dashboard() {
           </div>
 
 
-          <div className="grid lg:grid-cols-4 gap-8 items-start">
+          <div className="flex flex-col gap-6 lg:grid lg:grid-cols-4 lg:gap-8 lg:items-start">
             {/* ═══ LEFT COLUMN ═══ */}
             <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-24">
               <MembershipCard profile={profile} />
@@ -828,7 +855,7 @@ export default function Dashboard() {
                 </h3>
                 <div className="space-y-1">
                   <button
-                    onClick={() => setActiveTool('institute')}
+                    onClick={() => handleWorkspaceNav('institute')}
                     className={cn(
                       "sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all duration-250 group",
                       activeTool === 'institute' 
@@ -844,7 +871,7 @@ export default function Dashboard() {
                   </button>
 
                   <button
-                    onClick={() => setActiveTool('enroll-program')}
+                    onClick={() => handleWorkspaceNav('enroll-program')}
                     className={cn(
                       "sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all duration-250 group",
                       activeTool === 'enroll-program' 
@@ -860,7 +887,7 @@ export default function Dashboard() {
                   </button>
 
                   <button
-                    onClick={() => setActiveTool('certification')}
+                    onClick={() => handleWorkspaceNav('certification')}
                     className={cn(
                       "sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all duration-250 group",
                       activeTool === 'certification' 
@@ -876,7 +903,7 @@ export default function Dashboard() {
                   </button>
 
                   <button
-                    onClick={() => setActiveTool('blog')}
+                    onClick={() => handleWorkspaceNav('blog')}
                     className={cn(
                       "sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all duration-250 group",
                       activeTool === 'blog' 
@@ -892,7 +919,7 @@ export default function Dashboard() {
                   </button>
 
                   <button
-                    onClick={() => setActiveTool('saved-blogs')}
+                    onClick={() => handleWorkspaceNav('saved-blogs')}
                     className={cn(
                       "sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all duration-250 group",
                       activeTool === 'saved-blogs' 
@@ -908,7 +935,7 @@ export default function Dashboard() {
                   </button>
 
                   <button
-                    onClick={() => setActiveTool('connections')}
+                    onClick={() => handleWorkspaceNav('connections')}
                     className={cn(
                       "sidebar-menu-btn w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all duration-250 group",
                       activeTool === 'connections' 
@@ -983,7 +1010,7 @@ export default function Dashboard() {
             </div>
 
             {/* ═══ RIGHT COLUMN ═══ */}
-            <div className="lg:col-span-3 space-y-6">
+            <div id="dashboard-content" className="lg:col-span-3 space-y-6 min-h-[750px]">
               {activeTool === 'lms' ? (
                 <ProgramDetail 
                   embedded={true} 
@@ -1020,7 +1047,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* Tool Container */}
-                  <div className="bg-card border border-border rounded-2xl p-1 relative overflow-hidden">
+                  <div className="bg-card border border-border rounded-2xl p-1 relative overflow-hidden min-h-[600px]">
                     {activeTool === 'api-score' && <APIScoreCalculator embedded={true} />}
                     {activeTool === 'promotion-check' && <PromotionChecker embedded={true} />}
                     {activeTool === 'research-score' && <ResearchScoreCalculator embedded={true} />}
@@ -1331,7 +1358,21 @@ export default function Dashboard() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs">Years of Experience</Label>
-                      <Input type="number" value={form.experience_years} onChange={(e) => setForm({ ...form, experience_years: parseInt(e.target.value) || 0 })} className="rounded-xl" min={0} max={60} />
+                      <Select
+                        value={form.experience_years.toString()}
+                        onValueChange={(value) => setForm({ ...form, experience_years: parseInt(value) || 0 })}
+                      >
+                        <SelectTrigger className="rounded-xl h-10">
+                          <SelectValue placeholder="Select experience" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {Array.from({ length: 41 }, (_, i) => (
+                            <SelectItem key={i} value={i.toString()}>
+                              {i === 0 ? 'Fresher (0 years)' : i === 40 ? '40+ years' : `${i} ${i === 1 ? 'year' : 'years'}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* Address (Optional) */}
@@ -1352,11 +1393,39 @@ export default function Dashboard() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs">LinkedIn URL</Label>
-                      <Input value={form.linkedin_url} onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })} placeholder="https://linkedin.com/in/..." className="rounded-xl" maxLength={300} />
+                      <Input 
+                        value={form.linkedin_url} 
+                        onChange={(e) => {
+                          setForm({ ...form, linkedin_url: e.target.value });
+                          if (fieldErrors.linkedin) {
+                            setFieldErrors(prev => ({ ...prev, linkedin: undefined }));
+                          }
+                        }} 
+                        placeholder="https://linkedin.com/in/..." 
+                        className={cn("rounded-xl", fieldErrors.linkedin && "border-red-500")} 
+                        maxLength={300} 
+                      />
+                      {fieldErrors.linkedin && (
+                        <p className="text-[10px] text-red-500 mt-1">{fieldErrors.linkedin}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs">Google Scholar URL</Label>
-                      <Input value={form.google_scholar_url} onChange={(e) => setForm({ ...form, google_scholar_url: e.target.value })} placeholder="https://scholar.google.com/..." className="rounded-xl" maxLength={300} />
+                      <Input 
+                        value={form.google_scholar_url} 
+                        onChange={(e) => {
+                          setForm({ ...form, google_scholar_url: e.target.value });
+                          if (fieldErrors.scholar) {
+                            setFieldErrors(prev => ({ ...prev, scholar: undefined }));
+                          }
+                        }} 
+                        placeholder="https://scholar.google.com/..." 
+                        className={cn("rounded-xl", fieldErrors.scholar && "border-red-500")} 
+                        maxLength={300} 
+                      />
+                      {fieldErrors.scholar && (
+                        <p className="text-[10px] text-red-500 mt-1">{fieldErrors.scholar}</p>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -1605,8 +1674,8 @@ function SavedBlogsModule() {
               <div>
                 {/* Cover Image */}
                 <div className="h-40 w-full bg-slate-100 relative">
-                  {blog.cover_image ? (
-                    <img src={blog.cover_image} alt={blog.title} className="w-full h-full object-cover" />
+                  {blog.cover_image_url ? (
+                    <img src={blog.cover_image_url} alt={blog.title} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gold/5 text-gold/30">
                       <BookOpen className="w-12 h-12" />
@@ -1656,11 +1725,9 @@ function SavedBlogsModule() {
 
                 {/* Remove bookmark */}
                 <Button
-                  variant="ghost"
-                  size="sm"
                   disabled={actionLoading === blog.id}
                   onClick={() => handleRemoveBookmark(blog.id, blog.title)}
-                  className="text-destructive hover:bg-destructive/10 text-[10px] font-semibold gap-1.5 h-8 rounded-lg"
+                  className="btn-danger text-white text-[10px] font-semibold gap-1.5 h-8 rounded-lg"
                 >
                   {actionLoading === blog.id ? (
                     <Loader2 className="w-3 h-3 animate-spin" />

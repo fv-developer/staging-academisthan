@@ -504,7 +504,6 @@
 .dashboard-theme button, .dashboard-theme .Button, .dashboard-theme [role="dialog"] button, .dashboard-theme [role="dialog"] .Button {
     border-radius: 5px !important;
     font-size: 11px !important;
-    white-space: nowrap !important;
    }
 
 /* Sidebar menu font size override */
@@ -512,4 +511,27 @@
 .dashboard-theme a.sidebar-menu-btn,
 .sidebar-menu-btn {
   font-size: 13px !important;
+}
+
+/* Form Fields & Labels Font Size Standardization (12px) */
+.dashboard-theme label,
+.dashboard-theme input,
+.dashboard-theme textarea,
+.dashboard-theme select,
+.dashboard-theme [role="combobox"],
+.dashboard-theme [role="combobox"] *,
+.dashboard-theme button.rounded-xl.h-10,
+.dashboard-theme button.rounded-xl.h-10 *,
+.dashboard-theme button.rounded-xl.h-9,
+.dashboard-theme button.rounded-xl.h-9 *,
+[data-radix-select-content] * {
+  font-size: 12px !important;
+}
+
+/* Mobile Dashboard Cards Padding Override (1rem) */
+@media (max-width: 768px) {
+  .dashboard-theme .p-6,
+  .dashboard-theme .p-8 {
+    padding: 1rem !important;
+  }
 }

@@ -3,17 +3,26 @@ import { supabase } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Upload, X, File as FileIcon, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-interface ImageUploadProps {
+interface FileUploadProps {
   value: string;
   onChange: (url: string) => void;
   label?: string;
   folder?: string;
+  accept?: string;
+  maxSizeMB?: number;
 }
 
-export function ImageUpload({ value, onChange, label = 'Cover Image', folder = 'covers' }: ImageUploadProps) {
+export function FileUpload({ 
+  value, 
+  onChange, 
+  label = 'File Attachment', 
+  folder = 'documents',
+  accept = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt',
+  maxSizeMB = 10
+}: FileUploadProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [mode, setMode] = useState<'upload' | 'url'>(value && !value.includes('admin-uploads') ? 'url' : 'upload');
@@ -23,12 +32,8 @@ export function ImageUpload({ value, onChange, label = 'Cover Image', folder = '
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Only image files allowed', variant: 'destructive' });
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'Image must be under 5MB', variant: 'destructive' });
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      toast({ title: `File must be under ${maxSizeMB}MB`, variant: 'destructive' });
       return;
     }
 
@@ -52,12 +57,22 @@ export function ImageUpload({ value, onChange, label = 'Cover Image', folder = '
 
     onChange(publicUrl);
     setUploading(false);
-    toast({ title: 'Image uploaded! ✨' });
+    toast({ title: 'File uploaded! ✨' });
   };
 
-  const clearImage = () => {
+  const clearFile = () => {
     onChange('');
     if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const getFileName = (url: string) => {
+    if (!url) return '';
+    try {
+      const decoded = decodeURIComponent(url);
+      return decoded.split('/').pop() || url;
+    } catch {
+      return url;
+    }
   };
 
   return (
@@ -85,27 +100,28 @@ export function ImageUpload({ value, onChange, label = 'Cover Image', folder = '
                 <span className="text-xs">Uploading...</span>
               </div>
             ) : value ? (
-              <div className="relative">
-                <img src={value} alt="Preview" className="max-h-32 mx-auto rounded-lg object-cover" />
+              <div className="relative flex items-center justify-center gap-2 bg-slate-50 border border-slate-100 rounded-lg p-2 max-w-md mx-auto">
+                <FileIcon className="w-4 h-4 text-gold flex-shrink-0" />
+                <span className="text-xs font-medium truncate flex-1 text-slate-700">{getFileName(value)}</span>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); clearImage(); }}
-                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+                  onClick={(e) => { e.stopPropagation(); clearFile(); }}
+                  className="w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-2.5 h-2.5" />
                 </button>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-1 text-muted-foreground py-2">
                 <Upload className="w-5 h-5" />
-                <span className="text-xs">Click to upload (max 5MB)</span>
+                <span className="text-xs">Click to upload document (max {maxSizeMB}MB)</span>
               </div>
             )}
           </div>
           <input
             ref={fileRef}
             type="file"
-            accept="image/*"
+            accept={accept}
             onChange={handleUpload}
             className="hidden"
           />
@@ -115,11 +131,11 @@ export function ImageUpload({ value, onChange, label = 'Cover Image', folder = '
           <Input
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="https://example.com/image.jpg"
+            placeholder="https://example.com/document.pdf"
             className="rounded-xl text-xs"
           />
           {value && (
-            <Button type="button" variant="ghost" size="sm" onClick={clearImage} className="shrink-0">
+            <Button type="button" variant="ghost" size="sm" onClick={clearFile} className="shrink-0">
               <X className="w-4 h-4" />
             </Button>
           )}

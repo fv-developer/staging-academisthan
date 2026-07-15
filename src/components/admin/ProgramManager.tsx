@@ -11,6 +11,8 @@ import {
   Plus, Edit3, Trash2, X, Move, BookOpen, FileText, Video as VideoIcon,
   Link as LinkIcon, HelpCircle, Check, ArrowLeft, Loader2, Save, Download, File, AlertCircle, ChevronRight
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { FileUpload } from './FileUpload';
 
 export function ProgramManager() {
   const { toast } = useToast();
@@ -922,33 +924,29 @@ export function ProgramManager() {
 
               {/* Type: PDF */}
               {stepForm.content_type === 'pdf' && (
-                <div className="space-y-4 bg-slate-50/50 border border-slate-250/70 rounded-2xl p-5 w-full">
+                <div className="space-y-4 bg-slate-50/50 border border-slate-250/70 rounded-2xl p-5 w-full text-left">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b pb-1.5 mb-1">PDF File</span>
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold text-slate-500 uppercase">Upload PDF Link / URL *</Label>
-                    <Input
-                      value={stepForm.file_url}
-                      onChange={e => setStepForm({ ...stepForm, file_url: e.target.value })}
-                      placeholder="https://academisthan.org/materials/slide.pdf"
-                      className="rounded-xl text-xs h-9 bg-white"
-                    />
-                  </div>
+                  <FileUpload
+                    value={stepForm.file_url || ''}
+                    onChange={url => setStepForm({ ...stepForm, file_url: url })}
+                    label="Upload PDF or Paste URL *"
+                    folder="syllabus-pdfs"
+                    accept=".pdf"
+                  />
                 </div>
               )}
 
               {/* Type: Document */}
               {stepForm.content_type === 'document' && (
-                <div className="space-y-4 bg-slate-50/50 border border-slate-250/70 rounded-2xl p-5 w-full">
+                <div className="space-y-4 bg-slate-50/50 border border-slate-250/70 rounded-2xl p-5 w-full text-left">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b pb-1.5 mb-1">Document details</span>
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold text-slate-500 uppercase">Document Link / URL *</Label>
-                    <Input
-                      value={stepForm.file_url}
-                      onChange={e => setStepForm({ ...stepForm, file_url: e.target.value })}
-                      placeholder="e.g. Google Docs shareable link"
-                      className="rounded-xl text-xs h-9 bg-white"
-                    />
-                  </div>
+                  <FileUpload
+                    value={stepForm.file_url || ''}
+                    onChange={url => setStepForm({ ...stepForm, file_url: url })}
+                    label="Upload Document or Paste URL *"
+                    folder="syllabus-documents"
+                    accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                  />
                 </div>
               )}
 

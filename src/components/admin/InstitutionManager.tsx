@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -12,6 +12,7 @@ import {
 type Institution = {
   id: string;
   institution_name: string;
+  institute_code: string | null;
   institution_type: string;
   representative_name: string;
   representative_email: string;
@@ -131,6 +132,9 @@ export function InstitutionManager() {
                     <div className="flex items-center gap-3 mt-1 flex-wrap">
                       {inst.membership_id && (
                         <span className="text-[10px] font-mono text-gold font-bold">{inst.membership_id}</span>
+                      )}
+                      {inst.institute_code && (
+                        <span className="text-[10px] font-mono text-muted-foreground bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">Code: {inst.institute_code}</span>
                       )}
                       {(inst.city || inst.state) && (
                         <span className="text-[10px] text-muted-foreground flex items-center gap-1">

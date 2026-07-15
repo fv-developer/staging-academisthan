@@ -26,4 +26,5 @@ pool.getConnection()
     console.error('❌ MySQL connection error:', err.message);
   });
 
+export { pool };
 export default pool;

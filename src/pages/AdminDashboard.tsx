@@ -75,7 +75,7 @@ const getAvatarColor = (type: string) => {
 };
 
 export default function AdminDashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { isAdmin, role, loading: roleLoading } = useUserRole();
   const { toast } = useToast();
 
@@ -1519,9 +1519,8 @@ export default function AdminDashboard() {
                   {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>
               </div>
-              <Button variant="outline" onClick={() => {
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('auth_user');
+              <Button variant="outline" onClick={async () => {
+                await signOut();
                 window.location.href = '/';
               }} className="rounded-xl border-destructive/30 text-destructive hover:bg-destructive/10 self-start">
                 Sign Out
@@ -1532,7 +1531,7 @@ export default function AdminDashboard() {
 
         <div className="pb-16 pt-8">
           <div className="container mx-auto px-4 space-y-8">
-            <div className="grid lg:grid-cols-4 gap-8 items-start">
+            <div className="flex flex-col gap-6 lg:grid lg:grid-cols-4 lg:gap-8 lg:items-start">
               {/* ═══ LEFT COLUMN ═══ */}
               <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-24">
                 {/* Membership Card */}
@@ -1632,7 +1631,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* ═══ RIGHT COLUMN ═══ */}
-              <div className="lg:col-span-3 space-y-6">
+              <div className="lg:col-span-3 space-y-6 min-h-[750px]">
                 {activeTab !== 'dashboard' && (
                   <div className="flex items-center justify-between bg-card border border-border rounded-2xl p-4 shadow-sm">
                     <span className="font-serif font-bold text-foreground text-sm flex items-center gap-2">

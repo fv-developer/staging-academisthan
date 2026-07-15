@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { ScrollSection } from '@/components/ScrollSection';
-import { supabase } from '@/integrations/supabase/client';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 import { useCountUp } from '@/hooks/useCountUp';
 import { Button } from '@/components/ui/button';
@@ -144,7 +143,7 @@ function HeroSection() {
           src={cinematicCampus}
           alt="Academisthan Campus"
           className="w-full h-full object-cover"
-          fetchPriority="high"
+          fetchpriority="high"
           decoding="async"
           width={1920}
           height={1080}

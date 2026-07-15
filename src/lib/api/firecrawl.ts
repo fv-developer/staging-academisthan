@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/api-client';
 
 type FirecrawlResponse<T = any> = {
   success: boolean;

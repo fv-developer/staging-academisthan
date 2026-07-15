@@ -1,182 +1,248 @@
-import express, { Response } from 'express';
-import pool from '../config/database';
-import { authenticate, AuthRequest } from '../utils/auth';
+/**
+ * Universal Database API Handler
+ * Provides Supabase-like API for MySQL database
+ */
+
+import express, { Request, Response } from 'express';
+import { pool } from '../config/database';
 
 const router = express.Router();
 
-// Public tables that can be read without authentication
-const PUBLIC_READ_TABLES = [
-  'blog_posts',
-  'events',
-  'news_updates',
-  'programs',
-  'program_modules',
-  'institutions',
-  'autonomous_colleges_directory'
-];
-
-// Helper to check if a table is sensitive
-const isSensitiveTable = (table: string) => {
-  return ['users', 'admin_roles', 'profiles', 'user_activity_logs', 'email_change_requests'].includes(table);
-};
-
-router.post('/', async (req: any, res: Response) => {
-  const { table, method, payload, filters, orderCol, orderAscending, limitCount, isSingle } = req.body;
-  
-  // 1. Authentication & Security Check
-  let userId = null;
-  
-  // Try to authenticate if header is present
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    try {
-      const jwt = await import('jsonwebtoken');
-      const decoded: any = jwt.default.verify(token, process.env.JWT_SECRET || 'academisthan-secret-key-change-this-in-production-2026');
-      userId = decoded.id;
-    } catch (err) {
-      // Token invalid or expired
-    }
+// Helper to build WHERE clause from filters
+function buildWhereClause(filters: any[]): { clause: string; values: any[] } {
+  if (!filters || filters.length === 0) {
+    return { clause: '', values: [] };
   }
 
-  // Enforce read/write permissions
-  if (method === 'select') {
-    if (isSensitiveTable(table) && !userId) {
-      return res.status(401).json({ data: null, error: { message: 'Authentication required' } });
-    }
-    if (!PUBLIC_READ_TABLES.includes(table) && !userId) {
-      return res.status(401).json({ data: null, error: { message: 'Authentication required' } });
-    }
-  } else {
-    // Write operation (insert, update, delete) requires auth
-    if (!userId) {
-      return res.status(401).json({ data: null, error: { message: 'Authentication required for write operations' } });
-    }
-  }
+  const conditions: string[] = [];
+  const values: any[] = [];
 
-  let sql = '';
+  filters.forEach((filter) => {
+    const { field, op, value } = filter;
+
+    switch (op) {
+      case 'eq':
+        conditions.push(`${field} = ?`);
+        values.push(value);
+        break;
+      case 'neq':
+        conditions.push(`${field} != ?`);
+        values.push(value);
+        break;
+      case 'gt':
+        conditions.push(`${field} > ?`);
+        values.push(value);
+        break;
+      case 'gte':
+        conditions.push(`${field} >= ?`);
+        values.push(value);
+        break;
+      case 'lt':
+        conditions.push(`${field} < ?`);
+        values.push(value);
+        break;
+      case 'lte':
+        conditions.push(`${field} <= ?`);
+        values.push(value);
+        break;
+      case 'like':
+        conditions.push(`${field} LIKE ?`);
+        values.push(value);
+        break;
+      case 'ilike':
+        conditions.push(`LOWER(${field}) LIKE LOWER(?)`);
+        values.push(value);
+        break;
+      case 'in':
+        const inValues = JSON.parse(value);
+        conditions.push(`${field} IN (${inValues.map(() => '?').join(', ')})`);
+        values.push(...inValues);
+        break;
+      case 'is':
+        if (value === null || value === 'null') {
+          conditions.push(`${field} IS NULL`);
+        } else {
+          conditions.push(`${field} IS NOT NULL`);
+        }
+        break;
+    }
+  });
+
+  return {
+    clause: conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '',
+    values,
+  };
+}
+
+// GET - Select/Query
+router.get('/:table', async (req: Request, res: Response) => {
   try {
-    const params: any[] = [];
+    const { table } = req.params;
+    const { select, order, ascending, limit, offset, count, head } = req.query;
 
-    // 2. Compile SQL statement
-    if (method === 'select') {
-      sql = `SELECT * FROM \`${table}\``;
-    } else if (method === 'insert') {
-      const keys = Object.keys(payload);
-      const placeholders = keys.map(() => '?').join(', ');
-      sql = `INSERT INTO \`${table}\` (\`${keys.join('`, `')}\`) VALUES (${placeholders})`;
-      params.push(...keys.map(k => payload[k]));
-    } else if (method === 'update') {
-      const keys = Object.keys(payload);
-      const assignments = keys.map(k => `\`${k}\` = ?`).join(', ');
-      sql = `UPDATE \`${table}\` SET ${assignments}`;
-      params.push(...keys.map(k => payload[k]));
-    } else if (method === 'delete') {
-      sql = `DELETE FROM \`${table}\``;
-    } else {
-      return res.status(400).json({ data: null, error: { message: `Unsupported method: ${method}` } });
-    }
-
-    // 3. Apply Filters
-    if (filters && filters.length > 0) {
-      const filterSql = filters.map((f: any) => {
-        if (f.type === 'eq') {
-          if (f.value === null) {
-            return `\`${f.column}\` IS NULL`;
-          }
-          params.push(f.value);
-          return `\`${f.column}\` = ?`;
-        } else if (f.type === 'gte') {
-          params.push(f.value);
-          return `\`${f.column}\` >= ?`;
-        } else if (f.type === 'lte') {
-          params.push(f.value);
-          return `\`${f.column}\` <= ?`;
-        } else if (f.type === 'gt') {
-          params.push(f.value);
-          return `\`${f.column}\` > ?`;
-        } else if (f.type === 'lt') {
-          params.push(f.value);
-          return `\`${f.column}\` < ?`;
-        } else if (f.type === 'is') {
-          if (f.value === null) {
-            return `\`${f.column}\` IS NULL`;
-          }
-          params.push(f.value);
-          return `\`${f.column}\` = ?`;
-        } else if (f.type === 'in') {
-          if (!Array.isArray(f.value) || f.value.length === 0) {
-            return '1=0';
-          }
-          const placeholders = f.value.map(() => '?').join(', ');
-          params.push(...f.value);
-          return `\`${f.column}\` IN (${placeholders})`;
-        } else if (f.type === 'like' || f.type === 'ilike') {
-          params.push(f.value);
-          return `\`${f.column}\` LIKE ?`;
-        }
-        return '1=1';
-      }).join(' AND ');
-      sql += ` WHERE ${filterSql}`;
-    }
-
-    // 4. Apply Order
-    if (orderCol) {
-      sql += ` ORDER BY \`${orderCol}\` ${orderAscending ? 'ASC' : 'DESC'}`;
-    }
-
-    // 5. Apply Limit
-    if (limitCount) {
-      sql += ` LIMIT ${limitCount}`;
-    }
-
-    // Execute query
-    const [result]: any = await pool.execute(sql, params);
-
-    let responseData = null;
-    if (method === 'select') {
-      responseData = isSingle ? (result[0] || null) : result;
-      
-      // Parse JSON fields automatically if they are returned as string in older MySQL versions
-      if (Array.isArray(responseData)) {
-        responseData.forEach(row => {
-          if (row.metadata && typeof row.metadata === 'string') {
-            try { row.metadata = JSON.parse(row.metadata); } catch(e){}
-          }
-          if (row.highlights && typeof row.highlights === 'string') {
-            try { row.highlights = JSON.parse(row.highlights); } catch(e){}
-          }
-          if (row.speakers && typeof row.speakers === 'string') {
-            try { row.speakers = JSON.parse(row.speakers); } catch(e){}
-          }
-        });
-      } else if (responseData) {
-        if (responseData.metadata && typeof responseData.metadata === 'string') {
-          try { responseData.metadata = JSON.parse(responseData.metadata); } catch(e){}
-        }
-        if (responseData.highlights && typeof responseData.highlights === 'string') {
-          try { responseData.highlights = JSON.parse(responseData.highlights); } catch(e){}
-        }
-        if (responseData.speakers && typeof responseData.speakers === 'string') {
-          try { responseData.speakers = JSON.parse(responseData.speakers); } catch(e){}
+    // Parse filters from query params
+    const filters: any[] = [];
+    Object.keys(req.query).forEach((key) => {
+      if (key.startsWith('filter[')) {
+        const match = key.match(/filter\[(\d+)\]\[(\w+)\]/);
+        if (match) {
+          const index = parseInt(match[1]);
+          const prop = match[2];
+          if (!filters[index]) filters[index] = {};
+          filters[index][prop] = req.query[key];
         }
       }
-    } else if (method === 'insert') {
-      // Mimic Supabase: return the inserted object
-      responseData = { ...payload };
-      if (result.insertId) {
-        responseData.insertId = result.insertId;
-      }
-    } else if (method === 'update') {
-      responseData = { ...payload };
-    } else {
-      responseData = { success: true };
+    });
+
+    // Build WHERE clause
+    const { clause: whereClause, values: whereValues } = buildWhereClause(filters);
+
+    // Build SELECT fields
+    const selectFields = select && select !== '*' ? String(select) : '*';
+
+    // Build ORDER BY
+    let orderClause = '';
+    if (order) {
+      const direction = ascending === 'false' ? 'DESC' : 'ASC';
+      orderClause = `ORDER BY ${order} ${direction}`;
     }
 
-    res.json({ data: responseData, error: null });
+    // Build LIMIT/OFFSET
+    let limitClause = '';
+    if (limit) {
+      limitClause = `LIMIT ${limit}`;
+      if (offset) {
+        limitClause += ` OFFSET ${offset}`;
+      }
+    }
+
+    // If count mode, return count
+    if (count === 'exact' && head === 'true') {
+      const countQuery = `SELECT COUNT(*) as count FROM ${table} ${whereClause}`;
+      const [rows]: any = await pool.execute(countQuery, whereValues);
+      return res.json({ count: rows[0].count });
+    }
+
+    // Regular query
+    const query = `SELECT ${selectFields} FROM ${table} ${whereClause} ${orderClause} ${limitClause}`;
+    const [rows] = await pool.execute(query, whereValues);
+
+    // If count mode with data
+    if (count === 'exact') {
+      const countQuery = `SELECT COUNT(*) as count FROM ${table} ${whereClause}`;
+      const [countRows]: any = await pool.execute(countQuery, whereValues);
+      return res.json({ data: rows, count: countRows[0].count });
+    }
+
+    res.json({ data: rows });
   } catch (error: any) {
-    console.error('Dynamic DB Endpoint Error:', error.message, 'SQL:', sql);
-    res.status(500).json({ data: null, error: { message: error.message } });
+    console.error('Database query error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST - Insert
+router.post('/:table', async (req: Request, res: Response) => {
+  try {
+    const { table } = req.params;
+    const data = Array.isArray(req.body) ? req.body : [req.body];
+
+    if (data.length === 0) {
+      return res.status(400).json({ error: 'No data provided' });
+    }
+
+    const results = [];
+
+    for (const row of data) {
+      const columns = Object.keys(row);
+      const values = Object.values(row);
+      const placeholders = columns.map(() => '?').join(', ');
+
+      const query = `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`;
+      const [result]: any = await pool.execute(query, values);
+
+      results.push({ id: result.insertId, ...row });
+    }
+
+    res.json({ data: results });
+  } catch (error: any) {
+    console.error('Database insert error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT - Update
+router.put('/:table', async (req: Request, res: Response) => {
+  try {
+    const { table } = req.params;
+    const updateData = req.body;
+
+    // Parse filters
+    const filters: any[] = [];
+    Object.keys(req.query).forEach((key) => {
+      if (key.startsWith('filter[')) {
+        const match = key.match(/filter\[(\d+)\]\[(\w+)\]/);
+        if (match) {
+          const index = parseInt(match[1]);
+          const prop = match[2];
+          if (!filters[index]) filters[index] = {};
+          filters[index][prop] = req.query[key];
+        }
+      }
+    });
+
+    const { clause: whereClause, values: whereValues } = buildWhereClause(filters);
+
+    if (!whereClause) {
+      return res.status(400).json({ error: 'Update requires WHERE clause (filters)' });
+    }
+
+    const columns = Object.keys(updateData);
+    const values = Object.values(updateData);
+    const setClause = columns.map((col) => `${col} = ?`).join(', ');
+
+    const query = `UPDATE ${table} SET ${setClause} ${whereClause}`;
+    const [result]: any = await pool.execute(query, [...values, ...whereValues]);
+
+    res.json({ data: { affectedRows: result.affectedRows } });
+  } catch (error: any) {
+    console.error('Database update error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE - Delete
+router.delete('/:table', async (req: Request, res: Response) => {
+  try {
+    const { table } = req.params;
+
+    // Parse filters
+    const filters: any[] = [];
+    Object.keys(req.query).forEach((key) => {
+      if (key.startsWith('filter[')) {
+        const match = key.match(/filter\[(\d+)\]\[(\w+)\]/);
+        if (match) {
+          const index = parseInt(match[1]);
+          const prop = match[2];
+          if (!filters[index]) filters[index] = {};
+          filters[index][prop] = req.query[key];
+        }
+      }
+    });
+
+    const { clause: whereClause, values: whereValues } = buildWhereClause(filters);
+
+    if (!whereClause) {
+      return res.status(400).json({ error: 'Delete requires WHERE clause (filters)' });
+    }
+
+    const query = `DELETE FROM ${table} ${whereClause}`;
+    const [result]: any = await pool.execute(query, whereValues);
+
+    res.json({ data: { affectedRows: result.affectedRows } });
+  } catch (error: any) {
+    console.error('Database delete error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

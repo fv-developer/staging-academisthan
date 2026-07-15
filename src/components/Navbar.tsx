@@ -53,13 +53,7 @@ export const Navbar = forwardRef<HTMLElement, NavbarProps>(function Navbar({ for
   const [openMobileSubmenu, setOpenMobileSubmenu] = useState<string | null>(null);
   const { user, profile } = useAuth();
   const { isAdmin, loading: roleLoading } = useUserRole();
-  const isUserAdmin = isAdmin || (user && user.email === 'admin@academisthan.org');
-  const filteredLinks = navLinks.filter((link) => {
-    if (link.label === 'Teacher Tools' && isUserAdmin) {
-      return false;
-    }
-    return true;
-  });
+  const filteredLinks = navLinks;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -78,10 +72,9 @@ export const Navbar = forwardRef<HTMLElement, NavbarProps>(function Navbar({ for
       )}
     >
       <div className="container mx-auto px-4 flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 group flex-shrink-0 mr-6">
-          <img src={logo} alt="Academisthan" className="h-10 w-auto object-contain transition-transform group-hover:scale-110" />
-          <span className="font-serif text-xl font-bold text-gold-foreground tracking-wide" style={{ color: 'hsl(38 55% 58%)' }}>
+        <Link to="/" className="flex items-center gap-2 md:gap-3 group flex-shrink-0 mr-2 md:mr-6">
+          <img src={logo} alt="Academisthan" className="h-9 md:h-10 w-auto object-contain transition-transform group-hover:scale-110" />
+          <span className="font-serif text-lg md:text-xl font-bold text-gold-foreground tracking-wide" style={{ color: 'hsl(38 55% 58%)' }}>
             Academisthan
           </span>
         </Link>

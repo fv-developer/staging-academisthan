@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import {
   Building2, Mail, Phone, MapPin, Globe, Award,
-  Upload, Check, Shield, AlertCircle, Edit3, ArrowLeft, ArrowRight, Loader2, Eye, ExternalLink, ChevronsUpDown, Calendar, Plus
+  Upload, Check, Shield, AlertCircle, Edit3, ArrowLeft, ArrowRight, Loader2, Eye, ExternalLink, ChevronsUpDown, Calendar, Plus, Trash2
 } from 'lucide-react';
 import { countries, Country, stateCities, getMaxPhoneLength } from '@/utils/countryData';
 import { cn } from '@/lib/utils';
@@ -78,6 +78,7 @@ export default function InstituteModule() {
 
   const [form, setForm] = useState({
     name: '',
+    institute_code: '',
     type: 'college',
     established_year: '',
     website: '',
@@ -353,6 +354,7 @@ export default function InstituteModule() {
 
       setForm({
         name: inst.name || '',
+        institute_code: inst.institute_code || '',
         type: inst.type || 'college',
         established_year: inst.established_year ? String(inst.established_year) : '',
         website: inst.website || '',
@@ -400,6 +402,7 @@ export default function InstituteModule() {
 
       setForm({
         name: '',
+        institute_code: '',
         type: 'college',
         established_year: '',
         website: '',
@@ -494,6 +497,7 @@ export default function InstituteModule() {
 
       const payload = {
         name: form.name.trim(),
+        institute_code: form.institute_code.trim() || null,
         type: form.type,
         established_year: form.established_year ? parseInt(form.established_year) : null,
         website: form.website.trim() || null,
@@ -538,6 +542,21 @@ export default function InstituteModule() {
       toast({ title: 'Submission failed', description: err.message, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteInst = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to permanently delete the registration for "${name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await institutions.delete(id);
+      toast({ title: 'Institution deleted successfully' });
+      await fetchMyInstitutions();
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: 'Failed to delete institution', description: err.message, variant: 'destructive' });
     }
   };
 
@@ -633,6 +652,15 @@ export default function InstituteModule() {
                           </Button>
                           <Button onClick={() => startEditing(inst)} size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-gold hover:text-gold hover:bg-gold/10" title="Edit details">
                             <Edit3 className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button 
+                            onClick={() => handleDeleteInst(inst.id, inst.name)} 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-7 w-7 rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10" 
+                            title="Delete institution"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       </TableCell>
@@ -1002,6 +1030,17 @@ export default function InstituteModule() {
                 </div>
               )}
               {errors.name && <span className="text-[10px] text-red-500">{errors.name}</span>}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Institute Code</Label>
+              <Input
+                value={form.institute_code}
+                onChange={e => updateForm('institute_code', e.target.value)}
+                placeholder="e.g. AISHE or Registration Code"
+                className="rounded-xl h-9 text-xs"
+                maxLength={50}
+              />
             </div>
 
             <div className="space-y-1.5">

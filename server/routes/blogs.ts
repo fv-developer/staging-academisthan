@@ -223,14 +223,14 @@ router.get('/categories', async (req, res: Response) => {
 });
 
 // 5. Get blog details by slug (Public)
-router.get('/:slug', async (req, res: Response) => {
+const getBlogBySlug = async (req: any, res: Response) => {
   try {
     const { slug } = req.params;
 
     const [posts]: any = await pool.execute(
       `SELECT p.*, pr.avatar_url as author_avatar, pr.bio as author_bio
        FROM blog_posts p
-       JOIN profiles pr ON p.author_id = pr.id
+       LEFT JOIN profiles pr ON p.author_id = pr.id
        WHERE p.slug = ?`,
       [slug]
     );
@@ -272,7 +272,10 @@ router.get('/:slug', async (req, res: Response) => {
     console.error('Get blog by slug error:', error);
     res.status(500).json({ error: 'Failed to retrieve blog details' });
   }
-});
+};
+
+router.get('/slug/:slug', getBlogBySlug);
+router.get('/:slug', getBlogBySlug);
 
 // 6. Create Blog Post (Authenticated)
 router.post('/', authenticate, async (req: AuthRequest, res: Response) => {

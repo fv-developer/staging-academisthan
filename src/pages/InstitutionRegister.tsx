@@ -98,6 +98,7 @@ export default function InstitutionRegister() {
     representative_designation: '',
     // Institution basics
     institution_name: '',
+    institute_code: '',
     institution_type: 'college',
     affiliated_university: '',
     // Contact details
@@ -411,6 +412,7 @@ export default function InstitutionRegister() {
       // 2. Prepare payload
       const institutionData = {
         name: form.institution_name.trim(),
+        institute_code: form.institute_code.trim() || undefined,
         type: form.institution_type,
         address: form.address.trim() || undefined,
         city: form.city.trim(),
@@ -719,6 +721,17 @@ export default function InstitutionRegister() {
                       {errors.institution_name && (
                         <p className="text-[11px] text-red-500">{errors.institution_name}</p>
                       )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">Institute Code</Label>
+                      <Input 
+                        value={form.institute_code} 
+                        onChange={e => updateForm('institute_code', e.target.value)} 
+                        placeholder="e.g. AISHE or Registration Code" 
+                        className="rounded-lg text-sm"
+                        maxLength={50} 
+                      />
                     </div>
 
                     <div className="space-y-2">

@@ -1,6 +1,16 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+
+type User = {
+  id: string;
+  email: string;
+  full_name: string;
+  email_verified: boolean;
+};
+
+type Session = {
+  access_token: string;
+  user: User;
+};
 
 type Profile = {
   id: string;
@@ -40,78 +50,125 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    setProfile(data as Profile | null);
+  const fetchProfile = async (userId: string, token: string) => {
+    try {
+      const response = await fetch(`${API_URL}/profiles/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    }
   };
 
   const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id);
+    if (user && session) {
+      await fetchProfile(user.id, session.access_token);
+    }
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-
-        if (newSession?.user) {
-          // Use setTimeout to avoid Supabase deadlock
-          setTimeout(() => fetchProfile(newSession.user.id), 0);
-        } else {
-          setProfile(null);
-        }
-        setLoading(false);
+    // Check for existing session in localStorage
+    const storedSession = localStorage.getItem('auth_session');
+    if (storedSession) {
+      try {
+        const parsedSession: Session = JSON.parse(storedSession);
+        setSession(parsedSession);
+        setUser(parsedSession.user);
+        localStorage.setItem('auth_token', parsedSession.access_token); // Ensure token is also stored
+        fetchProfile(parsedSession.user.id, parsedSession.access_token);
+      } catch (error) {
+        console.error('Failed to parse stored session:', error);
+        localStorage.removeItem('auth_session');
+        localStorage.removeItem('auth_token');
       }
-    );
-
-    // THEN check existing session
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      setSession(existingSession);
-      setUser(existingSession?.user ?? null);
-      if (existingSession?.user) {
-        fetchProfile(existingSession.user.id);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    }
+    setLoading(false);
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string, country?: string, phone?: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { 
-          full_name: fullName,
-          country: country || 'India',
-          phone: phone || ''
+    try {
+      const response = await fetch(`${API_URL}/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    return { error };
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
+          country: country || 'India',
+          phone: phone || '',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: { message: data.error || 'Sign up failed' } };
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message || 'Sign up failed' } };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+    try {
+      const response = await fetch(`${API_URL}/auth/signin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: { message: data.error || 'Sign in failed' } };
+      }
+
+      // Store session
+      const newSession: Session = {
+        access_token: data.token,
+        user: data.user,
+      };
+
+      localStorage.setItem('auth_session', JSON.stringify(newSession));
+      localStorage.setItem('auth_token', data.token); // Store token separately for api-client
+      setSession(newSession);
+      setUser(data.user);
+      
+      if (data.profile) {
+        setProfile(data.profile);
+      } else {
+        await fetchProfile(data.user.id, data.token);
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message || 'Sign in failed' } };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem('auth_session');
+    localStorage.removeItem('auth_token'); // Also remove the token
     setUser(null);
     setSession(null);
     setProfile(null);
