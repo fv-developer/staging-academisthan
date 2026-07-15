@@ -6,6 +6,10 @@ import path from 'path';
 import fs from 'fs';
 import { sendAdminNewInstitutionEmail, sendAdminInstitutionResubmittedEmail, sendInstitutionRegistrationConfirmationEmail, sendInstitutionResubmittedConfirmationEmail, sendInstitutionDeletedEmail } from '../services/email';
 
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const router = express.Router();
 
 // Helper to check for non-official public email domains

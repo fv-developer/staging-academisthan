@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/contexts/AuthContext';
-import api from '@/lib/api-client';
+import api, { API_BASE } from '@/lib/api-client';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -313,7 +313,19 @@ export default function Dashboard() {
     work_email: '',
   });
 
-  const [fieldErrors, setFieldErrors] = useState<{ linkedin?: string; scholar?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{
+    full_name?: string;
+    phone?: string;
+    designation?: string;
+    department?: string;
+    institution?: string;
+    state?: string;
+    city?: string;
+    pincode?: string;
+    work_email?: string;
+    linkedin?: string;
+    scholar?: string;
+  }>({});
 
   const startEditing = () => {
     if (profile) {
@@ -367,10 +379,13 @@ export default function Dashboard() {
   const saveProfile = async () => {
     if (!profile) return;
 
-    // Form validations
+    const newFieldErrors: typeof fieldErrors = {};
+    let hasError = false;
+
+    // Full Name
     if (!form.full_name.trim()) {
-      toast({ title: 'Full Name is required', variant: 'destructive' });
-      return;
+      newFieldErrors.full_name = 'Full Name is required.';
+      hasError = true;
     }
 
     // Phone / Mobile Validation based on country regex
@@ -379,41 +394,47 @@ export default function Dashboard() {
     const expectedDigits = getExpectedPhoneLabel(selectedCountry);
 
     if (!phoneVal.trim()) {
-      toast({ title: 'Mobile Number is required', variant: 'destructive' });
-      return;
-    }
-    if (phoneVal.length > maxLen) {
-      toast({ title: 'Validation Error', description: `Mobile number cannot exceed ${maxLen} digits.`, variant: 'destructive' });
-      return;
-    }
-    if (phoneVal.length < maxLen && !phoneRegex.test(phoneVal)) {
-      toast({ title: 'Validation Error', description: `Please enter a valid ${expectedDigits}-digit mobile number.`, variant: 'destructive' });
-      return;
-    }
-    if (!phoneRegex.test(phoneVal)) {
-      toast({ title: 'Validation Error', description: 'Invalid mobile number format.', variant: 'destructive' });
-      return;
+      newFieldErrors.phone = 'Mobile Number is required.';
+      hasError = true;
+    } else if (phoneVal.length > maxLen) {
+      newFieldErrors.phone = `Mobile number cannot exceed ${maxLen} digits.`;
+      hasError = true;
+    } else if (phoneVal.length < maxLen && !phoneRegex.test(phoneVal)) {
+      newFieldErrors.phone = `Please enter a valid ${expectedDigits}-digit mobile number.`;
+      hasError = true;
+    } else if (!phoneRegex.test(phoneVal)) {
+      newFieldErrors.phone = 'Invalid mobile number format.';
+      hasError = true;
     }
 
+    // Designation
     if (!form.designation.trim()) {
-      toast({ title: 'Designation is required', variant: 'destructive' });
-      return;
+      newFieldErrors.designation = 'Designation is required.';
+      hasError = true;
     }
+
+    // Department
     if (!form.department.trim()) {
-      toast({ title: 'Department is required', variant: 'destructive' });
-      return;
+      newFieldErrors.department = 'Department is required.';
+      hasError = true;
     }
+
+    // Institution
     if (!form.institution.trim()) {
-      toast({ title: 'Institution is required', variant: 'destructive' });
-      return;
+      newFieldErrors.institution = 'Institution is required.';
+      hasError = true;
     }
+
+    // State
     if (!form.state) {
-      toast({ title: 'State is required', variant: 'destructive' });
-      return;
+      newFieldErrors.state = 'State is required.';
+      hasError = true;
     }
+
+    // City
     if (!form.city) {
-      toast({ title: 'City is required', variant: 'destructive' });
-      return;
+      newFieldErrors.city = 'City is required.';
+      hasError = true;
     }
 
     // PIN Code Validation based on country regex
@@ -423,34 +444,30 @@ export default function Dashboard() {
     const pinTerm = selectedCountry.code === 'IN' ? 'PIN Code' : 'ZIP Code';
 
     if (!form.pincode.trim()) {
-      toast({ title: `${pinTerm} is required`, variant: 'destructive' });
-      return;
-    }
-    if (form.pincode.length > maxPinLen) {
-      toast({ title: 'Validation Error', description: `${pinTerm} cannot exceed ${maxPinLen} digits.`, variant: 'destructive' });
-      return;
-    }
-    if (form.pincode.length < maxPinLen && !pinRegex.test(form.pincode)) {
-      toast({ title: 'Validation Error', description: `Please enter a valid ${expectedPinDigits}-digit ${pinTerm}.`, variant: 'destructive' });
-      return;
-    }
-    if (!pinRegex.test(form.pincode)) {
-      toast({ title: 'Validation Error', description: `Invalid ${pinTerm} format.`, variant: 'destructive' });
-      return;
+      newFieldErrors.pincode = `${pinTerm} is required.`;
+      hasError = true;
+    } else if (form.pincode.length > maxPinLen) {
+      newFieldErrors.pincode = `${pinTerm} cannot exceed ${maxPinLen} digits.`;
+      hasError = true;
+    } else if (form.pincode.length < maxPinLen && !pinRegex.test(form.pincode)) {
+      newFieldErrors.pincode = `Please enter a valid ${expectedPinDigits}-digit ${pinTerm}.`;
+      hasError = true;
+    } else if (!pinRegex.test(form.pincode)) {
+      newFieldErrors.pincode = `Invalid ${pinTerm} format.`;
+      hasError = true;
     }
 
+    // Working Email
     if (form.work_email && form.work_email.trim()) {
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailPattern.test(form.work_email.trim())) {
-        toast({ title: 'Invalid Working Email Address', variant: 'destructive' });
-        return;
+        newFieldErrors.work_email = 'Invalid Working Email Address.';
+        hasError = true;
       }
     }
 
+    // LinkedIn URL
     let linkedinUrl = form.linkedin_url.trim();
-    let hasError = false;
-    const newFieldErrors: { linkedin?: string; scholar?: string } = {};
-
     if (linkedinUrl) {
       const linkedinPattern = /^(https?:\/\/)?([a-z]{2,3}\.)?linkedin\.com\/.*$/i;
       if (!linkedinPattern.test(linkedinUrl)) {
@@ -463,6 +480,7 @@ export default function Dashboard() {
       }
     }
 
+    // Scholar URL
     let scholarUrl = form.google_scholar_url.trim();
     if (scholarUrl) {
       const scholarPattern = /^(https?:\/\/)?(www\.)?scholar\.google\.(com|co\.[a-z]{2}|[a-z]{2,3})\/.*$/i;
@@ -596,7 +614,7 @@ export default function Dashboard() {
       reader.onload = async () => {
         const base64Data = reader.result as string;
 
-        const response = await fetch('/api/profiles/upload-avatar', {
+        const response = await fetch(`${API_BASE}/profiles/upload-avatar`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1124,7 +1142,20 @@ export default function Dashboard() {
                   <div className="grid sm:grid-cols-2 gap-5">
                     <div className="space-y-2">
                       <Label className="text-xs">Full Name</Label>
-                      <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="rounded-xl" maxLength={100} />
+                      <Input
+                        value={form.full_name}
+                        onChange={(e) => {
+                          setForm({ ...form, full_name: e.target.value });
+                          if (fieldErrors.full_name) {
+                            setFieldErrors(prev => ({ ...prev, full_name: undefined }));
+                          }
+                        }}
+                        className={cn("rounded-xl text-[13px]", fieldErrors.full_name && "border-red-500")}
+                        maxLength={100}
+                      />
+                      {fieldErrors.full_name && (
+                        <p className="text-[10px] text-red-500 mt-1">{fieldErrors.full_name}</p>
+                      )}
                     </div>
 
                     {/* Country Searchable Dropdown */}
@@ -1134,7 +1165,7 @@ export default function Dashboard() {
                         <button
                           type="button"
                           onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
-                          className="flex h-10 w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                          className="flex h-10 w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                         >
                           <span>{selectedCountry ? selectedCountry.name : 'Select Country'}</span>
                           <ChevronDown className="h-4 w-4 opacity-50" />
@@ -1148,7 +1179,7 @@ export default function Dashboard() {
                                 placeholder="Search country..."
                                 value={countrySearch}
                                 onChange={(e) => setCountrySearch(e.target.value)}
-                                className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                                className="w-full bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
                               />
                             </div>
                             <div className="space-y-1">
@@ -1165,7 +1196,7 @@ export default function Dashboard() {
                                     setStateSearch('');
                                   }}
                                   className={cn(
-                                    "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-muted transition-colors text-left",
+                                    "flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] hover:bg-muted transition-colors text-left",
                                     selectedCountry?.code === c.code && "bg-muted font-medium text-gold"
                                   )}
                                 >
@@ -1183,7 +1214,7 @@ export default function Dashboard() {
                     <div className="space-y-2">
                       <Label className="text-xs">Mobile Number</Label>
                       <div className="flex gap-2">
-                        <div className="flex h-10 items-center justify-center rounded-xl border border-border bg-muted/50 px-3 text-sm text-muted-foreground font-medium min-w-[65px]">
+                        <div className="flex h-10 items-center justify-center rounded-xl border border-border bg-muted/50 px-3 text-[13px] text-muted-foreground font-medium min-w-[65px]">
                           {selectedCountry?.dialCode || '+91'}
                         </div>
                         <Input
@@ -1195,11 +1226,17 @@ export default function Dashboard() {
                             const maxLen = getMaxPhoneLength(selectedCountry);
                             if (val.length <= maxLen) {
                               setPhoneVal(val);
+                              if (fieldErrors.phone) {
+                                setFieldErrors(prev => ({ ...prev, phone: undefined }));
+                              }
                             }
                           }}
-                          className="rounded-xl h-10"
+                          className={cn("rounded-xl h-10 text-[13px]", fieldErrors.phone && "border-red-500")}
                         />
                       </div>
+                      {fieldErrors.phone && (
+                        <p className="text-[10px] text-red-500 mt-1">{fieldErrors.phone}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -1207,41 +1244,85 @@ export default function Dashboard() {
                       <Input
                         type="email"
                         value={form.work_email}
-                        onChange={(e) => setForm({ ...form, work_email: e.target.value })}
+                        onChange={(e) => {
+                          setForm({ ...form, work_email: e.target.value });
+                          if (fieldErrors.work_email) {
+                            setFieldErrors(prev => ({ ...prev, work_email: undefined }));
+                          }
+                        }}
                         placeholder="e.g. yourname@institution.edu"
-                        className="rounded-xl h-10"
+                        className={cn("rounded-xl h-10 text-[13px]", fieldErrors.work_email && "border-red-500")}
                         maxLength={255}
                       />
+                      {fieldErrors.work_email && (
+                        <p className="text-[10px] text-red-500 mt-1">{fieldErrors.work_email}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
                       <Label className="text-xs">Designation</Label>
                       <Select
                         value={form.designation}
-                        onValueChange={(val) => setForm({ ...form, designation: val })}
+                        onValueChange={(val) => {
+                          setForm({ ...form, designation: val });
+                          if (fieldErrors.designation) {
+                            setFieldErrors(prev => ({ ...prev, designation: undefined }));
+                          }
+                        }}
                       >
-                        <SelectTrigger className="rounded-xl h-10 border border-border bg-card text-foreground">
+                        <SelectTrigger className={cn("rounded-xl h-10 border border-border bg-card text-foreground text-[13px]", fieldErrors.designation && "border-red-500")}>
                           <SelectValue placeholder="Select designation" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Professor">Professor</SelectItem>
-                          <SelectItem value="Associate Professor">Associate Professor</SelectItem>
-                          <SelectItem value="Assistant Professor">Assistant Professor</SelectItem>
-                          <SelectItem value="Lecturer">Lecturer</SelectItem>
-                          <SelectItem value="Dean">Dean</SelectItem>
-                          <SelectItem value="HOD">HOD</SelectItem>
-                          <SelectItem value="Director">Director</SelectItem>
+                          <SelectItem value="Professor" className="text-[13px]">Professor</SelectItem>
+                          <SelectItem value="Associate Professor" className="text-[13px]">Associate Professor</SelectItem>
+                          <SelectItem value="Assistant Professor" className="text-[13px]">Assistant Professor</SelectItem>
+                          <SelectItem value="Lecturer" className="text-[13px]">Lecturer</SelectItem>
+                          <SelectItem value="Dean" className="text-[13px]">Dean</SelectItem>
+                          <SelectItem value="HOD" className="text-[13px]">HOD</SelectItem>
+                          <SelectItem value="Director" className="text-[13px]">Director</SelectItem>
                         </SelectContent>
                       </Select>
+                      {fieldErrors.designation && (
+                        <p className="text-[10px] text-red-500 mt-1">{fieldErrors.designation}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
                       <Label className="text-xs">Department</Label>
-                      <Input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="e.g. Computer Science" className="rounded-xl" maxLength={100} />
+                      <Input
+                        value={form.department}
+                        onChange={(e) => {
+                          setForm({ ...form, department: e.target.value });
+                          if (fieldErrors.department) {
+                            setFieldErrors(prev => ({ ...prev, department: undefined }));
+                          }
+                        }}
+                        placeholder="e.g. Computer Science"
+                        className={cn("rounded-xl text-[13px]", fieldErrors.department && "border-red-500")}
+                        maxLength={100}
+                      />
+                      {fieldErrors.department && (
+                        <p className="text-[10px] text-red-500 mt-1">{fieldErrors.department}</p>
+                      )}
                     </div>
                     <div className="sm:col-span-2 space-y-2">
                       <Label className="text-xs">Institution</Label>
-                      <Input value={form.institution} onChange={(e) => setForm({ ...form, institution: e.target.value })} placeholder="e.g. University of Mumbai" className="rounded-xl" maxLength={200} />
+                      <Input
+                        value={form.institution}
+                        onChange={(e) => {
+                          setForm({ ...form, institution: e.target.value });
+                          if (fieldErrors.institution) {
+                            setFieldErrors(prev => ({ ...prev, institution: undefined }));
+                          }
+                        }}
+                        placeholder="e.g. University of Mumbai"
+                        className={cn("rounded-xl text-[13px]", fieldErrors.institution && "border-red-500")}
+                        maxLength={200}
+                      />
+                      {fieldErrors.institution && (
+                        <p className="text-[10px] text-red-500 mt-1">{fieldErrors.institution}</p>
+                      )}
                     </div>
 
                     {/* State Searchable Dropdown */}
@@ -1257,7 +1338,7 @@ export default function Dashboard() {
                             }
                             setStateDropdownOpen(!stateDropdownOpen);
                           }}
-                          className="flex h-10 w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                          className={cn("flex h-10 w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring", fieldErrors.state && "border-red-500")}
                         >
                           <span>{form.state || 'Select State'}</span>
                           <ChevronDown className="h-4 w-4 opacity-50" />
@@ -1271,7 +1352,7 @@ export default function Dashboard() {
                                 placeholder="Search state..."
                                 value={stateSearch}
                                 onChange={(e) => setStateSearch(e.target.value)}
-                                className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                                className="w-full bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
                               />
                             </div>
                             <div className="space-y-1">
@@ -1283,9 +1364,12 @@ export default function Dashboard() {
                                     setForm(f => ({ ...f, state: s, city: '' }));
                                     setStateDropdownOpen(false);
                                     setStateSearch('');
+                                    if (fieldErrors.state) {
+                                      setFieldErrors(prev => ({ ...prev, state: undefined }));
+                                    }
                                   }}
                                   className={cn(
-                                    "flex w-full items-center rounded-lg px-3 py-2 text-sm hover:bg-muted transition-colors text-left",
+                                    "flex w-full items-center rounded-lg px-3 py-2 text-[13px] hover:bg-muted transition-colors text-left",
                                     form.state === s && "bg-muted font-medium text-gold"
                                   )}
                                 >
@@ -1300,9 +1384,17 @@ export default function Dashboard() {
                         <Input
                           placeholder="State / Province"
                           value={form.state}
-                          onChange={(e) => setForm({ ...form, state: e.target.value })}
-                          className="rounded-xl mt-1 h-10"
+                          onChange={(e) => {
+                            setForm({ ...form, state: e.target.value });
+                            if (fieldErrors.state) {
+                              setFieldErrors(prev => ({ ...prev, state: undefined }));
+                            }
+                          }}
+                          className={cn("rounded-xl mt-1 h-10 text-[13px]", fieldErrors.state && "border-red-500")}
                         />
+                      )}
+                      {fieldErrors.state && (
+                        <p className="text-[10px] text-red-500 mt-1">{fieldErrors.state}</p>
                       )}
                     </div>
 
@@ -1312,14 +1404,19 @@ export default function Dashboard() {
                       {stateCities[selectedCountry?.name] && form.state ? (
                         <Select
                           value={form.city}
-                          onValueChange={(val) => setForm({ ...form, city: val })}
+                          onValueChange={(val) => {
+                            setForm({ ...form, city: val });
+                            if (fieldErrors.city) {
+                              setFieldErrors(prev => ({ ...prev, city: undefined }));
+                            }
+                          }}
                         >
-                          <SelectTrigger className="rounded-xl h-10">
+                          <SelectTrigger className={cn("rounded-xl h-10 text-[13px]", fieldErrors.city && "border-red-500")}>
                             <SelectValue placeholder="Select City" />
                           </SelectTrigger>
                           <SelectContent className="max-h-60">
                             {(stateCities[selectedCountry.name][form.state] || []).map((c: string) => (
-                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                              <SelectItem key={c} value={c} className="text-[13px]">{c}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -1327,9 +1424,17 @@ export default function Dashboard() {
                         <Input
                           placeholder="City"
                           value={form.city}
-                          onChange={(e) => setForm({ ...form, city: e.target.value })}
-                          className="rounded-xl h-10"
+                          onChange={(e) => {
+                            setForm({ ...form, city: e.target.value });
+                            if (fieldErrors.city) {
+                              setFieldErrors(prev => ({ ...prev, city: undefined }));
+                            }
+                          }}
+                          className={cn("rounded-xl h-10 text-[13px]", fieldErrors.city && "border-red-500")}
                         />
+                      )}
+                      {fieldErrors.city && (
+                        <p className="text-[10px] text-red-500 mt-1">{fieldErrors.city}</p>
                       )}
                     </div>
 
@@ -1346,15 +1451,27 @@ export default function Dashboard() {
                           const maxLen = getMaxPinLength(selectedCountry);
                           if (val.length <= maxLen) {
                             setForm({ ...form, pincode: val });
+                            if (fieldErrors.pincode) {
+                              setFieldErrors(prev => ({ ...prev, pincode: undefined }));
+                            }
                           }
                         }}
-                        className="rounded-xl h-10"
+                        className={cn("rounded-xl h-10 text-[13px]", fieldErrors.pincode && "border-red-500")}
                       />
+                      {fieldErrors.pincode && (
+                        <p className="text-[10px] text-red-500 mt-1">{fieldErrors.pincode}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
                       <Label className="text-xs">Specialization</Label>
-                      <Input value={form.specialization} onChange={(e) => setForm({ ...form, specialization: e.target.value })} placeholder="e.g. Artificial Intelligence" className="rounded-xl" maxLength={200} />
+                      <Input
+                        value={form.specialization}
+                        onChange={(e) => setForm({ ...form, specialization: e.target.value })}
+                        placeholder="e.g. Artificial Intelligence"
+                        className="rounded-xl text-[13px]"
+                        maxLength={200}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs">Years of Experience</Label>
@@ -1362,12 +1479,12 @@ export default function Dashboard() {
                         value={form.experience_years.toString()}
                         onValueChange={(value) => setForm({ ...form, experience_years: parseInt(value) || 0 })}
                       >
-                        <SelectTrigger className="rounded-xl h-10">
+                        <SelectTrigger className="rounded-xl h-10 text-[13px]">
                           <SelectValue placeholder="Select experience" />
                         </SelectTrigger>
                         <SelectContent className="max-h-60">
                           {Array.from({ length: 41 }, (_, i) => (
-                            <SelectItem key={i} value={i.toString()}>
+                            <SelectItem key={i} value={i.toString()} className="text-[13px]">
                               {i === 0 ? 'Fresher (0 years)' : i === 40 ? '40+ years' : `${i} ${i === 1 ? 'year' : 'years'}`}
                             </SelectItem>
                           ))}
@@ -1382,28 +1499,35 @@ export default function Dashboard() {
                         value={form.address}
                         onChange={(e) => setForm({ ...form, address: e.target.value })}
                         placeholder="Street address, building, apartment..."
-                        className="rounded-xl resize-none h-20"
+                        className="rounded-xl resize-none h-20 text-[13px]"
                         maxLength={500}
                       />
                     </div>
 
                     <div className="sm:col-span-2 space-y-2">
                       <Label className="text-xs">Bio</Label>
-                      <Textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder="Tell us about your academic journey..." className="rounded-xl resize-none" rows={3} maxLength={500} />
+                      <Textarea
+                        value={form.bio}
+                        onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                        placeholder="Tell us about your academic journey..."
+                        className="rounded-xl resize-none text-[13px]"
+                        rows={3}
+                        maxLength={500}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs">LinkedIn URL</Label>
-                      <Input 
-                        value={form.linkedin_url} 
+                      <Input
+                        value={form.linkedin_url}
                         onChange={(e) => {
                           setForm({ ...form, linkedin_url: e.target.value });
                           if (fieldErrors.linkedin) {
                             setFieldErrors(prev => ({ ...prev, linkedin: undefined }));
                           }
-                        }} 
-                        placeholder="https://linkedin.com/in/..." 
-                        className={cn("rounded-xl", fieldErrors.linkedin && "border-red-500")} 
-                        maxLength={300} 
+                        }}
+                        placeholder="https://linkedin.com/in/..."
+                        className={cn("rounded-xl text-[13px]", fieldErrors.linkedin && "border-red-500")}
+                        maxLength={300}
                       />
                       {fieldErrors.linkedin && (
                         <p className="text-[10px] text-red-500 mt-1">{fieldErrors.linkedin}</p>
@@ -1411,17 +1535,17 @@ export default function Dashboard() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs">Google Scholar URL</Label>
-                      <Input 
-                        value={form.google_scholar_url} 
+                      <Input
+                        value={form.google_scholar_url}
                         onChange={(e) => {
                           setForm({ ...form, google_scholar_url: e.target.value });
                           if (fieldErrors.scholar) {
                             setFieldErrors(prev => ({ ...prev, scholar: undefined }));
                           }
-                        }} 
-                        placeholder="https://scholar.google.com/..." 
-                        className={cn("rounded-xl", fieldErrors.scholar && "border-red-500")} 
-                        maxLength={300} 
+                        }}
+                        placeholder="https://scholar.google.com/..."
+                        className={cn("rounded-xl text-[13px]", fieldErrors.scholar && "border-red-500")}
+                        maxLength={300}
                       />
                       {fieldErrors.scholar && (
                         <p className="text-[10px] text-red-500 mt-1">{fieldErrors.scholar}</p>
