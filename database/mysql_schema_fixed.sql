@@ -468,3 +468,88 @@ VALUES (
   '{"full_access": true}',
   'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 ) ON DUPLICATE KEY UPDATE role=role;
+
+-- ============================================================================
+-- FELLOW CONNECTIONS TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS fellow_connections (
+  id CHAR(36) PRIMARY KEY,
+  sender_id CHAR(36) NOT NULL,
+  receiver_id CHAR(36) NOT NULL,
+  status VARCHAR(50) DEFAULT 'pending',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_sender_receiver (sender_id, receiver_id),
+  INDEX idx_sender_id (sender_id),
+  INDEX idx_receiver_id (receiver_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- BLOG LIKES TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS blog_likes (
+  user_id CHAR(36) NOT NULL,
+  post_id CHAR(36) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, post_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (post_id) REFERENCES blog_posts(id) ON DELETE CASCADE,
+  INDEX idx_post_id (post_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- BLOG COMMENTS TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS blog_comments (
+  id CHAR(36) PRIMARY KEY,
+  post_id CHAR(36) NOT NULL,
+  user_id CHAR(36) NOT NULL,
+  parent_id CHAR(36),
+  content TEXT NOT NULL,
+  status VARCHAR(50) DEFAULT 'approved',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES blog_posts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES blog_comments(id) ON DELETE CASCADE,
+  INDEX idx_post_id (post_id),
+  INDEX idx_user_id (user_id),
+  INDEX idx_parent_id (parent_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- BLOG TAGS TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS blog_tags (
+  id CHAR(36) PRIMARY KEY,
+  name VARCHAR(255) UNIQUE NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- BLOG POST TAGS TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS blog_post_tags (
+  post_id CHAR(36) NOT NULL,
+  tag_id CHAR(36) NOT NULL,
+  PRIMARY KEY (post_id, tag_id),
+  FOREIGN KEY (post_id) REFERENCES blog_posts(id) ON DELETE CASCADE,
+  FOREIGN KEY (tag_id) REFERENCES blog_tags(id) ON DELETE CASCADE,
+  INDEX idx_tag_id (tag_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- BLOG SAVED POSTS TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS blog_saved_posts (
+  user_id CHAR(36) NOT NULL,
+  post_id CHAR(36) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, post_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (post_id) REFERENCES blog_posts(id) ON DELETE CASCADE,
+  INDEX idx_post_id (post_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
