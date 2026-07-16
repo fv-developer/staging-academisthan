@@ -30,6 +30,7 @@ import dbApiRoutes from './routes/dbApi';
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', true);
 const PORT = process.env.PORT || 3001;
 
 // CORS Configuration - allows both local development and staging/production

@@ -894,8 +894,9 @@ router.post('/upload-cover', authenticate, async (req: AuthRequest, res: Respons
 
     fs.writeFileSync(filepath, dataBuffer);
 
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-    const coverImageUrl = `${protocol}://${req.get('host')}/uploads/${filename}`;
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.get('host') || 'localhost:3001';
+    const coverImageUrl = `${protocol}://${host}/uploads/${filename}`;
 
     res.json({ coverImageUrl });
   } catch (error) {
