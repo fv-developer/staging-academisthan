@@ -163,14 +163,14 @@ export default function ConnectionsModule() {
         <p className="text-xs text-muted-foreground mt-0.5">Network and collaborate with other approved Academisthan Fellows.</p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6 items-start">
+      <div className="grid lg:grid-cols-3 gap-6 items-start min-w-0 w-full">
         {/* Main section: Tabs & lists */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex border-b border-border">
+        <div className="lg:col-span-2 space-y-4 min-w-0">
+          <div className="flex border-b border-border overflow-x-auto whitespace-nowrap scrollbar-none">
             <button
               onClick={() => setActiveTab('my-connections')}
               className={cn(
-                "pb-3 text-xs font-semibold px-4 border-b-2 transition-all flex items-center gap-1.5",
+                "pb-3 text-xs font-semibold px-4 border-b-2 transition-all flex items-center gap-1.5 shrink-0",
                 activeTab === 'my-connections'
                   ? "border-gold text-gold"
                   : "border-transparent text-muted-foreground hover:text-slate-950"
@@ -184,7 +184,7 @@ export default function ConnectionsModule() {
             <button
               onClick={() => setActiveTab('pending-requests')}
               className={cn(
-                "pb-3 text-xs font-semibold px-4 border-b-2 transition-all flex items-center gap-1.5",
+                "pb-3 text-xs font-semibold px-4 border-b-2 transition-all flex items-center gap-1.5 shrink-0",
                 activeTab === 'pending-requests'
                   ? "border-gold text-gold"
                   : "border-transparent text-muted-foreground hover:text-slate-950"
@@ -200,7 +200,7 @@ export default function ConnectionsModule() {
             <button
               onClick={() => setActiveTab('sent-requests')}
               className={cn(
-                "pb-3 text-xs font-semibold px-4 border-b-2 transition-all flex items-center gap-1.5",
+                "pb-3 text-xs font-semibold px-4 border-b-2 transition-all flex items-center gap-1.5 shrink-0",
                 activeTab === 'sent-requests'
                   ? "border-gold text-gold"
                   : "border-transparent text-muted-foreground hover:text-slate-950"
@@ -233,7 +233,7 @@ export default function ConnectionsModule() {
                   {myConnections.map((conn) => (
                     <div 
                       key={conn.connection_id} 
-                      className="bg-white border border-slate-100 rounded-2xl p-5 hover:shadow-md transition-all flex flex-col justify-between"
+                      className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 hover:shadow-md transition-all flex flex-col justify-between min-w-0"
                     >
                       <div className="flex gap-3 items-start text-left mb-4">
                         <div className="w-12 h-12 rounded-full flex-shrink-0 bg-gold/15 text-gold border flex items-center justify-center font-serif font-bold overflow-hidden">
@@ -312,7 +312,7 @@ export default function ConnectionsModule() {
                   {pendingRequests.map((req) => (
                     <div 
                       key={req.connection_id} 
-                      className="bg-white border border-slate-100 rounded-2xl p-5 hover:shadow-md transition-all flex flex-col justify-between"
+                      className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 hover:shadow-md transition-all flex flex-col justify-between min-w-0"
                     >
                       <div className="flex gap-3 items-start text-left mb-4">
                         <div className="w-12 h-12 rounded-full flex-shrink-0 bg-gold/15 text-gold border flex items-center justify-center font-serif font-bold overflow-hidden">
@@ -378,7 +378,7 @@ export default function ConnectionsModule() {
                   {sentRequests.map((req) => (
                     <div 
                       key={req.connection_id} 
-                      className="bg-white border border-slate-100 rounded-2xl p-5 hover:shadow-md transition-all flex flex-col justify-between"
+                      className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 hover:shadow-md transition-all flex flex-col justify-between min-w-0"
                     >
                       <div className="flex gap-3 items-start text-left mb-4">
                         <div className="w-12 h-12 rounded-full flex-shrink-0 bg-gold/15 text-gold border flex items-center justify-center font-serif font-bold overflow-hidden">
@@ -434,8 +434,8 @@ export default function ConnectionsModule() {
         </div>
 
         {/* Sidebar: Work Email configuration */}
-        <div className="space-y-4">
-          <div className="bg-white border border-slate-100 rounded-2xl p-5 text-left">
+        <div className="space-y-4 min-w-0">
+          <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-5 text-left min-w-0">
             <h4 className="text-xs font-bold text-slate-900 mb-2 flex items-center gap-1.5">
               Connection Settings
             </h4>

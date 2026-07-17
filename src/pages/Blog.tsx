@@ -236,8 +236,8 @@ export default function Blog() {
     setActiveShareMenu(activeShareMenu === postId ? null : postId);
   };
 
-  const featured = posts.find((p) => p.is_featured);
-  const regular = posts.filter((p) => p !== featured);
+  const featured = posts[0];
+  const regular = posts.slice(1);
 
   return (
     <div className="min-h-screen bg-background website-page">

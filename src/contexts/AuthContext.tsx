@@ -33,6 +33,8 @@ type Profile = {
   teacher_type: string | null;
   country: string | null;
   work_email: string | null;
+  institution_id?: string | null;
+  is_deactivated?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -46,6 +48,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateProfileState: (data: Partial<Profile>) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -174,8 +177,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   };
 
+  const updateProfileState = (data: Partial<Profile>) => {
+    setProfile(prev => prev ? { ...prev, ...data } : null);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signUp, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, signUp, signIn, signOut, refreshProfile, updateProfileState }}>
       {children}
     </AuthContext.Provider>
   );

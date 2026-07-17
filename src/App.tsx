@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { GlobalBackToTop } from "@/components/GlobalBackToTop";
 
 import Index from "./pages/Index.tsx";
 import About from "./pages/About.tsx";
@@ -72,6 +73,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ScrollToTop />
+          <GlobalBackToTop />
           <PageViewTracker />
           <Routes>
             <Route path="/" element={<Index />} />

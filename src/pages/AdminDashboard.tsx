@@ -19,8 +19,8 @@ import {
   Shield, Users, Building2, GraduationCap, FileText, Bell, BarChart3, Settings, Key, LogOut,
   CheckCircle2, XCircle, AlertTriangle, Search, Filter, Edit, Plus, Trash2,
   Calendar, Mail, Phone, Download, Eye, RefreshCw, Clock, BookOpen,
-  Loader2, Sparkles, Info, ChevronRight, ArrowRight, Upload, Tag, Check, ArrowLeft,
-  Award
+  Loader2, Sparkles, Info, ChevronRight, ChevronLeft, X, ArrowRight, Upload, Tag, Check, ArrowLeft,
+  Award, User, MapPin, ExternalLink
 } from 'lucide-react';
 
 interface Stats {
@@ -278,6 +278,40 @@ export default function AdminDashboard() {
   const [changeRequests, setChangeRequests] = useState<any[]>([]);
   const [selectedChangeReq, setSelectedChangeReq] = useState<any | null>(null);
 
+  const [fellowToolResults, setFellowToolResults] = useState<any[]>([]);
+  const [fellowActivity, setFellowActivity] = useState<any[]>([]);
+  const [activePanelTab, setActivePanelTab] = useState<'activity' | 'task'>('activity');
+  const [reasonModal, setReasonModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    actionType: 'reject_fellow' | 'suspend_fellow' | 'reject_inst' | 'suspend_inst' | '';
+    targetId: string;
+  }>({
+    isOpen: false,
+    title: '',
+    actionType: '',
+    targetId: ''
+  });
+  const [reasonText, setReasonText] = useState('');
+  useEffect(() => {
+    setRejectReason('');
+    if (viewingFellow?.id) {
+      api.apiRequest(`/admin/users/${viewingFellow.id}/tool-results`)
+        .then(res => setFellowToolResults(res || []))
+        .catch(err => console.error(err));
+      api.apiRequest(`/admin/users/${viewingFellow.id}/activity`)
+        .then(res => setFellowActivity(res || []))
+        .catch(err => console.error(err));
+    } else {
+      setFellowToolResults([]);
+      setFellowActivity([]);
+    }
+  }, [viewingFellow?.id]);
+
+  useEffect(() => {
+    setRejectReason('');
+  }, [viewingInst?.id]);
+
   // Generic prompt/reason modal state
   const [actionReasonDialog, setActionReasonDialog] = useState<{
     isOpen: boolean;
@@ -482,12 +516,17 @@ export default function AdminDashboard() {
       sortable: true,
       className: 'font-semibold text-slate-700',
       cell: (row) => (
-        <button
-          onClick={() => setViewingInst(row)}
-          className="text-left font-semibold text-navy hover:text-gold hover:underline transition-colors focus:outline-none text-[13px] block"
-        >
-          {row.name}
-        </button>
+        <div className="space-y-0.5">
+          <button
+            onClick={() => setViewingInst(row)}
+            className="text-left font-semibold text-navy hover:text-gold hover:underline transition-colors focus:outline-none text-[13px] block"
+          >
+            {row.name}
+          </button>
+          <span className="text-[10px] text-slate-400 font-mono block">
+            {row.institute_code || 'N/A'}
+          </span>
+        </div>
       )
     },
     {
@@ -890,6 +929,30 @@ export default function AdminDashboard() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Update Fellow Status from panel directly
+  const handleUpdateFellowStatusFromPanel = async (fellowId: string, status: string) => {
+    if (status === 'rejected' && !rejectReason.trim()) {
+      toast({ title: 'Reason required', description: 'Please specify a rejection reason.', variant: 'destructive' });
+      return;
+    }
+    if (status === 'suspended' && !rejectReason.trim()) {
+      toast({ title: 'Reason required', description: 'Please specify a suspension reason.', variant: 'destructive' });
+      return;
+    }
+    try {
+      await api.apiRequest(`/admin/users/${fellowId}/status`, {
+        method: 'PUT',
+        body: { membership_status: status, reason: rejectReason }
+      });
+      toast({ title: 'Status Updated', description: `Fellow status successfully updated to ${status}.` });
+      fetchData();
+      setViewingFellow(prev => prev ? { ...prev, membership_status: status } : null);
+      setRejectReason('');
+    } catch (err: any) {
+      toast({ title: 'Operation failed', description: err.message, variant: 'destructive' });
+    }
+  };
+
   // Update Fellow Status (Activate/Suspend/Reject)
   const handleUpdateFellowStatus = async (fellowId: string, status: string) => {
     const performStatusUpdate = async (reason: string) => {
@@ -969,6 +1032,81 @@ export default function AdminDashboard() {
       }
     } catch (err: any) {
       toast({ title: 'Delete failed', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  // Update Institution Status from panel directly
+  const handleUpdateInstitutionStatusFromPanel = async (instId: string, status: string) => {
+    if ((status === 'rejected' || status === 'suspended') && !rejectReason.trim()) {
+      toast({ title: 'Reason required', description: `Please specify a reason for status: ${status}.`, variant: 'destructive' });
+      return;
+    }
+    try {
+      if (status === 'approved') {
+        await api.apiRequest(`/admin/institutions/${instId}/approve`, { method: 'PUT' });
+        toast({ title: 'Institution Approved 🏛️', description: 'The institution has been approved and is now active.' });
+      } else if (status === 'rejected') {
+        await api.apiRequest(`/admin/institutions/${instId}/reject`, {
+          method: 'PUT',
+          body: { reason: rejectReason }
+        });
+        toast({ title: 'Institution Rejected', description: 'The registration request has been rejected.' });
+      } else if (status === 'suspended') {
+        await api.apiRequest(`/admin/institutions/${instId}/suspend`, {
+          method: 'PUT',
+          body: { reason: rejectReason }
+        });
+        toast({ title: 'Institution Suspended', description: 'The institution has been suspended.' });
+      }
+      fetchData();
+      setViewingInst(prev => prev ? { ...prev, status } : null);
+      setRejectReason('');
+    } catch (err: any) {
+      toast({ title: 'Operation failed', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const handleSubmitReasonModal = async () => {
+    if (!reasonText.trim()) {
+      toast({ title: 'Reason required', description: 'Please enter a valid reason.', variant: 'destructive' });
+      return;
+    }
+    const { actionType, targetId } = reasonModal;
+    try {
+      if (actionType === 'reject_fellow') {
+        await api.apiRequest(`/admin/users/${targetId}/status`, {
+          method: 'PUT',
+          body: { membership_status: 'rejected', reason: reasonText }
+        });
+        toast({ title: 'Status Updated', description: 'Fellow status updated to Rejected.' });
+        setViewingFellow(prev => prev ? { ...prev, membership_status: 'rejected' } : null);
+      } else if (actionType === 'suspend_fellow') {
+        await api.apiRequest(`/admin/users/${targetId}/status`, {
+          method: 'PUT',
+          body: { membership_status: 'suspended', reason: reasonText }
+        });
+        toast({ title: 'Status Updated', description: 'Fellow status updated to Suspended.' });
+        setViewingFellow(prev => prev ? { ...prev, membership_status: 'suspended' } : null);
+      } else if (actionType === 'reject_inst') {
+        await api.apiRequest(`/admin/institutions/${targetId}/reject`, {
+          method: 'PUT',
+          body: { reason: reasonText }
+        });
+        toast({ title: 'Institution Rejected', description: 'Institution has been rejected.' });
+        setViewingInst(prev => prev ? { ...prev, status: 'rejected' } : null);
+      } else if (actionType === 'suspend_inst') {
+        await api.apiRequest(`/admin/institutions/${targetId}/suspend`, {
+          method: 'PUT',
+          body: { reason: reasonText }
+        });
+        toast({ title: 'Institution Suspended', description: 'Institution has been suspended.' });
+        setViewingInst(prev => prev ? { ...prev, status: 'suspended' } : null);
+      }
+      fetchData();
+      setReasonModal({ isOpen: false, title: '', actionType: '', targetId: '' });
+      setReasonText('');
+    } catch (err: any) {
+      toast({ title: 'Action failed', description: err.message, variant: 'destructive' });
     }
   };
 
@@ -1273,7 +1411,7 @@ export default function AdminDashboard() {
 
       if (coverFile && coverBase64) {
         const uploadRes = await api.blogs.uploadCover(coverBase64);
-        finalCoverUrl = uploadRes.imageUrl;
+        finalCoverUrl = uploadRes.coverImageUrl || uploadRes.imageUrl;
       }
 
       const payload = {
@@ -1584,7 +1722,7 @@ export default function AdminDashboard() {
                   <h3 className="font-serif text-sm font-bold text-foreground mb-3 flex items-center gap-2">
                     <Shield className="w-4 h-4 text-gold" /> Admin Console
                   </h3>
-                  <div className="space-y-1">
+                  <div className="space-y-1 dashboard-menu">
                     {[
                       { id: 'dashboard', label: 'Dashboard Overview', icon: BarChart3 },
                       { id: 'fellows', label: 'Fellow List', icon: Users },
@@ -2587,24 +2725,71 @@ export default function AdminDashboard() {
 
       {/* POPUP MODALS */}
 
-      {/* 1. FELLOW PROFILE MODAL */}
+      {/* 1. FELLOW PROFILE SLIDING PANEL */}
       {viewingFellow && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden p-6 space-y-5 relative">
-            <button className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 font-bold" onClick={() => setViewingFellow(null)}>×</button>
-            <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
+        <>
+          {/* Backdrop overlay */}
+          <div 
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 transition-opacity"
+            onClick={() => setViewingFellow(null)}
+          />
+          {/* Sliding panel */}
+          <div className="fixed top-0 right-0 bottom-0 w-full sm:w-[700px] bg-white border-l border-slate-200 shadow-2xl z-50 overflow-y-auto flex flex-col animate-in slide-in-from-right duration-350">
+            {/* Header / Nav */}
+            <div className="flex justify-between items-center px-6 py-3 border-b border-slate-100 bg-slate-50 shrink-0">
+              <div className="flex items-center gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  disabled={filteredFellowsList.findIndex(f => f.id === viewingFellow.id) <= 0}
+                  onClick={() => {
+                    const idx = filteredFellowsList.findIndex(f => f.id === viewingFellow.id);
+                    if (idx > 0) setViewingFellow(filteredFellowsList[idx - 1]);
+                  }}
+                  className="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-200/60 transition-colors"
+                  title="Previous"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  disabled={filteredFellowsList.findIndex(f => f.id === viewingFellow.id) >= filteredFellowsList.length - 1}
+                  onClick={() => {
+                    const idx = filteredFellowsList.findIndex(f => f.id === viewingFellow.id);
+                    if (idx < filteredFellowsList.length - 1) setViewingFellow(filteredFellowsList[idx + 1]);
+                  }}
+                  className="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-200/60 transition-colors"
+                  title="Next"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+              <h3 className="font-serif text-sm font-bold text-navy">Fellow Review</h3>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setViewingFellow(null)}
+                className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Profile Summary Hero */}
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-4 shrink-0 bg-white">
               {viewingFellow.avatar_url ? (
-                <img src={viewingFellow.avatar_url} alt="Profile" className="w-12 h-12 rounded-full object-cover border border-slate-200 shadow-sm" />
+                <img src={viewingFellow.avatar_url} alt="Profile" className="w-14 h-14 rounded-full object-cover border border-slate-200 shadow-sm" />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-gold/15 flex items-center justify-center text-gold font-bold text-lg">
+                <div className="w-14 h-14 rounded-full bg-gold/15 flex items-center justify-center text-gold font-bold text-xl">
                   {viewingFellow.full_name?.charAt(0) || 'F'}
                 </div>
               )}
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-serif text-lg font-bold text-navy">{viewingFellow.full_name}</h3>
+                  <h3 className="font-serif text-base font-bold text-navy leading-tight">{viewingFellow.full_name}</h3>
                   <Badge className={cn(
-                    "border text-[10px]",
+                    "border text-[9px] font-bold uppercase px-2 py-0.5 rounded-full",
                     viewingFellow.membership_status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
                     viewingFellow.membership_status === 'suspended' ? 'bg-slate-100 text-slate-600 border-slate-200' :
                     viewingFellow.membership_status === 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-200' :
@@ -2614,127 +2799,325 @@ export default function AdminDashboard() {
                     {viewingFellow.membership_status === 'pending_review' ? 'pending review' : (viewingFellow.membership_status || 'pending')}
                   </Badge>
                 </div>
-                <p className="text-xs text-slate-400">ID: {viewingFellow.membership_id || 'N/A'}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">ID: {viewingFellow.membership_id || 'N/A'}</p>
+                <p className="text-[11px] text-slate-400">Joined: {viewingFellow.created_at ? new Date(viewingFellow.created_at).toLocaleDateString() : 'N/A'}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="space-y-0.5">
-                <span className="text-slate-400 font-medium">Official Email</span>
-                <p className="font-semibold text-slate-700">{viewingFellow.work_email || viewingFellow.email}</p>
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-slate-400 font-medium">Contact Number</span>
-                <p className="font-semibold text-slate-700">{viewingFellow.phone || 'N/A'}</p>
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-slate-400 font-medium">Designation</span>
-                <p className="font-semibold text-slate-700">{viewingFellow.designation || 'None'}</p>
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-slate-400 font-medium">Department</span>
-                <p className="font-semibold text-slate-700">{viewingFellow.department || 'None'}</p>
-              </div>
-              <div className="col-span-2 space-y-0.5">
-                <span className="text-slate-400 font-medium">Linked Institution</span>
-                <p className="font-semibold text-slate-700">{viewingFellow.institution || 'None'}</p>
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-slate-400 font-medium">Country</span>
-                <p className="font-semibold text-slate-700">{viewingFellow.country || 'India'}</p>
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-slate-400 font-medium">City, State</span>
-                <p className="font-semibold text-slate-700">{viewingFellow.city ? `${viewingFellow.city}, ` : ''}{viewingFellow.state || ''}</p>
-              </div>
-            </div>
-
-            {viewingFellow.bio && (
-              <div className="text-xs space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <span className="text-slate-400 font-medium">Professional Bio</span>
-                <p className="text-slate-600 leading-normal">{viewingFellow.bio}</p>
-              </div>
-            )}
-
-            {/* Cross-referenced Enrolled Programs */}
-            <div className="text-xs space-y-2 border-t border-slate-100 pt-4">
-              <span className="text-slate-400 font-medium block">Enrolled Programs & Progress</span>
-              {viewingFellow.enrolled_programs ? (
-                <div className="space-y-2">
-                  {viewingFellow.enrolled_programs.split(', ').map((progName: string, idx: number) => {
-                    const status = viewingFellow.enrollment_statuses?.split(', ')[idx] || 'enrolled';
-                    const progress = viewingFellow.enrollment_progress?.split(', ')[idx] || '0';
-                    return (
-                      <div key={idx} className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                        <div className="space-y-0.5">
-                          <span className="font-semibold text-slate-700">{progName}</span>
-                          <div className="text-[10px] text-slate-400">
-                            Status: <span className="font-bold text-slate-500 capitalize">{status}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1.5 font-semibold text-slate-700">
-                          <span>{progress}%</span>
-                          <div className="w-12 h-1 bg-slate-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-gold" style={{ width: `${progress}%` }} />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-slate-400 text-xs italic">Not enrolled in any program.</p>
+            {/* Premium CRM Action Row */}
+            <div className="px-6 py-3 bg-slate-50/50 border-b border-slate-100 flex flex-wrap gap-2 shrink-0 items-center">
+              {viewingFellow.membership_status !== 'active' && (
+                <Button 
+                  onClick={() => handleUpdateFellowStatusFromPanel(viewingFellow.id, 'active')}
+                  className="h-8 px-3 rounded-lg text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-sm border-0"
+                >
+                  <Check className="w-3.5 h-3.5" /> Approve
+                </Button>
+              )}
+              {viewingFellow.membership_status !== 'rejected' && (
+                <Button 
+                  onClick={() => setReasonModal({ isOpen: true, title: 'Reject Fellow Account', actionType: 'reject_fellow', targetId: viewingFellow.id })}
+                  className="h-8 px-3 rounded-lg text-[11px] font-semibold bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 shadow-sm border-0"
+                >
+                  <XCircle className="w-3.5 h-3.5" /> Reject
+                </Button>
+              )}
+              {viewingFellow.membership_status !== 'suspended' && (
+                <Button 
+                  onClick={() => setReasonModal({ isOpen: true, title: 'Suspend Fellow Account', actionType: 'suspend_fellow', targetId: viewingFellow.id })}
+                  className="h-8 px-3 rounded-lg text-[11px] font-semibold bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-1.5 shadow-sm border-0"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" /> Suspend
+                </Button>
+              )}
+              <a href={`mailto:${viewingFellow.work_email || viewingFellow.email}`} className="inline-block">
+                <Button variant="outline" className="h-8 px-3 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 bg-white">
+                  <Mail className="w-3.5 h-3.5" /> Email
+                </Button>
+              </a>
+              {viewingFellow.phone && (
+                <a href={`tel:${viewingFellow.phone}`} className="inline-block">
+                  <Button variant="outline" className="h-8 px-3 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 bg-white">
+                    <Phone className="w-3.5 h-3.5" /> Call
+                  </Button>
+                </a>
               )}
             </div>
 
-            {/* Profile Documents */}
-            <div className="text-xs space-y-2 border-t border-slate-100 pt-4">
-              <span className="text-slate-400 font-medium block">Uploaded Documents / Attachments</span>
-              {viewingFellow.avatar_url ? (
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-gold shrink-0" />
-                    <div>
-                      <span className="font-semibold text-slate-700">Profile Picture / Avatar</span>
-                      <p className="text-[10px] text-slate-400">Uploaded user profile picture file</p>
+            {/* Tabs Selector Bar */}
+            <div className="px-6 border-b border-slate-100 flex gap-6 bg-white pt-3 shrink-0">
+              <button
+                onClick={() => setActivePanelTab('activity')}
+                className={cn(
+                  "pb-2.5 text-xs font-bold uppercase tracking-wider transition-colors relative focus:outline-none",
+                  activePanelTab === 'activity' ? "text-navy" : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                Activity History
+                {activePanelTab === 'activity' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-navy" />
+                )}
+              </button>
+              <button
+                onClick={() => setActivePanelTab('task')}
+                className={cn(
+                  "pb-2.5 text-xs font-bold uppercase tracking-wider transition-colors relative focus:outline-none",
+                  activePanelTab === 'task' ? "text-navy" : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                Task / Details
+                {activePanelTab === 'task' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-navy" />
+                )}
+              </button>
+            </div>
+
+            {/* Tab Contents Area */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {activePanelTab === 'activity' ? (
+                /* Activity History Tab content */
+                <div className="space-y-4">
+                  {fellowActivity.length === 0 ? (
+                    <p className="text-slate-400 text-xs italic text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">No activity logs found.</p>
+                  ) : (
+                    <div className="relative border-l border-slate-200 ml-3 pl-5 space-y-4">
+                      {fellowActivity.map((log: any) => (
+                        <div key={log.id} className="relative text-xs leading-normal">
+                          {/* Timeline dot */}
+                          <div className="absolute -left-[25px] top-1 w-2.5 h-2.5 rounded-full bg-navy border-2 border-white shadow-sm" />
+                          <span className="text-[10px] text-slate-400 font-semibold block">{new Date(log.created_at).toLocaleString('en-IN')}</span>
+                          <span className="text-slate-700 font-bold capitalize">{(log.activity_type || '').replace('_', ' ')}:</span>{' '}
+                          <span className="text-slate-500">{log.description}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Task / Details Tab content */
+                <div className="space-y-6">
+                  {/* Academic Details (Score calculations) */}
+                  <div className="space-y-3 bg-slate-50/40 p-4 rounded-xl border border-slate-100 text-xs">
+                    <h4 className="font-serif text-[13px] font-bold text-navy border-b border-slate-100 pb-2 flex items-center gap-2">
+                      <div className="p-1.5 bg-gold/10 text-gold rounded-lg">
+                        <GraduationCap className="w-4 h-4 fill-gold/10" />
+                      </div>
+                      Academic Score Check (Tasks)
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white p-3 rounded-lg border border-slate-150 shadow-sm space-y-0.5">
+                        <span className="text-slate-400 block font-medium">UGC API Score</span>
+                        <p className="font-serif text-sm font-bold text-navy">{fellowToolResults.find(r => r.tool_name === 'api_score')?.score || 'N/A'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-slate-150 shadow-sm space-y-0.5">
+                        <span className="text-slate-400 block font-medium">CAS Status</span>
+                        <p className="font-serif text-sm font-bold text-navy">{fellowToolResults.find(r => r.tool_name === 'cas_check')?.score || 'N/A'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-slate-150 shadow-sm space-y-0.5">
+                        <span className="text-slate-400 block font-medium">Research Score</span>
+                        <p className="font-serif text-sm font-bold text-navy">{fellowToolResults.find(r => r.tool_name === 'research_score')?.score || 'N/A'}</p>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border border-slate-150 shadow-sm space-y-0.5">
+                        <span className="text-slate-400 block font-medium">Google Scholar Link</span>
+                        {viewingFellow.google_scholar_url ? (
+                          <a href={viewingFellow.google_scholar_url} target="_blank" rel="noreferrer" className="text-gold hover:underline font-semibold flex items-center gap-1.5 text-xs">
+                            View Profile <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : (
+                          <p className="font-semibold text-slate-400">Not Linked</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <a href={viewingFellow.avatar_url} target="_blank" rel="noreferrer">
-                    <Button size="xs" variant="outline" className="rounded-lg text-[10px] gap-1">
-                      <Download className="w-3.5 h-3.5" /> View
-                    </Button>
-                  </a>
+
+                  {/* Personal Details */}
+                  <div className="space-y-3 bg-slate-50/40 p-4 rounded-xl border border-slate-100 text-xs">
+                    <h4 className="font-serif text-[13px] font-bold text-navy border-b border-slate-100 pb-2 flex items-center gap-2">
+                      <div className="p-1.5 bg-navy/10 text-navy rounded-lg">
+                        <User className="w-4 h-4 fill-navy/10" />
+                      </div>
+                      Personal Details
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-slate-400 block font-medium">Official Email</span>
+                        <p className="font-semibold text-slate-700 break-all">{viewingFellow.work_email || viewingFellow.email || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block font-medium">Contact Number</span>
+                        <p className="font-semibold text-slate-700">{viewingFellow.phone || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block font-medium">Designation</span>
+                        <p className="font-semibold text-slate-700">{viewingFellow.designation || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block font-medium">Department</span>
+                        <p className="font-semibold text-slate-700">{viewingFellow.department || 'N/A'}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-slate-400 block font-medium">Linked Institution</span>
+                        <p className="font-semibold text-slate-700">{viewingFellow.institution || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block font-medium">Location</span>
+                        <p className="font-semibold text-slate-700">{viewingFellow.city ? `${viewingFellow.city}, ${viewingFellow.state || ''}` : 'N/A'}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block font-medium">Country</span>
+                        <p className="font-semibold text-slate-700">{viewingFellow.country || 'India'}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-slate-400 block font-medium">Specialization</span>
+                        <p className="font-semibold text-slate-700">{viewingFellow.specialization || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Program Enrollments */}
+                  <div className="space-y-3 bg-slate-50/40 p-4 rounded-xl border border-slate-100 text-xs">
+                    <h4 className="font-serif text-[13px] font-bold text-navy border-b border-slate-100 pb-2 flex items-center gap-2">
+                      <div className="p-1.5 bg-emerald-500/10 text-emerald-600 rounded-lg">
+                        <BookOpen className="w-4 h-4 fill-emerald-500/10" />
+                      </div>
+                      Program Enrollments
+                    </h4>
+                    {viewingFellow.enrolled_programs ? (
+                      <div className="space-y-2">
+                        {viewingFellow.enrolled_programs.split(', ').map((progName: string, idx: number) => {
+                          const status = viewingFellow.enrollment_statuses?.split(', ')[idx] || 'enrolled';
+                          const progress = viewingFellow.enrollment_progress?.split(', ')[idx] || '0';
+                          return (
+                            <div key={idx} className="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200/60 shadow-sm">
+                              <div className="space-y-0.5">
+                                <span className="font-semibold text-slate-700">{progName}</span>
+                                <div className="text-[10px] text-slate-400">
+                                  Status: <span className="font-bold text-slate-500 capitalize">{status}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 font-semibold text-slate-700">
+                                <span>{progress}%</span>
+                                <div className="w-12 h-1 bg-slate-200 rounded-full overflow-hidden">
+                                  <div className="h-full bg-gold" style={{ width: `${progress}%` }} />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-slate-400 text-xs italic">Not enrolled in any program.</p>
+                    )}
+                  </div>
+
+                  {/* Uploaded Documents */}
+                  <div className="space-y-3 bg-slate-50/40 p-4 rounded-xl border border-slate-100 text-xs">
+                    <h4 className="font-serif text-[13px] font-bold text-navy border-b border-slate-100 pb-2 flex items-center gap-2">
+                      <div className="p-1.5 bg-indigo-500/10 text-indigo-600 rounded-lg">
+                        <FileText className="w-4 h-4 fill-indigo-500/10" />
+                      </div>
+                      Verification Documents
+                    </h4>
+                    {viewingFellow.avatar_url ? (
+                      <div className="bg-white border border-slate-200/60 shadow-sm rounded-xl p-3 flex justify-between items-center text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <FileText className="w-4 h-4 text-gold shrink-0" />
+                          <div>
+                            <span className="font-semibold text-slate-700">Profile Image File</span>
+                            <p className="text-[10px] text-slate-400">Uploaded user profile avatar photo</p>
+                          </div>
+                        </div>
+                        <a href={viewingFellow.avatar_url} target="_blank" rel="noreferrer">
+                          <Button size="xs" variant="outline" className="rounded-lg text-[10px] gap-1 bg-slate-50 hover:bg-slate-100">
+                            <Download className="w-3.5 h-3.5" /> View
+                          </Button>
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="text-slate-400 text-xs italic">No documents uploaded.</p>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <p className="text-slate-400 text-xs italic">No documents uploaded.</p>
               )}
             </div>
 
-            <div className="pt-4 border-t border-slate-100 flex justify-end gap-2.5">
-              <Button variant="outline" className="rounded-xl text-xs h-9" onClick={() => setViewingFellow(null)}>Close</Button>
+            {/* Action Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0 flex justify-end">
+              <Button className="btn-outline w-28 text-xs font-semibold rounded-xl" onClick={() => setViewingFellow(null)}>Close</Button>
             </div>
           </div>
-        </div>
+        </>
       )}
 
-      {/* 2. INSTITUTION DETAIL MODAL */}
+      {/* 2. INSTITUTION DETAIL SLIDING PANEL */}
       {viewingInst && !showRejectDialog && !showSuspendDialog && !showChangeReqDialog && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-3xl w-full p-6 space-y-5 relative">
-            <button className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 font-bold" onClick={() => setViewingInst(null)}>×</button>
-            
-            <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+        <>
+          {/* Backdrop overlay */}
+          <div 
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 transition-opacity"
+            onClick={() => setViewingInst(null)}
+          />
+          {/* Sliding panel */}
+          <div className="fixed top-0 right-0 bottom-0 w-full sm:w-[700px] bg-white border-l border-slate-200 shadow-2xl z-50 overflow-y-auto flex flex-col animate-in slide-in-from-right duration-350">
+            {/* Header / Nav */}
+            <div className="flex justify-between items-center px-6 py-3 border-b border-slate-100 bg-slate-50 shrink-0">
+              <div className="flex items-center gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  disabled={filteredInstitutionsList.findIndex(i => i.id === viewingInst.id) <= 0}
+                  onClick={() => {
+                    const idx = filteredInstitutionsList.findIndex(i => i.id === viewingInst.id);
+                    if (idx > 0) setViewingInst(filteredInstitutionsList[idx - 1]);
+                  }}
+                  className="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-200/60 transition-colors"
+                  title="Previous"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  disabled={filteredInstitutionsList.findIndex(i => i.id === viewingInst.id) >= filteredInstitutionsList.length - 1}
+                  onClick={() => {
+                    const idx = filteredInstitutionsList.findIndex(i => i.id === viewingInst.id);
+                    if (idx < filteredInstitutionsList.length - 1) setViewingInst(filteredInstitutionsList[idx + 1]);
+                  }}
+                  className="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-200/60 transition-colors"
+                  title="Next"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+              <h3 className="font-serif text-sm font-bold text-navy">Institute Review</h3>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setViewingInst(null)}
+                className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Logo & Hero */}
+            <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-start shrink-0 bg-white">
               <div className="flex items-center gap-3">
-                {viewingInst.logo_url && (
-                  <img src={viewingInst.logo_url} alt="Logo" className="w-10 h-10 object-contain rounded-lg border border-slate-200 p-1 bg-slate-50 shrink-0" />
+                {viewingInst.logo_url ? (
+                  <img src={viewingInst.logo_url} alt="Logo" className="w-14 h-14 object-contain rounded-lg border border-slate-200 p-1 bg-slate-50 shrink-0" />
+                ) : (
+                  <div className="w-14 h-14 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xl shrink-0">
+                    🏛️
+                  </div>
                 )}
                 <div>
-                  <h3 className="font-serif text-base md:text-lg font-bold text-navy">{viewingInst.name}</h3>
-                  <p className="text-xs text-slate-400">{viewingInst.type || 'Academic Institution'}</p>
+                  <h3 className="font-serif text-base font-bold text-navy leading-tight">{viewingInst.name}</h3>
+                  <p className="text-xs text-slate-400 capitalize">{viewingInst.type?.replace('_', ' ') || 'Academic Institution'}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Institution Code: <span className="font-semibold text-slate-600 font-mono">{viewingInst.institute_code || 'N/A'}</span></p>
                 </div>
               </div>
               <Badge className={cn(
-                "border px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider",
+                "border px-2.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider",
                 viewingInst.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
                 viewingInst.status === 'pending_change_approval' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' :
                 viewingInst.status === 'rejected' ? 'bg-rose-50 text-rose-600 border-rose-200' :
@@ -2745,152 +3128,182 @@ export default function AdminDashboard() {
               </Badge>
             </div>
 
-            {viewingInst.description && (
-              <p className="text-xs text-slate-605 italic bg-slate-50/50 p-3 rounded-xl border border-slate-100 leading-relaxed">
-                "{viewingInst.description}"
-              </p>
-            )}
+            {/* Premium CRM Action Row */}
+            <div className="px-6 py-3 bg-slate-50/50 border-b border-slate-100 flex flex-wrap gap-2 shrink-0 items-center">
+              {viewingInst.status !== 'approved' && (
+                <Button 
+                  onClick={() => handleUpdateInstitutionStatusFromPanel(viewingInst.id, 'approved')}
+                  className="h-8 px-3 rounded-lg text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-sm border-0"
+                >
+                  <Check className="w-3.5 h-3.5" /> Approve
+                </Button>
+              )}
+              {viewingInst.status !== 'rejected' && (
+                <Button 
+                  onClick={() => setReasonModal({ isOpen: true, title: 'Reject Institution Registration', actionType: 'reject_inst', targetId: viewingInst.id })}
+                  className="h-8 px-3 rounded-lg text-[11px] font-semibold bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 shadow-sm border-0"
+                >
+                  <XCircle className="w-3.5 h-3.5" /> Reject
+                </Button>
+              )}
+              {viewingInst.status !== 'suspended' && (
+                <Button 
+                  onClick={() => setReasonModal({ isOpen: true, title: 'Suspend Institution Membership', actionType: 'suspend_inst', targetId: viewingInst.id })}
+                  className="h-8 px-3 rounded-lg text-[11px] font-semibold bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-1.5 shadow-sm border-0"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" /> Suspend
+                </Button>
+              )}
+              {viewingInst.contact_email && (
+                <a href={`mailto:${viewingInst.contact_email}`} className="inline-block">
+                  <Button variant="outline" className="h-8 px-3 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 bg-white">
+                    <Mail className="w-3.5 h-3.5" /> Email
+                  </Button>
+                </a>
+              )}
+              {viewingInst.contact_phone && (
+                <a href={`tel:${viewingInst.contact_phone}`} className="inline-block">
+                  <Button variant="outline" className="h-8 px-3 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 bg-white">
+                    <Phone className="w-3.5 h-3.5" /> Call
+                  </Button>
+                </a>
+              )}
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
-              {/* Section 1: Basic Details */}
-              <div className="space-y-3 bg-slate-50/40 p-4 rounded-xl border border-slate-100">
-                <h4 className="font-bold text-navy uppercase tracking-wider text-[10px] border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-navy/70" /> Basic Details
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {viewingInst.description && (
+                <p className="text-xs text-slate-605 italic bg-slate-50/50 p-3.5 rounded-xl border border-slate-100 leading-relaxed">
+                  "{viewingInst.description}"
+                </p>
+              )}
+
+              {/* Representative details */}
+              <div className="space-y-3 bg-slate-50/40 p-4 rounded-xl border border-slate-100 text-xs">
+                <h4 className="font-serif text-[13px] font-bold text-navy border-b border-slate-100 pb-2 flex items-center gap-2">
+                  <div className="p-1.5 bg-navy/10 text-navy rounded-lg">
+                    <Users className="w-4 h-4 fill-navy/10" />
+                  </div>
+                  Representative Details
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <span className="text-slate-400 block font-medium">Institution Code</span>
-                    <p className="font-semibold text-slate-700">{viewingInst.code || viewingInst.institution_code || 'N/A'}</p>
+                    <span className="text-slate-400 block font-medium">Contact Person</span>
+                    <p className="font-semibold text-slate-700">{viewingInst.contact_person || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block font-medium">Designation</span>
+                    <p className="font-semibold text-slate-700">{viewingInst.representative_designation || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block font-medium">Office Email</span>
+                    <p className="font-semibold text-slate-700 break-all">{viewingInst.contact_email || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block font-medium">Mobile Number</span>
+                    <p className="font-semibold text-slate-700">{viewingInst.contact_phone || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Institute details */}
+              <div className="space-y-3 bg-slate-50/40 p-4 rounded-xl border border-slate-100 text-xs">
+                <h4 className="font-serif text-[13px] font-bold text-navy border-b border-slate-100 pb-2 flex items-center gap-2">
+                  <div className="p-1.5 bg-gold/10 text-gold rounded-lg">
+                    <Building2 className="w-4 h-4 fill-gold/10" />
+                  </div>
+                  Institute Info
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-slate-400 block font-medium">Type</span>
+                    <p className="font-semibold text-slate-700 capitalize">{viewingInst.type?.replace('_', ' ') || 'N/A'}</p>
                   </div>
                   <div>
                     <span className="text-slate-400 block font-medium">Established Year</span>
                     <p className="font-semibold text-slate-700">{viewingInst.established_year || 'N/A'}</p>
                   </div>
                   <div>
-                    <span className="text-slate-400 block font-medium">Affiliation</span>
-                    <p className="font-semibold text-slate-700">{viewingInst.affiliation || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block font-medium">Accreditation</span>
+                    <span className="text-slate-400 block font-medium">Accreditation Grade</span>
                     <p className="font-semibold text-slate-700">{viewingInst.accreditation || 'N/A'}</p>
                   </div>
                   <div>
-                    <span className="text-slate-400 block font-medium">Faculty Strength</span>
-                    <p className="font-semibold text-slate-700">{viewingInst.faculty_count ? `${viewingInst.faculty_count} Members` : 'N/A'}</p>
+                    <span className="text-slate-400 block font-medium">Website</span>
+                    {viewingInst.website ? (
+                      <a href={viewingInst.website.startsWith('http') ? viewingInst.website : `https://${viewingInst.website}`} target="_blank" rel="noreferrer" className="text-gold hover:underline font-semibold break-all flex items-center gap-1">
+                        Visit Site <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : (
+                      <p className="font-semibold text-slate-400">N/A</p>
+                    )}
                   </div>
                   <div>
                     <span className="text-slate-400 block font-medium">Student Strength</span>
-                    <p className="font-semibold text-slate-700">{viewingInst.student_count ? `${viewingInst.student_count} Students` : 'N/A'}</p>
-                  </div>
-                </div>
-                {viewingInst.website && (
-                  <div className="pt-2 border-t border-slate-100/60 mt-1">
-                    <span className="text-slate-400 block font-medium">Website</span>
-                    <a href={viewingInst.website} target="_blank" rel="noreferrer" className="text-gold hover:underline font-semibold break-all">{viewingInst.website}</a>
-                  </div>
-                )}
-              </div>
-
-              {/* Section 2: Contact Details */}
-              <div className="space-y-3 bg-slate-50/40 p-4 rounded-xl border border-slate-100">
-                <h4 className="font-bold text-navy uppercase tracking-wider text-[10px] border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-navy/70" /> Contact & Registrant
-                </h4>
-                <div className="space-y-2.5">
-                  <div>
-                    <span className="text-slate-400 block font-medium">Contact Person</span>
-                    <p className="font-semibold text-slate-700">{viewingInst.contact_person || 'N/A'}</p>
+                    <p className="font-semibold text-slate-700">{viewingInst.student_count || 'N/A'}</p>
                   </div>
                   <div>
-                    <span className="text-slate-400 block font-medium">Office Email</span>
-                    <p className="font-semibold text-slate-700">{viewingInst.contact_email || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block font-medium">Phone Number</span>
-                    <p className="font-semibold text-slate-700">{viewingInst.contact_phone || 'N/A'}</p>
+                    <span className="text-slate-400 block font-medium">Faculty Strength</span>
+                    <p className="font-semibold text-slate-700">{viewingInst.faculty_count || 'N/A'}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Section 3: Address Details */}
-              <div className="md:col-span-2 space-y-3 bg-slate-50/40 p-4 rounded-xl border border-slate-100">
-                <h4 className="font-bold text-navy uppercase tracking-wider text-[10px] border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
-                  <Filter className="w-3.5 h-3.5 text-navy/70" /> Location & Address
+              {/* Address details */}
+              <div className="space-y-3 bg-slate-50/40 p-4 rounded-xl border border-slate-100 text-xs">
+                <h4 className="font-serif text-[13px] font-bold text-navy border-b border-slate-100 pb-2 flex items-center gap-2">
+                  <div className="p-1.5 bg-indigo-500/10 text-indigo-600 rounded-lg">
+                    <MapPin className="w-4 h-4 fill-indigo-500/10" />
+                  </div>
+                  Address Details
                 </h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="col-span-2 md:col-span-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
                     <span className="text-slate-400 block font-medium">Street Address</span>
                     <p className="font-semibold text-slate-700">{viewingInst.address || 'N/A'}</p>
                   </div>
                   <div>
-                    <span className="text-slate-400 block font-medium">City</span>
-                    <p className="font-semibold text-slate-700">{viewingInst.city || 'N/A'}</p>
+                    <span className="text-slate-400 block font-medium">City, State</span>
+                    <p className="font-semibold text-slate-700">{viewingInst.city ? `${viewingInst.city}, ${viewingInst.state || ''}` : 'N/A'}</p>
                   </div>
                   <div>
-                    <span className="text-slate-400 block font-medium">State</span>
-                    <p className="font-semibold text-slate-700">{viewingInst.state || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block font-medium">Country</span>
-                    <p className="font-semibold text-slate-700">{viewingInst.country || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block font-medium">Pincode</span>
-                    <p className="font-semibold text-slate-700">{viewingInst.pincode || 'N/A'}</p>
+                    <span className="text-slate-400 block font-medium">Pincode, Country</span>
+                    <p className="font-semibold text-slate-700">{viewingInst.pincode ? `${viewingInst.pincode}, ${viewingInst.country || ''}` : 'N/A'}</p>
                   </div>
                 </div>
               </div>
+
+              {/* Uploaded Verification Documents */}
+              {viewingInst.document_url && (
+                <div className="bg-slate-50 border border-slate-150 rounded-xl p-3.5 flex justify-between items-center text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <FileText className="w-4 h-4 text-gold shrink-0" />
+                    <div>
+                      <span className="font-semibold text-slate-700">Verification Document</span>
+                      <p className="text-[10px] text-slate-400">PDF / Image upload for credential check</p>
+                    </div>
+                  </div>
+                  <a href={viewingInst.document_url} target="_blank" rel="noreferrer">
+                    <Button size="xs" variant="outline" className="rounded-lg text-[10px] gap-1 px-3">
+                      <Download className="w-3.5 h-3.5" /> View / Download
+                    </Button>
+                  </a>
+                </div>
+              )}
+
+              {viewingInst.status === 'rejected' && viewingInst.rejection_reason && (
+                <div className="bg-rose-50 text-rose-600 text-xs p-3.5 rounded-xl border border-rose-100 space-y-1">
+                  <span className="font-bold block uppercase tracking-wider text-[9px]">Rejection Reason</span>
+                  <p className="font-medium leading-relaxed">{viewingInst.rejection_reason}</p>
+                </div>
+              )}
             </div>
 
-            {viewingInst.document_url && (
-              <div className="bg-slate-50 border border-slate-150 rounded-xl p-3.5 flex justify-between items-center text-xs">
-                <div className="flex items-center gap-2.5">
-                  <FileText className="w-4 h-4 text-gold shrink-0" />
-                  <div>
-                    <span className="font-semibold text-slate-700">Supporting Validation Document</span>
-                    <p className="text-[10px] text-slate-400">PDF / Image upload for credential check</p>
-                  </div>
-                </div>
-                <a href={viewingInst.document_url} target="_blank" rel="noreferrer">
-                  <Button size="xs" variant="outline" className="rounded-lg text-[10px] gap-1 px-3">
-                    <Download className="w-3.5 h-3.5" /> View / Download
-                  </Button>
-                </a>
-              </div>
-            )}
-
-            {viewingInst.status === 'rejected' && viewingInst.rejection_reason && (
-              <div className="bg-rose-50 text-rose-600 text-xs p-3 rounded-xl border border-rose-100">
-                <strong>Rejection Reason:</strong> {viewingInst.rejection_reason}
-              </div>
-            )}
-
-            {viewingInst.status === 'suspended' && viewingInst.suspension_reason && (
-              <div className="bg-slate-50 text-slate-500 text-xs p-3 rounded-xl border border-slate-200">
-                <strong>Suspension Reason:</strong> {viewingInst.suspension_reason}
-              </div>
-            )}
-
-            <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
-              <span className="text-[10px] text-slate-400 font-semibold">Registered: {viewingInst.created_at ? new Date(viewingInst.created_at).toLocaleDateString() : ''}</span>
-              <div className="flex gap-2">
-                <Button className="btn-outline" onClick={() => setViewingInst(null)}>Close</Button>
-                {viewingInst.status === 'pending' && (
-                  <>
-                    <Button className="btn-success" onClick={() => handleApproveInstitution(viewingInst.id)}>Approve</Button>
-                    <Button className="btn-danger" onClick={() => setShowRejectDialog(true)}>Reject</Button>
-                  </>
-                )}
-                {viewingInst.status === 'approved' && (
-                  <Button className="btn-danger" onClick={() => setShowSuspendDialog(true)}>Suspend</Button>
-                )}
-                {viewingInst.status === 'pending_change_approval' && (
-                  <Button className="btn-warning" onClick={() => handleFetchChangeRequest(viewingInst.id)}>Review Changes</Button>
-                )}
-              </div>
+            {/* Action Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0 flex justify-end">
+              <Button className="btn-outline w-28 text-xs font-semibold rounded-xl" onClick={() => setViewingInst(null)}>Close</Button>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* 3. REJECT INSTITUTION DIALOG */}
@@ -3260,6 +3673,53 @@ export default function AdminDashboard() {
                 }}
               >
                 {actionReasonDialog.confirmText}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* REASON INPUT DIALOG (MESSAGE BOX) */}
+      {reasonModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-in fade-in-0 duration-200">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-4 relative animate-in zoom-in-95 duration-200">
+            <button 
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 font-bold text-lg" 
+              onClick={() => {
+                setReasonModal({ isOpen: false, title: '', actionType: '', targetId: '' });
+                setReasonText('');
+              }}
+            >
+              ×
+            </button>
+            <h3 className="font-serif text-sm font-bold text-navy">{reasonModal.title}</h3>
+            
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Reason / Feedback Comments</label>
+              <textarea
+                value={reasonText}
+                onChange={e => setReasonText(e.target.value)}
+                placeholder="Specify feedback or reason for this status change..."
+                className="w-full h-24 text-xs rounded-xl border border-slate-200 p-3 focus:outline-none transition-all duration-200 focus:ring-2 focus:ring-navy/20 bg-white"
+                required
+              />
+            </div>
+            
+            <div className="flex justify-end gap-2.5">
+              <Button 
+                variant="outline"
+                className="rounded-xl text-xs h-9 px-4"
+                onClick={() => {
+                  setReasonModal({ isOpen: false, title: '', actionType: '', targetId: '' });
+                  setReasonText('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="bg-navy hover:bg-navy/90 text-white rounded-xl text-xs h-9 px-4 font-semibold"
+                onClick={handleSubmitReasonModal}
+              >
+                Submit
               </Button>
             </div>
           </div>

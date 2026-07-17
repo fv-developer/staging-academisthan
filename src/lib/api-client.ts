@@ -830,6 +830,17 @@ export const blogs = {
       return { posts: [], count: 0 };
     }
   },
+
+  getAdminAll: async () => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/blogs/admin/all`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) throw new Error('Failed to fetch admin blogs');
+    return response.json();
+  },
   
   uploadCover: async (base64Image: string) => {
     const token = localStorage.getItem('auth_token');
@@ -1056,7 +1067,7 @@ export const programs = {
     return response.json();
   },
 
-  completeSyllabusStep: async (enrollmentId: string, stepId: string, options?: { score?: number }) => {
+  completeSyllabusStep: async (enrollmentId: string, stepId: string, options?: { score?: number; bypass?: boolean }) => {
     const token = localStorage.getItem('auth_token');
     const response = await fetch(`${API_BASE}/programs/enrollments/${enrollmentId}/steps/${stepId}/complete`, {
       method: 'POST',
@@ -1064,7 +1075,7 @@ export const programs = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ score: options?.score }),
+      body: JSON.stringify({ score: options?.score, bypass: options?.bypass }),
     });
     if (!response.ok) throw new Error('Failed to complete syllabus step');
     return response.json();
@@ -1227,6 +1238,20 @@ export const programs = {
       },
     });
     if (!response.ok) throw new Error('Failed to delete program');
+    return response.json();
+  },
+
+  uploadCover: async (base64Image: string) => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/programs/upload-cover`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ image: base64Image }),
+    });
+    if (!response.ok) throw new Error('Failed to upload cover image');
     return response.json();
   },
 };

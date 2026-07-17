@@ -65,12 +65,12 @@ router.get('/', async (req, res: Response) => {
     // Sorting
     if (sort === 'popular') {
       // Sort by likes first
-      query += ` ORDER BY p.is_pinned DESC, p.like_count DESC, p.published_at DESC`;
+      query += ` ORDER BY p.is_pinned DESC, p.like_count DESC, p.published_at DESC, p.created_at DESC`;
     } else if (sort === 'views') {
-      query += ` ORDER BY p.is_pinned DESC, p.view_count DESC, p.published_at DESC`;
+      query += ` ORDER BY p.is_pinned DESC, p.view_count DESC, p.published_at DESC, p.created_at DESC`;
     } else {
       // Default: Latest
-      query += ` ORDER BY p.is_pinned DESC, p.published_at DESC`;
+      query += ` ORDER BY p.is_pinned DESC, p.published_at DESC, p.created_at DESC`;
     }
 
     query += ` LIMIT ? OFFSET ?`;
@@ -412,7 +412,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
     const userId = req.user!.id;
 
     // Check if post exists and author identity
-    const [posts]: any = await pool.execute('SELECT author_id, title, status FROM blog_posts WHERE id = ?', [id]);
+    const [posts]: any = await pool.execute('SELECT * FROM blog_posts WHERE id = ?', [id]);
     if (posts.length === 0) {
       return res.status(404).json({ error: 'Blog post not found' });
     }
@@ -453,7 +453,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
 
     let query = `
       UPDATE blog_posts 
-      SET title = ?, summary = ?, content = ?, cover_image_url = ?, category = ?, status = ?
+      SET title = ?, summary = ?, content = ?, cover_image_url = ?, category = ?, status = ?, is_featured = ?
     `;
     const params: any[] = [
       title !== undefined ? title : post.title,
@@ -461,7 +461,8 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
       content !== undefined ? content : post.content,
       cover_image_url !== undefined ? cover_image_url : post.cover_image_url,
       category !== undefined ? category : post.category,
-      status
+      status,
+      req.body.is_featured !== undefined ? (req.body.is_featured ? 1 : 0) : post.is_featured
     ];
 
     if (isSubmittedForReview) {

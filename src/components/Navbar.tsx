@@ -1,11 +1,12 @@
 import { useState, useEffect, forwardRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, ChevronDown, ChevronRight, User, Shield } from 'lucide-react';
+import { Menu, ChevronDown, ChevronRight, User, Shield, LogOut, UserMinus, Trash2, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import api from '@/lib/api-client';
 import logo from '@/assets/academisthan-logo-official.png';
 
 const navLinks = [
@@ -51,8 +52,31 @@ export const Navbar = forwardRef<HTMLElement, NavbarProps>(function Navbar({ for
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [openMobileSubmenu, setOpenMobileSubmenu] = useState<string | null>(null);
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { isAdmin, loading: roleLoading } = useUserRole();
+  const handleDeactivate = async () => {
+    if (!confirm('Are you sure you want to deactivate your account? Your profile will be hidden from the directory, but you can reactivate it at any time.')) return;
+    try {
+      await api.apiRequest('/profiles/deactivate', { method: 'POST' });
+      alert('Account deactivated successfully.');
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.message || 'Failed to deactivate account');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('WARNING: Are you sure you want to delete your account permanently? This action CANNOT be undone.')) return;
+    if (!profile) return;
+    try {
+      await api.apiRequest(`/profiles/${profile.id}`, { method: 'DELETE' });
+      alert('Your account has been deleted permanently.');
+      signOut();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete account');
+    }
+  };
+
   const filteredLinks = navLinks;
 
   useEffect(() => {
@@ -73,7 +97,7 @@ export const Navbar = forwardRef<HTMLElement, NavbarProps>(function Navbar({ for
     >
       <div className="container mx-auto px-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 md:gap-3 group flex-shrink-0 mr-2 md:mr-6">
-          <img src={logo} alt="Academisthan" className="h-9 md:h-10 w-auto object-contain transition-transform group-hover:scale-110" />
+          <img src={logo} alt="Academisthan" className="h-[3.25rem] md:h-10 w-auto object-contain transition-transform group-hover:scale-110" />
           <span className="font-serif text-lg md:text-xl font-bold text-gold-foreground tracking-wide" style={{ color: 'hsl(38 55% 58%)' }}>
             Academisthan
           </span>
@@ -121,12 +145,97 @@ export const Navbar = forwardRef<HTMLElement, NavbarProps>(function Navbar({ for
         {/* CTA / Auth state */}
         <div className="hidden lg:flex items-center gap-3">
           {user ? (
-            <Link to={isAdmin ? "/admin" : "/dashboard"}>
+            <div
+              className="relative"
+              onMouseEnter={() => setOpenDropdown('User Profile')}
+              onMouseLeave={() => setOpenDropdown(null)}
+            >
               <Button className="bg-gold/10 text-gold hover:bg-gold/20 font-medium gap-2 rounded-xl border border-gold/20">
                 {isAdmin ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
                 {isAdmin ? 'Admin Panel' : (profile?.full_name?.split(' ')[0] || 'Dashboard')}
+                <ChevronDown className="h-3 w-3" />
               </Button>
-            </Link>
+              {openDropdown === 'User Profile' && (
+                <div className="absolute top-full right-0 mt-0 w-64 bg-navy/95 backdrop-blur-xl rounded-xl shadow-2xl border border-gold/20 overflow-hidden py-1 z-50 dashboard-menu header-dashboard-menu space-y-1">
+                  {isAdmin ? (
+                    <Link
+                      to="/admin"
+                      onClick={() => setOpenDropdown(null)}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-[14px] font-medium text-warm/70 hover:text-gold hover:bg-gold/10 transition-colors text-left"
+                    >
+                      <Shield className="h-4 w-4" />
+                      <span>Admin Panel</span>
+                    </Link>
+                  ) : (
+                    <>
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setOpenDropdown(null)}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-[14px] font-medium text-warm/70 hover:text-gold hover:bg-gold/10 transition-colors text-left"
+                      >
+                        <User className="h-4 w-4" />
+                        <span>My Profile</span>
+                      </Link>
+                      {profile?.institution_id ? (
+                        <Link
+                          to="/dashboard?tool=institute"
+                          onClick={() => setOpenDropdown(null)}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-[14px] font-medium text-warm/70 hover:text-gold hover:bg-gold/10 transition-colors text-left"
+                        >
+                          <Building2 className="h-4 w-4" />
+                          <span>My Institute</span>
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/dashboard?tool=institute"
+                          onClick={() => setOpenDropdown(null)}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-[14px] font-medium text-warm/70 hover:text-gold hover:bg-gold/10 transition-colors text-left"
+                        >
+                          <Building2 className="h-4 w-4" />
+                          <span>Institute Registration</span>
+                        </Link>
+                      )}
+                      
+                      <div
+                        role="button"
+                        onClick={() => {
+                          handleDeactivate();
+                          setOpenDropdown(null);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-[14px] font-medium text-amber-500 hover:text-amber-400 hover:bg-gold/10 transition-colors text-left cursor-pointer"
+                      >
+                        <UserMinus className="h-4 w-4" />
+                        <span>Deactivate My Account</span>
+                      </div>
+
+                      <div
+                        role="button"
+                        onClick={() => {
+                          handleDelete();
+                          setOpenDropdown(null);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-[14px] font-medium text-red-500 hover:text-red-400 hover:bg-gold/10 transition-colors text-left cursor-pointer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>Delete My Account</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="border-t border-gold/10 my-1"></div>
+                  <div
+                    role="button"
+                    onClick={() => {
+                      signOut();
+                      setOpenDropdown(null);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-[14px] font-medium text-warm/70 hover:text-gold hover:bg-gold/10 transition-colors text-left cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign Out</span>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <div
               className="relative"
@@ -181,8 +290,8 @@ export const Navbar = forwardRef<HTMLElement, NavbarProps>(function Navbar({ for
         <div className="lg:hidden">
           <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-warm/80 hover:text-gold">
-                <Menu className="h-6 w-6" />
+              <Button variant="ghost" size="icon" className="text-warm/80 hover:text-gold [&_svg]:size-8">
+                <Menu className="h-8 w-8" />
                 <span className="sr-only">Open menu</span>
               </Button>
             </SheetTrigger>
@@ -267,11 +376,76 @@ export const Navbar = forwardRef<HTMLElement, NavbarProps>(function Navbar({ for
                 {/* Auth buttons at bottom */}
                 <div className="pt-4 space-y-2 border-t border-gold/20 mt-auto">
                   {user ? (
-                    <Link to="/dashboard" onClick={() => setIsMobileOpen(false)} className="block w-full">
-                      <Button className="w-full bg-gold text-gold-foreground hover:bg-gold/90 gap-2 text-sm">
-                        <User className="h-4 w-4" /> Dashboard
+                    <div className="space-y-1.5 w-full">
+                      <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-3 mb-1">
+                        My Account ({profile?.full_name || 'Fellow'})
+                      </div>
+                      
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setIsMobileOpen(false)}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:text-gold hover:bg-gold/10 transition-colors text-left rounded-lg"
+                      >
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span>My Profile</span>
+                      </Link>
+
+                      {profile?.institution_id ? (
+                        <Link
+                          to="/dashboard?tool=institute"
+                          onClick={() => setIsMobileOpen(false)}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:text-gold hover:bg-gold/10 transition-colors text-left rounded-lg"
+                        >
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span>My Institute</span>
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/dashboard?tool=institute"
+                          onClick={() => setIsMobileOpen(false)}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground hover:text-gold hover:bg-gold/10 transition-colors text-left rounded-lg"
+                        >
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span>Institute Registration</span>
+                        </Link>
+                      )}
+
+                      <div
+                        role="button"
+                        onClick={() => {
+                          handleDeactivate();
+                          setIsMobileOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-amber-500 hover:text-amber-400 hover:bg-gold/10 transition-colors text-left cursor-pointer rounded-lg"
+                      >
+                        <UserMinus className="h-4 w-4" />
+                        <span>Deactivate My Account</span>
+                      </div>
+
+                      <div
+                        role="button"
+                        onClick={() => {
+                          handleDelete();
+                          setIsMobileOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-500 hover:text-red-400 hover:bg-gold/10 transition-colors text-left cursor-pointer rounded-lg"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>Delete My Account</span>
+                      </div>
+
+                      <div className="border-t border-gold/10 my-2"></div>
+
+                      <Button 
+                        onClick={() => {
+                          signOut();
+                          setIsMobileOpen(false);
+                        }}
+                        className="w-full bg-gold text-gold-foreground hover:bg-gold/90 gap-2 text-sm font-semibold rounded-lg h-10"
+                      >
+                        <LogOut className="h-4 w-4" /> Sign Out
                       </Button>
-                    </Link>
+                    </div>
                   ) : (
                     <>
                       <div className="text-xs font-semibold text-muted-foreground px-3 py-1">Join Us</div>

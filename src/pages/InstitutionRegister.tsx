@@ -31,7 +31,7 @@ const INSTITUTION_TYPES = [
   { value: 'k12_school', label: 'K-12 School' },
 ];
 
-const NAAC_GRADES = ['A++', 'A+', 'A', 'B++', 'B+', 'B', 'C', 'Not Accredited', 'Applied'];
+const NAAC_GRADES = ['A++', 'A+', 'A', 'B++', 'B+'];
 
 const REPRESENTATIVE_DESIGNATIONS = [
   'Professor',
@@ -112,7 +112,7 @@ export default function InstitutionRegister() {
     pincode: '',
     website: '',
     // Accreditation
-    naac_grade: 'Not Accredited',
+    naac_grade: 'A++',
     nirf_rank: '',
     established_year: '',
     // Stats
@@ -323,6 +323,9 @@ export default function InstitutionRegister() {
         return `Please enter a valid year between 1800 and ${currentYear}`;
       }
     }
+    if (key === 'address' && !value.trim()) {
+      return 'Address details are required';
+    }
 
     return '';
   };
@@ -347,7 +350,7 @@ export default function InstitutionRegister() {
 
   const validateStep2 = (): boolean => {
     const newErrors: Record<string, string> = {};
-    const step2Fields = ['institution_name', 'institution_phone', 'established_year', 'pincode'];
+    const step2Fields = ['institution_name', 'institution_phone', 'established_year', 'pincode', 'address'];
     
     step2Fields.forEach(f => {
       const err = validateField(f, form[f as keyof typeof form]);
@@ -378,12 +381,18 @@ export default function InstitutionRegister() {
       return;
     }
 
-    setIsSubmitting(true);
+    if (!logoFile) {
+      setLogoError('Institute Logo is required.');
+      toast({ title: 'Logo missing', description: 'Please upload an institute logo to submit.', variant: 'destructive' });
+      return;
+    }
 
     try {
-      // 0. Duplicate prevention check
-      const approvedList = await institutions.getAll();
-      const isDuplicate = (approvedList || []).some((inst: any) => 
+      setIsSubmitting(true);
+      // 0. Duplicate prevention check (fellow-specific only)
+      const res = await institutions.getMyRegistered();
+      const myRegistered = Array.isArray(res) ? res : (res && (res as any).institutions ? (res as any).institutions : []);
+      const isDuplicate = myRegistered.some((inst: any) => 
         inst.name.toLowerCase() === form.institution_name.trim().toLowerCase() &&
         inst.city.toLowerCase() === form.city.trim().toLowerCase() &&
         inst.state.toLowerCase() === form.state.trim().toLowerCase()
@@ -393,11 +402,12 @@ export default function InstitutionRegister() {
         setIsSubmitting(false);
         toast({
           title: 'Duplicate Institution Detected ⚠️',
-          description: `An approved record for "${form.institution_name.trim()}" in ${form.city.trim()}, ${form.state} already exists in Academisthan's registry. Duplicate submissions are not allowed.`,
+          description: 'You have already registered this institute.',
           variant: 'destructive'
         });
         return;
       }
+
       // 1. Upload the supporting document
       const uploadRes = await institutions.uploadDocument(docBase64, docFile.name);
       const documentUrl = uploadRes.documentUrl;
@@ -511,25 +521,33 @@ export default function InstitutionRegister() {
         ) : (
           <>
             {/* Step Indicators */}
-            <div className="flex items-center justify-center gap-2 mb-8 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-              {[1, 2, 3].map((s) => (
-                <div key={s} className="flex items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                    s < step ? 'bg-[#8B1538] text-white' :
-                    s === step ? 'bg-amber-500 text-white shadow-lg' :
-                    'bg-slate-100 text-slate-400'
-                  }`}>
-                    {s < step ? <Check className="w-4 h-4" /> : s}
+            <div className="w-full mb-8 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <div className="flex items-center justify-between max-w-lg mx-auto relative">
+                {/* Background line */}
+                <div className="absolute top-4 left-0 right-0 h-0.5 bg-slate-100 -z-0" />
+                <div 
+                  className="absolute top-4 left-0 h-0.5 bg-[#8B1538] transition-all duration-300 -z-0" 
+                  style={{ width: `${((step - 1) / 2) * 100}%` }} 
+                />
+
+                {[1, 2, 3].map((s) => (
+                  <div key={s} className="flex flex-col items-center relative z-10 px-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                      s < step ? 'bg-[#8B1538] text-white' :
+                      s === step ? 'bg-amber-500 text-white shadow-lg ring-4 ring-amber-500/10' :
+                      'bg-white border-2 border-slate-200 text-slate-400'
+                    }`}>
+                      {s < step ? <Check className="w-4 h-4" /> : s}
+                    </div>
+                    <span className={cn(
+                      "text-[9px] sm:text-xs mt-2 font-semibold text-center whitespace-nowrap",
+                      s === step ? "text-slate-800 font-bold" : "text-slate-400"
+                    )}>
+                      {s === 1 ? 'Step 1: Rep Info' : s === 2 ? 'Step 2: Institute Info' : 'Step 3: Documents'}
+                    </span>
                   </div>
-                  <span className={cn(
-                    "text-xs ml-2 mr-3 hidden sm:inline font-medium",
-                    s === step ? "text-slate-800 font-bold" : "text-slate-400"
-                  )}>
-                    {stepLabels[s - 1]}
-                  </span>
-                  {s < 3 && <div className="w-8 h-px bg-slate-200 mr-3 hidden sm:block" />}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-md">
@@ -608,57 +626,59 @@ export default function InstitutionRegister() {
                       )}
                     </div>
 
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">Official Office Email *</Label>
-                      <Input 
-                        type="email" 
-                        value={form.representative_email} 
-                        onChange={e => updateForm('representative_email', e.target.value)} 
-                        onBlur={e => handleFieldBlur('representative_email', e.target.value)}
-                        placeholder="your-name@institutename.com" 
-                        className={cn("rounded-lg text-sm", errors.representative_email && "border-red-500")}
-                        maxLength={254} 
-                        required 
-                      />
-                      <p className="text-[10px] text-slate-400 leading-normal">
-                        Please use your official institutional email address (e.g. your-name@institutename.com) for faster verification.
-                      </p>
-                      {errors.representative_email && (
-                        <p className="text-[11px] text-red-500">{errors.representative_email}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">Mobile Number *</Label>
-                      <div className="flex gap-1.5">
-                        <Select
-                          value={form.representative_dial_code}
-                          onValueChange={(val) => updateForm('representative_dial_code', val)}
-                        >
-                          <SelectTrigger className="w-[95px] rounded-lg text-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-48 text-sm">
-                            {countries.map(c => (
-                              <SelectItem key={c.code} value={c.dialCode}>{c.code} ({c.dialCode})</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    <div className="grid md:grid-cols-2 gap-5">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">Official Office Email *</Label>
                         <Input 
-                          value={form.representative_phone} 
-                          onChange={e => {
-                            const val = e.target.value.replace(/\D/g, '').slice(0, 15);
-                            updateForm('representative_phone', val);
-                          }}
-                          onBlur={e => handleFieldBlur('representative_phone', e.target.value)}
-                          placeholder="Phone number" 
-                          className={cn("flex-1 rounded-lg text-sm", errors.representative_phone && "border-red-500")}
+                          type="email" 
+                          value={form.representative_email} 
+                          onChange={e => updateForm('representative_email', e.target.value)} 
+                          onBlur={e => handleFieldBlur('representative_email', e.target.value)}
+                          placeholder="your-name@institutename.com" 
+                          className={cn("rounded-lg text-sm", errors.representative_email && "border-red-500")}
+                          maxLength={254} 
                           required 
                         />
+                        <p className="text-[10px] text-slate-400 leading-normal">
+                          Please use your official institutional email address (e.g. your-name@institutename.com) for faster verification.
+                        </p>
+                        {errors.representative_email && (
+                          <p className="text-[11px] text-red-500">{errors.representative_email}</p>
+                        )}
                       </div>
-                      {errors.representative_phone && (
-                        <p className="text-[11px] text-red-500">{errors.representative_phone}</p>
-                      )}
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">Representative Mobile Number *</Label>
+                        <div className="flex gap-1.5">
+                          <Select
+                            value={form.representative_dial_code}
+                            onValueChange={(val) => updateForm('representative_dial_code', val)}
+                          >
+                            <SelectTrigger className="w-[95px] rounded-lg text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-48 text-sm">
+                              {countries.map(c => (
+                                <SelectItem key={c.code} value={c.dialCode}>{c.code} ({c.dialCode})</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input 
+                            value={form.representative_phone} 
+                            onChange={e => {
+                              const val = e.target.value.replace(/\D/g, '').slice(0, 15);
+                              updateForm('representative_phone', val);
+                            }}
+                            onBlur={e => handleFieldBlur('representative_phone', e.target.value)}
+                            placeholder="Phone number" 
+                            className={cn("flex-1 rounded-lg text-sm", errors.representative_phone && "border-red-500")}
+                            required 
+                          />
+                        </div>
+                        {errors.representative_phone && (
+                          <p className="text-[11px] text-red-500">{errors.representative_phone}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -801,8 +821,18 @@ export default function InstitutionRegister() {
                     </div>
 
                     <div className="sm:col-span-2 space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">Address</Label>
-                      <Input value={form.address} onChange={e => updateForm('address', e.target.value)} placeholder="Full postal address" className="rounded-lg text-sm" maxLength={500} />
+                      <Label className="text-sm font-medium text-slate-700">Institute Address Details *</Label>
+                      <Input 
+                        value={form.address} 
+                        onChange={e => updateForm('address', e.target.value)} 
+                        onBlur={e => handleFieldBlur('address', e.target.value)}
+                        placeholder="Full postal address" 
+                        className={cn("rounded-lg text-sm", errors.address && "border-red-500")}
+                        maxLength={500} 
+                      />
+                      {errors.address && (
+                        <p className="text-[11px] text-red-500">{errors.address}</p>
+                      )}
                     </div>
 
                     {/* Cascading Country Dropdown */}
@@ -1028,7 +1058,7 @@ export default function InstitutionRegister() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">NAAC Grade</Label>
+                      <Label className="text-sm font-medium text-slate-700">Accreditation Grade</Label>
                       <Select value={form.naac_grade} onValueChange={v => updateForm('naac_grade', v)}>
                         <SelectTrigger className="rounded-lg text-sm"><SelectValue placeholder="Select grade" /></SelectTrigger>
                         <SelectContent className="text-xs">
@@ -1134,7 +1164,7 @@ export default function InstitutionRegister() {
                     {/* Logo upload */}
                     <div className="sm:col-span-1 space-y-2">
                       <Label className="text-sm font-semibold text-slate-700 flex items-center gap-1">
-                        Institution Logo <span className="text-slate-400 font-normal">(Optional)</span>
+                        Institution Logo *
                       </Label>
                       <div className="mt-2 border-2 border-dashed border-slate-200 rounded-xl p-5 bg-slate-50 hover:bg-slate-100/50 transition-colors flex flex-col items-center justify-center text-center h-[200px]">
                         {logoFile ? (

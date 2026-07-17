@@ -42,13 +42,14 @@ router.get('/directory', async (req: AuthRequest, res: Response) => {
           fc.sender_id,
           fc.receiver_id,
           fc.status as connection_status,
-          IF(fc.status = 'accepted', COALESCE(p.work_email, p.email), NULL) as email,
-          IF(fc.status = 'accepted', p.phone, NULL) as phone
+          NULL as email,
+          NULL as phone
         FROM profiles p
         LEFT JOIN fellow_connections fc ON 
           (fc.sender_id = ? AND fc.receiver_id = p.id) OR 
           (fc.sender_id = p.id AND fc.receiver_id = ?)
         WHERE p.membership_status = 'active'
+          AND (p.is_deactivated = FALSE OR p.is_deactivated IS NULL)
           AND p.id != ?
           AND p.email != 'admin@academisthan.org'
         ORDER BY p.full_name ASC
@@ -76,6 +77,7 @@ router.get('/directory', async (req: AuthRequest, res: Response) => {
           NULL as phone
         FROM profiles p
         WHERE p.membership_status = 'active'
+          AND (p.is_deactivated = FALSE OR p.is_deactivated IS NULL)
           AND p.email != 'admin@academisthan.org'
         ORDER BY p.full_name ASC
       `;
@@ -94,8 +96,8 @@ router.get('/directory', async (req: AuthRequest, res: Response) => {
 router.post('/request', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const senderId = req.user!.id;
-    const { receiverId, targetUserId } = req.body;
-    const finalReceiverId = receiverId || targetUserId;
+    const { receiverId, targetUserId, target_user_id } = req.body;
+    const finalReceiverId = receiverId || targetUserId || target_user_id;
 
     if (!finalReceiverId) {
       return res.status(400).json({ error: 'Receiver ID is required' });

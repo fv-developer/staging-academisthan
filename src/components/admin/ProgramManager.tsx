@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import CKEditor from '@/components/ui/CKEditor';
 import {
   Plus, Edit3, Trash2, X, Move, BookOpen, FileText, Video as VideoIcon,
-  Link as LinkIcon, HelpCircle, Check, ArrowLeft, Loader2, Save, Download, File, AlertCircle, ChevronRight
+  Link as LinkIcon, HelpCircle, Check, ArrowLeft, Loader2, Save, Download, File, AlertCircle, ChevronRight, Image, RotateCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FileUpload } from './FileUpload';
@@ -24,6 +24,33 @@ export function ProgramManager() {
   const [programs, setPrograms] = useState<any[]>([]);
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefreshList = async () => {
+    setRefreshing(true);
+    try {
+      await loadData();
+      toast({ title: 'Programs list refreshed!' });
+    } catch (err) {
+      toast({ title: 'Failed to refresh list', variant: 'destructive' });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleRefreshBuilder = async () => {
+    if (!selectedProgram) return;
+    setRefreshing(true);
+    try {
+      await loadData();
+      await loadModules(selectedProgram.id);
+      toast({ title: 'Program builder data refreshed!' });
+    } catch (err) {
+      toast({ title: 'Failed to refresh builder data', variant: 'destructive' });
+    } finally {
+      setRefreshing(false);
+    }
+  };
   
   // Active selection states
   const [selectedProgram, setSelectedProgram] = useState<any | null>(null);
@@ -38,6 +65,48 @@ export function ProgramManager() {
   const [programForm, setProgramForm] = useState({
     title: '', description: '', image_url: ''
   });
+
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ 
+        title: 'File size limit exceeded', 
+        description: 'Cover image must be under 2MB', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const base64 = await fileToBase64(file);
+      const res = await api.programs.uploadCover(base64);
+      setProgramForm(prev => ({ ...prev, image_url: res.coverImageUrl }));
+      toast({ title: 'Image uploaded successfully! 📸' });
+    } catch (err: any) {
+      console.error(err);
+      toast({ 
+        title: 'Upload failed', 
+        description: err.message, 
+        variant: 'destructive' 
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const [moduleForm, setModuleForm] = useState({
     title: '', chapter: 'M1', duration_minutes: 30
@@ -246,9 +315,9 @@ export function ProgramManager() {
     const payload = {
       title: stepForm.title.trim(),
       content_type: stepForm.content_type,
-      video_url: stepForm.content_type === 'video' ? stepForm.video_url : null,
-      text_content: stepForm.content_type === 'text' ? stepForm.text_content : null,
-      file_url: (stepForm.content_type === 'pdf' || stepForm.content_type === 'document' || stepForm.content_type === 'link') ? stepForm.file_url : null,
+      video_url: stepForm.content_type !== 'quiz' ? (stepForm.video_url || null) : null,
+      text_content: stepForm.content_type !== 'quiz' ? (stepForm.text_content || null) : null,
+      file_url: stepForm.content_type !== 'quiz' ? (stepForm.file_url || null) : null,
       duration_minutes: stepForm.duration_minutes || 10,
       quiz_questions: null,
       passing_score: 80
@@ -256,13 +325,14 @@ export function ProgramManager() {
 
     try {
       if (selectedStep) {
-        await api.programs.updateSyllabusStep(selectedStep.id, payload);
+        const updated = await api.programs.updateSyllabusStep(selectedStep.id, payload);
+        setSelectedStep(updated);
         toast({ title: 'Syllabus item updated!' });
       } else {
-        await api.programs.addSyllabusStep(selectedModule.id, payload);
+        const created = await api.programs.addSyllabusStep(selectedModule.id, payload);
+        setSelectedStep(created);
         toast({ title: 'Syllabus item added!' });
       }
-      setView('program_builder');
       loadModules(selectedProgram.id);
     } catch (err: any) {
       toast({ title: 'Failed to save syllabus item', variant: 'destructive' });
@@ -359,13 +429,14 @@ export function ProgramManager() {
 
     try {
       if (selectedStep) {
-        await api.programs.updateSyllabusStep(selectedStep.id, payload);
+        const updated = await api.programs.updateSyllabusStep(selectedStep.id, payload);
+        setSelectedStep(updated);
         toast({ title: 'Quiz updated successfully! 📝' });
       } else {
-        await api.programs.addSyllabusStep(selectedModule.id, payload);
+        const created = await api.programs.addSyllabusStep(selectedModule.id, payload);
+        setSelectedStep(created);
         toast({ title: 'Quiz created successfully! 📝' });
       }
-      setView('program_builder');
       loadModules(selectedProgram.id);
     } catch (err: any) {
       toast({ title: 'Failed to save quiz', variant: 'destructive' });
@@ -395,16 +466,28 @@ export function ProgramManager() {
               <h3 className="font-serif text-base font-bold text-navy">Programs</h3>
               <p className="text-xs text-slate-400 mt-0.5">Manage all programs</p>
             </div>
-            <Button
-              onClick={() => {
-                setSelectedProgram(null);
-                setProgramForm({ title: '', description: '', image_url: '' });
-                setView('create_program');
-              }}
-              className="btn-primary"
-            >
-              <Plus className="w-3.5 h-3.5" /> Create Program
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleRefreshList}
+                disabled={refreshing}
+                title="Refresh Programs"
+                className="h-9 w-9 rounded-xl border-slate-200"
+              >
+                <RotateCw className={cn("w-4 h-4 text-slate-500", refreshing && "animate-spin")} />
+              </Button>
+              <Button
+                onClick={() => {
+                  setSelectedProgram(null);
+                  setProgramForm({ title: '', description: '', image_url: '' });
+                  setView('create_program');
+                }}
+                className="btn-primary"
+              >
+                <Plus className="w-3.5 h-3.5" /> Create Program
+              </Button>
+            </div>
           </div>
 
           <div className="border border-slate-100 rounded-xl overflow-hidden w-full">
@@ -531,15 +614,63 @@ export function ProgramManager() {
               />
             </div>
 
-            <div className="space-y-1">
-              <Label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Cover Image</Label>
-              <Input
-                value={programForm.image_url}
-                onChange={e => setProgramForm({ ...programForm, image_url: e.target.value })}
-                placeholder="https://academisthan.org/images/cover.jpg (or drop URL here)"
-                className="rounded-xl text-xs h-9 bg-slate-50/20"
-              />
-              <p className="text-[9px] text-slate-400 mt-1">Provide an image URL or path for the course dashboard banner.</p>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold text-slate-500 uppercase block">Cover Image</Label>
+              
+              {programForm.image_url && (
+                <div className="relative w-full h-32 rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+                  <img src={programForm.image_url} alt="Cover Preview" className="w-full h-full object-cover" />
+                  <Button 
+                    type="button" 
+                    variant="destructive" 
+                    size="icon" 
+                    onClick={() => setProgramForm(prev => ({ ...prev, image_url: '' }))}
+                    className="absolute top-2 right-2 h-7 w-7 rounded-full shadow-md"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input
+                    value={programForm.image_url}
+                    onChange={e => setProgramForm({ ...programForm, image_url: e.target.value })}
+                    placeholder="https://academisthan.org/images/cover.jpg (or upload file)"
+                    className="rounded-xl text-xs h-9 bg-slate-50/20"
+                  />
+                </div>
+                <div className="relative">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                    id="program-image-file"
+                    disabled={uploadingImage}
+                  />
+                  <Button
+                    type="button"
+                    asChild
+                    variant="outline"
+                    className="rounded-xl text-xs h-9 font-semibold gap-1.5 cursor-pointer bg-white"
+                  >
+                    <label htmlFor="program-image-file">
+                      {uploadingImage ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Image className="w-3.5 h-3.5 text-gold" /> Upload Image
+                        </>
+                      )}
+                    </label>
+                  </Button>
+                </div>
+              </div>
+              <p className="text-[9px] text-slate-400">Provide an image URL or choose a local file to upload (Max 2MB).</p>
             </div>
 
             <div className="flex gap-2.5 pt-4 border-t border-slate-100">
@@ -577,6 +708,16 @@ export function ProgramManager() {
             </div>
             
             <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleRefreshBuilder}
+                disabled={refreshing}
+                title="Refresh Builder Data"
+                className="h-9 w-9 rounded-xl border-slate-200"
+              >
+                <RotateCw className={cn("w-4 h-4 text-slate-500", refreshing && "animate-spin")} />
+              </Button>
               <Button
                 onClick={() => setView('list')}
                 className="btn-outline"
@@ -893,75 +1034,45 @@ export function ProgramManager() {
 
             {/* Conditional input panels - Full width spacing */}
             <div className="w-full">
-              {/* Type: Video */}
-              {stepForm.content_type === 'video' && (
-                <div className="space-y-4 bg-slate-50/50 border border-slate-250/70 rounded-2xl p-5 w-full">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b pb-1.5 mb-1">Video Source</span>
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold text-slate-500 uppercase">YouTube Link *</Label>
-                    <Input
-                      value={stepForm.video_url}
-                      onChange={e => setStepForm({ ...stepForm, video_url: e.target.value })}
-                      placeholder="e.g. https://www.youtube.com/watch?v=xxxx"
-                      className="rounded-xl text-xs h-9 bg-white"
-                    />
+              {stepForm.content_type !== 'quiz' && (
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Video Link */}
+                    <div className="space-y-4 bg-slate-50/50 border border-slate-200 rounded-2xl p-5 w-full text-left">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b pb-1.5 mb-1">Video Source (Optional)</span>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold text-slate-500 uppercase">YouTube Link</Label>
+                        <Input
+                          value={stepForm.video_url || ''}
+                          onChange={e => setStepForm({ ...stepForm, video_url: e.target.value })}
+                          placeholder="e.g. https://www.youtube.com/watch?v=xxxx"
+                          className="rounded-xl text-xs h-9 bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* PDF/File Attachment */}
+                    <div className="space-y-4 bg-slate-50/50 border border-slate-200 rounded-2xl p-5 w-full text-left">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b pb-1.5 mb-1">Attached PDF/Document (Optional)</span>
+                      <FileUpload
+                        value={stepForm.file_url || ''}
+                        onChange={url => setStepForm({ ...stepForm, file_url: url })}
+                        label="Upload PDF/Document or Paste URL"
+                        folder="syllabus-files"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
 
-              {/* Type: Text */}
-              {stepForm.content_type === 'text' && (
-                <div className="space-y-2 w-full">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">CKEditor 5 Content</Label>
-                  <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white w-full min-h-[350px]">
-                    <CKEditor
-                      value={stepForm.text_content || ''}
-                      onChange={data => setStepForm({ ...stepForm, text_content: data })}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Type: PDF */}
-              {stepForm.content_type === 'pdf' && (
-                <div className="space-y-4 bg-slate-50/50 border border-slate-250/70 rounded-2xl p-5 w-full text-left">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b pb-1.5 mb-1">PDF File</span>
-                  <FileUpload
-                    value={stepForm.file_url || ''}
-                    onChange={url => setStepForm({ ...stepForm, file_url: url })}
-                    label="Upload PDF or Paste URL *"
-                    folder="syllabus-pdfs"
-                    accept=".pdf"
-                  />
-                </div>
-              )}
-
-              {/* Type: Document */}
-              {stepForm.content_type === 'document' && (
-                <div className="space-y-4 bg-slate-50/50 border border-slate-250/70 rounded-2xl p-5 w-full text-left">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b pb-1.5 mb-1">Document details</span>
-                  <FileUpload
-                    value={stepForm.file_url || ''}
-                    onChange={url => setStepForm({ ...stepForm, file_url: url })}
-                    label="Upload Document or Paste URL *"
-                    folder="syllabus-documents"
-                    accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
-                  />
-                </div>
-              )}
-
-              {/* Type: External Link */}
-              {stepForm.content_type === 'link' && (
-                <div className="space-y-4 bg-slate-50/50 border border-slate-250/70 rounded-2xl p-5 w-full">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block border-b pb-1.5 mb-1">Web Link</span>
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold text-slate-500 uppercase">External URL *</Label>
-                    <Input
-                      value={stepForm.file_url}
-                      onChange={e => setStepForm({ ...stepForm, file_url: e.target.value })}
-                      placeholder="https://wikipedia.org/..."
-                      className="rounded-xl text-xs h-9 bg-white"
-                    />
+                  {/* Text Editor */}
+                  <div className="space-y-2 w-full text-left">
+                    <Label className="text-[10px] font-bold text-slate-500 uppercase">Article/Text Content (Optional)</Label>
+                    <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white w-full min-h-[350px]">
+                      <CKEditor
+                        value={stepForm.text_content || ''}
+                        onChange={data => setStepForm({ ...stepForm, text_content: data })}
+                      />
+                    </div>
                   </div>
                 </div>
               )}

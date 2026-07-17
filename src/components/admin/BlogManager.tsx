@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/api-client';
+import api from '@/lib/api-client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,12 +70,14 @@ export function BlogManager() {
   });
 
   const fetchPosts = async () => {
-    const { data } = await supabase
-      .from('blog_posts')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setPosts((data as BlogPost[]) || []);
-    setLoading(false);
+    try {
+      const data = await api.blogs.getAdminAll();
+      setPosts((data as BlogPost[]) || []);
+    } catch (err: any) {
+      toast({ title: 'Error fetching posts', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchPosts(); }, []);
@@ -127,38 +129,42 @@ export function BlogManager() {
       published_at: form.is_published ? new Date().toISOString() : null,
     };
 
-    let error;
-    if (editingId) {
-      ({ error } = await supabase.from('blog_posts').update(payload).eq('id', editingId));
-    } else {
-      ({ error } = await supabase.from('blog_posts').insert(payload));
-    }
-
-    setSaving(false);
-    if (error) {
-      toast({ title: 'Error saving post', description: error.message, variant: 'destructive' });
-    } else {
+    try {
+      if (editingId) {
+        await api.blogs.update(editingId, payload);
+      } else {
+        await api.blogs.create(payload);
+      }
+      setSaving(false);
       toast({ title: editingId ? 'Post updated! ✨' : 'Post created! ✨' });
       resetForm();
       fetchPosts();
+    } catch (err: any) {
+      setSaving(false);
+      toast({ title: 'Error saving post', description: err.message, variant: 'destructive' });
     }
   };
 
   const togglePublish = async (post: BlogPost) => {
-    const { error } = await supabase
-      .from('blog_posts')
-      .update({
+    try {
+      await api.blogs.update(post.id, {
         is_published: !post.is_published,
         published_at: !post.is_published ? new Date().toISOString() : null,
-      })
-      .eq('id', post.id);
-    if (!error) fetchPosts();
+      });
+      fetchPosts();
+    } catch (err: any) {
+      toast({ title: 'Error updating publish status', description: err.message, variant: 'destructive' });
+    }
   };
 
   const deletePost = async (id: string) => {
     if (!confirm('Delete this post permanently?')) return;
-    await supabase.from('blog_posts').delete().eq('id', id);
-    fetchPosts();
+    try {
+      await api.blogs.delete(id);
+      fetchPosts();
+    } catch (err: any) {
+      toast({ title: 'Error deleting post', description: err.message, variant: 'destructive' });
+    }
   };
 
   return (

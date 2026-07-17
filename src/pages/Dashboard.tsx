@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/contexts/AuthContext';
 import api, { API_BASE } from '@/lib/api-client';
@@ -17,7 +17,7 @@ import {
   Calculator, FileText, GraduationCap, Sparkles, Copy, Check,
   TrendingUp, Clock, Newspaper, Star, Target, Zap,
   ExternalLink, ChevronRight, Briefcase, Globe, FlaskConical, Microscope,
-  Search, ChevronDown, Loader2, Home, Upload, Users, AlertTriangle, ShieldAlert, Bookmark, Trash2
+  Search, ChevronDown, Loader2, Home, Upload, Users, AlertTriangle, ShieldAlert, Bookmark, Trash2, AlertCircle
 } from 'lucide-react';
 import { NewsFeed } from '@/components/dashboard/NewsFeed';
 import { MyCertificates } from '@/components/dashboard/MyCertificates';
@@ -196,7 +196,7 @@ const exploreLinks = [
 export default function Dashboard() {
   const navigate = useNavigate();
   const { isAdmin, loading: roleLoading } = useUserRole();
-  const { profile, refreshProfile, signOut } = useAuth();
+  const { profile, refreshProfile, signOut, updateProfileState } = useAuth();
 
   useEffect(() => {
     if (!roleLoading && isAdmin) {
@@ -239,30 +239,31 @@ export default function Dashboard() {
   };
 
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const programParam = searchParams.get('program');
+  const toolParam = searchParams.get('tool');
+
   const [activeTool, setActiveTool] = useState<string | null>(() => {
     if (location.state && (location.state as any).activeTool) {
       return (location.state as any).activeTool;
     }
-    const params = new URLSearchParams(location.search);
-    const prog = params.get('program');
-    if (prog) return 'lms';
-    return params.get('tool');
+    if (programParam) return 'lms';
+    return toolParam;
   });
 
-  // Sync state with query parameters dynamically
+  // Sync state with query parameters dynamically and scroll to top
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const toolParam = params.get('tool');
-    const programParam = params.get('program');
-    
     if (programParam) {
       setActiveTool('lms');
+      window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (toolParam) {
       setActiveTool(toolParam);
+      window.scrollTo({ top: 0, behavior: 'instant' });
     } else {
       setActiveTool(null);
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }
-  }, [location.search]);
+  }, [programParam, toolParam]);
   const upcomingDates = useUpcomingDates();
   // Custom states for Country, State, City, PIN/ZIP, Phone
   const [selectedCountry, setSelectedCountry] = useState<Country>(countries.find(c => c.code === 'IN') || countries[0]);
@@ -629,9 +630,9 @@ export default function Dashboard() {
         const { avatarUrl } = data;
 
         await api.profiles.update(profile!.id, { avatar_url: avatarUrl });
+        updateProfileState({ avatar_url: avatarUrl });
 
         toast({ title: 'Profile photo updated! ✨' });
-        await refreshProfile();
       };
       
       reader.readAsDataURL(file);
@@ -649,9 +650,8 @@ export default function Dashboard() {
     setUploadingPhoto(true);
     try {
       await api.profiles.update(profile.id, { avatar_url: null });
-
+      updateProfileState({ avatar_url: null });
       toast({ title: 'Profile photo removed' });
-      await refreshProfile();
     } catch (err: any) {
       console.error('Photo remove error:', err);
       toast({ title: 'Failed to remove photo', description: err.message, variant: 'destructive' });
@@ -697,12 +697,38 @@ export default function Dashboard() {
                 {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
             </div>
-            <Button onClick={signOut} className="btn-danger btn-sm self-start">
-              Sign Out
-            </Button>
           </div>
         </div>
       </div>
+
+      {!!profile?.is_deactivated && (
+        <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white py-4 px-6 shadow-lg mb-8 border-b border-amber-600/30 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="container mx-auto max-w-7xl flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-3 text-sm font-medium">
+              <div className="p-2 bg-white/10 rounded-xl">
+                <AlertCircle className="w-5 h-5 shrink-0 text-white" />
+              </div>
+              <span className="leading-relaxed">
+                Your account is currently deactivated. Your profile is hidden from the public directory.
+              </span>
+            </div>
+            <Button 
+              onClick={async () => {
+                try {
+                  await api.apiRequest('/profiles/reactivate', { method: 'POST' });
+                  toast({ title: 'Account Reactivated! 🎉', description: 'Your profile is now visible in the directory.' });
+                  await refreshProfile();
+                } catch (err: any) {
+                  toast({ title: 'Reactivation failed', description: err.message, variant: 'destructive' });
+                }
+              }}
+              className="bg-white text-amber-600 hover:bg-amber-50 hover:shadow-md active:scale-98 transition-all duration-200 font-bold rounded-xl text-xs h-10 px-5 border-0 shrink-0"
+            >
+              Reactivate Account
+            </Button>
+          </div>
+        </div>
+      )}
 
       {profile?.membership_status === 'suspended' || profile?.membership_status === 'pending_review' ? (
         <div className="pb-16">
@@ -871,7 +897,7 @@ export default function Dashboard() {
                 <h3 className="font-serif text-sm font-bold text-foreground mb-3 flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-gold" /> Fellow Workspace
                 </h3>
-                <div className="space-y-1">
+                <div className="space-y-1 dashboard-menu">
                   <button
                     onClick={() => handleWorkspaceNav('institute')}
                     className={cn(
@@ -1032,7 +1058,7 @@ export default function Dashboard() {
               {activeTool === 'lms' ? (
                 <ProgramDetail 
                   embedded={true} 
-                  embeddedSlug={new URLSearchParams(location.search).get('program') || ''} 
+                  embeddedSlug={programParam || ''} 
                   onCloseLms={() => navigate('/dashboard')} 
                 />
               ) : activeTool ? (

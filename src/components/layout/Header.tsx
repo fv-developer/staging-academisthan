@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Search, Bell, Menu, User, Settings, LogOut, 
-  Upload, Camera, Shield, Sparkles, Building2, Globe
+  Upload, Camera, Shield, Sparkles, Building2, Globe,
+  UserMinus, Trash2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { notifications as notificationsApi } from '@/lib/api-client';
+import api, { notifications as notificationsApi } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import logo from '@/assets/academisthan-logo-official.png';
 import {
@@ -44,6 +45,29 @@ export function Header({ onMenuClick, showSearch = false }: HeaderProps) {
   const [notificationCount, setNotificationCount] = useState(0);
 
   const { requestPermission, showLocalNotification } = usePushNotifications(user?.id);
+
+  const handleDeactivate = async () => {
+    if (!confirm('Are you sure you want to deactivate your account? Your profile will be hidden from the directory, but you can reactivate it at any time.')) return;
+    try {
+      await api.apiRequest('/profiles/deactivate', { method: 'POST' });
+      alert('Account deactivated successfully.');
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.message || 'Failed to deactivate account');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('WARNING: Are you sure you want to delete your account permanently? This action CANNOT be undone.')) return;
+    if (!profile) return;
+    try {
+      await api.apiRequest(`/profiles/${profile.id}`, { method: 'DELETE' });
+      alert('Your account has been deleted permanently.');
+      signOut();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete account');
+    }
+  };
 
   useEffect(() => {
     if (user && localStorage.getItem('request_notification_permission_on_next_load') === 'true') {
@@ -297,39 +321,51 @@ export function Header({ onMenuClick, showSearch = false }: HeaderProps) {
               <DropdownMenuSeparator />
               
               <DropdownMenuItem asChild>
-                <Link to="/dashboard/profile" className="cursor-pointer">
+                <Link to="/dashboard" className="cursor-pointer">
                   <User className="mr-2 h-4 w-4" />
                   My Profile
                 </Link>
               </DropdownMenuItem>
-              
-              <DropdownMenuItem asChild>
-                <label className="cursor-pointer">
-                  <Camera className="mr-2 h-4 w-4" />
-                  Upload Photo
-                  <input type="file" accept="image/*" className="hidden" />
-                </label>
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem asChild>
-                <Link to="/dashboard/settings" className="cursor-pointer">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </Link>
-              </DropdownMenuItem>
-              
-              {profile?.membership_status === 'active' && (
-                <DropdownMenuItem disabled>
-                  <Shield className="mr-2 h-4 w-4 text-green-600" />
-                  <span className="text-green-600">Active Member</span>
+
+              {profile?.institution_id ? (
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard?tool=institute" className="cursor-pointer">
+                    <Building2 className="mr-2 h-4 w-4" />
+                    My Institute
+                  </Link>
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem asChild>
+                  <Link to="/institution-register" className="cursor-pointer">
+                    <Building2 className="mr-2 h-4 w-4" />
+                    Institute Registration
+                  </Link>
                 </DropdownMenuItem>
               )}
-              
+
               <DropdownMenuSeparator />
-              
+
+              <DropdownMenuItem 
+                onClick={handleDeactivate}
+                className="text-amber-600 focus:text-amber-600 cursor-pointer"
+              >
+                <UserMinus className="mr-2 h-4 w-4" />
+                Deactivate My Account
+              </DropdownMenuItem>
+
+              <DropdownMenuItem 
+                onClick={handleDelete}
+                className="text-red-600 focus:text-red-600 cursor-pointer"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete My Account
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
               <DropdownMenuItem 
                 onClick={signOut}
-                className="text-red-600 focus:text-red-600 cursor-pointer"
+                className="cursor-pointer"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out

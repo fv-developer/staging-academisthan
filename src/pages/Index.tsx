@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { ScrollSection } from '@/components/ScrollSection';
@@ -118,6 +119,7 @@ function TestimonialCard({ name, role, quote }: { name: string; role: string; qu
 
 /* ─── Hero Section (MKES University Style — Single Cinematic Image) ─── */
 function HeroSection() {
+  const { user } = useAuth();
   const [current, setCurrent] = useState(0);
 
   const captions = [
@@ -159,7 +161,6 @@ function HeroSection() {
       />
 
       {/* Floating decorative orbs */}
-      <div className="absolute top-20 left-10 w-32 h-32 border border-gold/10 rounded-full animate-float pointer-events-none" />
       <div className="absolute bottom-20 right-20 w-48 h-48 border border-gold/5 rounded-full animate-float pointer-events-none" style={{ animationDelay: '2s' }} />
 
       {/* Centered content */}
@@ -201,11 +202,13 @@ function HeroSection() {
           className="flex flex-col sm:flex-row gap-4 justify-center"
           style={{ animation: 'fadeUp 0.8s 1s ease-out forwards', opacity: 0 }}
         >
-          <Link to="/auth/signup">
-            <Button size="lg" className="bg-gold text-gold-foreground hover:bg-gold/90 text-base px-8 py-6 rounded-full font-semibold shadow-[0_4px_30px_hsl(38_55%_58%/0.3)] transition-all inline-flex items-center gap-2">
-              Become a Fellow <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
+          {!user && (
+            <Link to="/auth/signup">
+              <Button size="lg" className="bg-gold text-gold-foreground hover:bg-gold/90 text-base px-8 py-6 rounded-full font-semibold shadow-[0_4px_30px_hsl(38_55%_58%/0.3)] transition-all inline-flex items-center gap-2">
+                Become a Fellow <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          )}
           <Link to="/tools/api-score">
             <Button size="lg" className="bg-warm/10 border border-warm/30 text-warm hover:bg-warm/20 hover:border-gold hover:text-gold text-base px-8 py-6 rounded-full font-medium backdrop-blur-sm transition-colors">
               Calculate API Score

@@ -54,7 +54,7 @@ export function TeacherTypeOnboarding() {
       {/* Dismiss */}
       <button
         onClick={() => setDismissed(true)}
-        className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
+        className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors z-[9]"
       >
         <X className="w-4 h-4" />
       </button>

@@ -39,6 +39,15 @@ const REPRESENTATIVE_DESIGNATIONS = [
   'Other'
 ];
 
+const ACCREDITATION_GRADES = [
+  'A++',
+  'A+',
+  'A',
+  'B++',
+  'B+',
+  'Not Accredited'
+];
+
 export default function InstituteModule() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
@@ -104,11 +113,8 @@ export default function InstituteModule() {
     setLoading(true);
     try {
       const res = await institutions.getMyRegistered();
-      if (res.institutions) {
-        setMyInstitutions(res.institutions);
-      } else {
-        setMyInstitutions([]);
-      }
+      const list = Array.isArray(res) ? res : (res && (res as any).institutions ? (res as any).institutions : []);
+      setMyInstitutions(list);
     } catch (err: any) {
       console.error(err);
       toast({ title: 'Error loading institutions', description: err.message, variant: 'destructive' });
@@ -284,6 +290,9 @@ export default function InstituteModule() {
     if (!editingInst && !docFile) {
       newErrors.document = 'Supporting verification document is required';
     }
+    if (!editingInst && !logoFile) {
+      newErrors.logo = 'Institute Logo is required';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -442,10 +451,9 @@ export default function InstituteModule() {
 
     setIsSubmitting(true);
     try {
-      // 0. Duplicate prevention check for new registrations
+      // 0. Duplicate prevention check for new registrations (fellow-specific only)
       if (!editingInst) {
-        const approvedList = await institutions.getAll();
-        const isDuplicate = (approvedList || []).some((inst: any) => 
+        const isDuplicate = (myInstitutions || []).some((inst: any) => 
           inst.name.toLowerCase() === form.name.trim().toLowerCase() &&
           inst.city.toLowerCase() === form.city.trim().toLowerCase() &&
           inst.state.toLowerCase() === form.state.trim().toLowerCase()
@@ -455,7 +463,7 @@ export default function InstituteModule() {
           setIsSubmitting(false);
           toast({
             title: 'Duplicate Institution Detected ⚠️',
-            description: `An approved record for "${form.name.trim()}" in ${form.city.trim()}, ${form.state} already exists in Academisthan's registry. Duplicate submissions are not allowed.`,
+            description: 'You have already registered this institute.',
             variant: 'destructive'
           });
           return;
@@ -575,6 +583,7 @@ export default function InstituteModule() {
     pending: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
     suspended: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
     pending_change_approval: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
+    rejected: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
   };
 
   const statusLabels: Record<string, string> = {
@@ -582,6 +591,7 @@ export default function InstituteModule() {
     pending: 'Pending Review',
     suspended: 'Suspended',
     pending_change_approval: 'Pending Change Approval',
+    rejected: 'Rejected',
   };
 
   const getInstitutionTypeLabel = (val: string) => {
@@ -601,6 +611,24 @@ export default function InstituteModule() {
             <Plus className="w-4 h-4" /> Register Institution
           </Button>
         </div>
+
+        {myInstitutions.filter(inst => inst.status === 'rejected').map(inst => (
+          <div key={inst.id} className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-4 flex gap-3 text-rose-500 text-xs animate-in fade-in slide-in-from-top-4 duration-300">
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            <div className="space-y-1 flex-1">
+              <h4 className="font-bold text-[13px]">Registration Rejected: {inst.name}</h4>
+              <p className="text-rose-500/80 leading-relaxed">
+                <strong>Reason:</strong> {inst.rejection_reason || 'No reason provided.'}
+              </p>
+              <button 
+                onClick={() => startEditing(inst)}
+                className="mt-2 text-rose-600 font-bold hover:underline flex items-center gap-1.5 text-[11px]"
+              >
+                <Edit3 className="w-3.5 h-3.5" /> Edit & Resubmit Application →
+              </button>
+            </div>
+          </div>
+        ))}
 
         {myInstitutions.length === 0 ? (
           <div className="text-center py-16 border-2 border-dashed border-border/40 rounded-2xl space-y-4 max-w-lg mx-auto">
@@ -624,6 +652,7 @@ export default function InstituteModule() {
                 <TableHeader className="bg-muted/30">
                   <TableRow>
                     <TableHead className="text-xs font-bold whitespace-nowrap">Institution Name</TableHead>
+                    <TableHead className="text-xs font-bold whitespace-nowrap">Submission Date</TableHead>
                     <TableHead className="text-xs font-bold whitespace-nowrap">Type</TableHead>
                     <TableHead className="text-xs font-bold whitespace-nowrap">Office Email</TableHead>
                     <TableHead className="text-xs font-bold whitespace-nowrap">Contact Number</TableHead>
@@ -636,6 +665,9 @@ export default function InstituteModule() {
                   {myInstitutions.map((inst) => (
                     <TableRow key={inst.id} className="hover:bg-muted/10 transition-colors">
                       <TableCell className="font-medium text-xs max-w-[200px] truncate">{inst.name}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {inst.created_at ? new Date(inst.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                      </TableCell>
                       <TableCell className="text-xs whitespace-nowrap capitalize">{inst.type?.replace('_', ' ')}</TableCell>
                       <TableCell className="text-xs whitespace-nowrap">{inst.contact_email}</TableCell>
                       <TableCell className="text-xs whitespace-nowrap">{inst.contact_phone}</TableCell>
@@ -650,9 +682,15 @@ export default function InstituteModule() {
                           <Button onClick={() => setViewingInst(inst)} size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted" title="View details">
                             <Eye className="w-3.5 h-3.5" />
                           </Button>
-                          <Button onClick={() => startEditing(inst)} size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-gold hover:text-gold hover:bg-gold/10" title="Edit details">
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </Button>
+                          {inst.status === 'rejected' ? (
+                            <Button onClick={() => startEditing(inst)} size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-gold hover:text-gold hover:bg-gold/10" title="Edit and Resubmit">
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </Button>
+                          ) : (
+                            <Button disabled size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-muted-foreground/30 cursor-not-allowed" title="Editing is disabled for active or pending reviews">
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
                           <Button 
                             onClick={() => handleDeleteInst(inst.id, inst.name)} 
                             size="icon" 
@@ -718,13 +756,13 @@ export default function InstituteModule() {
                 </div>
               )}
 
-              {viewingInst.rejection_reason && (
+              {(viewingInst.status === 'rejected' || viewingInst.rejection_reason) && (
                 <div className="bg-rose-500/5 border border-rose-500/20 rounded-xl p-3 flex gap-2.5 text-rose-500 text-xs">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
-                    <h4 className="font-bold uppercase tracking-wider text-[10px]">Revision Requested</h4>
+                    <h4 className="font-bold uppercase tracking-wider text-[10px]">Registration Rejected</h4>
                     <p className="text-rose-500/80 leading-normal">
-                      Reason: {viewingInst.rejection_reason}
+                      Reason: {viewingInst.rejection_reason || 'No reason provided.'}
                     </p>
                   </div>
                 </div>
@@ -863,7 +901,7 @@ export default function InstituteModule() {
       {/* Step Indicators */}
       <div className="flex items-center justify-between gap-1 mb-6 bg-muted/40 border border-border/60 rounded-xl p-3">
         {[1, 2, 3].map((s) => (
-          <div key={s} className="flex items-center gap-1.5 flex-1 justify-center last:flex-none">
+          <div key={s} className="flex items-center gap-1.5 flex-1 justify-center sm:last:flex-none">
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all shrink-0 ${
               s < step ? 'bg-emerald-600 text-white' :
               s === step ? 'bg-gold text-gold-foreground shadow-sm' :
@@ -958,15 +996,20 @@ export default function InstituteModule() {
               <Label className="text-xs">Representative Mobile Number *</Label>
               <div className="flex gap-1.5">
                 <Select
-                  value={form.representative_dial_code}
-                  onValueChange={(val) => updateForm('representative_dial_code', val)}
+                  value={countries.find(c => c.dialCode === form.representative_dial_code)?.code || 'IN'}
+                  onValueChange={(val) => {
+                    const found = countries.find(c => c.code === val);
+                    if (found) {
+                      updateForm('representative_dial_code', found.dialCode);
+                    }
+                  }}
                 >
                   <SelectTrigger className="w-[100px] rounded-xl h-9 text-xs shrink-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-48">
                     {countries.map(c => (
-                      <SelectItem key={c.code} value={c.dialCode} className="text-xs">{c.code} ({c.dialCode})</SelectItem>
+                      <SelectItem key={c.code} value={c.code} className="text-xs">{c.code} ({c.dialCode})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1090,15 +1133,20 @@ export default function InstituteModule() {
               <Label className="text-xs">Institution Contact Number *</Label>
               <div className="flex gap-1.5">
                 <Select
-                  value={form.institution_dial_code}
-                  onValueChange={(val) => updateForm('institution_dial_code', val)}
+                  value={countries.find(c => c.dialCode === form.institution_dial_code)?.code || 'IN'}
+                  onValueChange={(val) => {
+                    const found = countries.find(c => c.code === val);
+                    if (found) {
+                      updateForm('institution_dial_code', found.dialCode);
+                    }
+                  }}
                 >
                   <SelectTrigger className="w-[100px] rounded-xl h-9 text-xs shrink-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-48">
                     {countries.map(c => (
-                      <SelectItem key={c.code} value={c.dialCode} className="text-xs">{c.code} ({c.dialCode})</SelectItem>
+                      <SelectItem key={c.code} value={c.code} className="text-xs">{c.code} ({c.dialCode})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1314,12 +1362,19 @@ export default function InstituteModule() {
 
             <div className="space-y-1.5 sm:col-span-2">
               <Label className="text-xs">Accreditation Grade</Label>
-              <Input
-                value={form.accreditation}
-                onChange={e => updateForm('accreditation', e.target.value)}
-                placeholder="E.g. A++ / Not Accredited"
-                className="rounded-xl h-9 text-xs"
-              />
+              <Select
+                value={form.accreditation || 'Not Accredited'}
+                onValueChange={(val) => updateForm('accreditation', val)}
+              >
+                <SelectTrigger className="rounded-xl h-9 text-xs">
+                  <SelectValue placeholder="Select grade" />
+                </SelectTrigger>
+                <SelectContent className="text-xs">
+                  {ACCREDITATION_GRADES.map(g => (
+                    <SelectItem key={g} value={g} className="text-xs">{g}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -1394,7 +1449,7 @@ export default function InstituteModule() {
 
             {/* Upload Logo File */}
             <div className="space-y-2">
-              <Label className="text-xs font-semibold">Institute Logo (Optional)</Label>
+              <Label className="text-xs font-semibold">Institute Logo *</Label>
               <div className="flex items-center gap-3">
                 <Button
                   type="button"
@@ -1416,6 +1471,7 @@ export default function InstituteModule() {
                   {logoFile ? logoFile.name : editingInst?.logo_url ? 'Keep current logo' : 'No logo selected'}
                 </span>
               </div>
+              {errors.logo && <span className="text-[10px] text-rose-500 block">{errors.logo}</span>}
             </div>
           </div>
 

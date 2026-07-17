@@ -1160,7 +1160,7 @@ router.post('/users/:id/notifications', authenticate, isAdmin, async (req: AuthR
 router.get('/tool-results', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const [results] = await pool.execute(`
-      SELECT tr.*, p.full_name, p.email, p.membership_id
+      SELECT tr.*, p.full_name, p.email, p.membership_id, p.designation, p.institution
       FROM tool_results tr
       LEFT JOIN profiles p ON tr.user_id = p.id
       ORDER BY tr.created_at DESC
@@ -1169,6 +1169,23 @@ router.get('/tool-results', authenticate, isAdmin, async (req: AuthRequest, res:
   } catch (error) {
     console.error('Get admin tool results error:', error);
     res.status(500).json({ error: 'Failed to get tool results' });
+  }
+});
+
+// Get tool results for a specific user (Admin)
+router.get('/users/:id/tool-results', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const [results] = await pool.execute(
+      `SELECT * FROM tool_results
+       WHERE user_id = ?
+       ORDER BY created_at DESC`,
+      [id]
+    );
+    res.json(results);
+  } catch (error) {
+    console.error('Get user tool results error:', error);
+    res.status(500).json({ error: 'Failed to get user tool results' });
   }
 });
 

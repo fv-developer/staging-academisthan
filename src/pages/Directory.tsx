@@ -373,35 +373,6 @@ function FellowCard({
               </p>
             </div>
           </div>
-
-          {/* Connected Details */}
-          {isConnected && fellow.email && (
-            <div className="flex items-center gap-3 animate-fade-in">
-              <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 border border-slate-100/50 flex-shrink-0">
-                <Mail className="w-4 h-4 text-gold" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Email</p>
-                <p className="text-xs font-semibold text-slate-700 truncate">
-                  <a href={`mailto:${fellow.email}`} className="hover:text-gold transition-colors">{fellow.email}</a>
-                </p>
-              </div>
-            </div>
-          )}
-
-          {isConnected && fellow.phone && (
-            <div className="flex items-center gap-3 animate-fade-in">
-              <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 border border-slate-100/50 flex-shrink-0">
-                <Phone className="w-4 h-4 text-gold" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Phone</p>
-                <p className="text-xs font-semibold text-slate-700 truncate">
-                  <a href={`tel:${fellow.phone}`} className="hover:text-gold transition-colors">{fellow.phone}</a>
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

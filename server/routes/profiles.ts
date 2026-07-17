@@ -133,47 +133,28 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
     const isComplete = Object.values(merged).every(val => val && String(val).trim());
     let shouldNotifyResubmission = false;
 
-    let query = `UPDATE profiles SET
-        full_name = COALESCE(?, full_name),
-        phone = COALESCE(?, phone),
-        designation = COALESCE(?, designation),
-        department = COALESCE(?, department),
-        institution = COALESCE(?, institution),
-        city = COALESCE(?, city),
-        state = COALESCE(?, state),
-        address = COALESCE(?, address),
-        pincode = COALESCE(?, pincode),
-        specialization = COALESCE(?, specialization),
-        experience_years = COALESCE(?, experience_years),
-        bio = COALESCE(?, bio),
-        linkedin_url = COALESCE(?, linkedin_url),
-        google_scholar_url = COALESCE(?, google_scholar_url),
-        teacher_type = COALESCE(?, teacher_type),
-        avatar_url = COALESCE(?, avatar_url),
-        country = COALESCE(?, country),
-        work_email = COALESCE(?, work_email),
-        updated_at = NOW()`;
+    const updates: string[] = [];
+    const params: any[] = [];
 
-    const params: any[] = [
-      full_name ?? null,
-      phone ?? null,
-      designation ?? null,
-      department ?? null,
-      institution ?? null,
-      city ?? null,
-      state ?? null,
-      address ?? null,
-      pincode ?? null,
-      specialization ?? null,
-      experience_years ?? null,
-      bio ?? null,
-      linkedin_url ?? null,
-      google_scholar_url ?? null,
-      teacher_type ?? null,
-      avatar_url ?? null,
-      country ?? null,
-      work_email === "" ? null : (work_email ?? null)
+    const allowedFields = [
+      'full_name', 'phone', 'designation', 'department', 'institution',
+      'city', 'state', 'address', 'pincode', 'specialization',
+      'experience_years', 'bio', 'linkedin_url', 'google_scholar_url',
+      'teacher_type', 'avatar_url', 'country', 'work_email'
     ];
+
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updates.push(`${field} = ?`);
+        params.push(req.body[field] === "" ? null : req.body[field]);
+      }
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    let query = `UPDATE profiles SET ${updates.join(', ')}, updated_at = NOW()`;
 
     if (isComplete && (current.membership_status === 'rejected' || current.membership_status === 'pending' || current.membership_status === 'inactive')) {
       query += `, membership_status = ?, status = ?, rejection_reason = NULL`;
@@ -400,6 +381,32 @@ router.post('/request-reactivation', authenticate, async (req: AuthRequest, res:
   } catch (error) {
     console.error('Request reactivation error:', error);
     res.status(500).json({ error: 'Failed to submit reactivation request' });
+  }
+});
+
+// Deactivate account
+router.post('/deactivate', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    await pool.execute('UPDATE profiles SET is_deactivated = TRUE WHERE id = ?', [userId]);
+    await logUserActivity(userId, 'deactivate_account', 'Deactivated user account');
+    res.json({ message: 'Account deactivated successfully' });
+  } catch (error) {
+    console.error('Deactivate account error:', error);
+    res.status(500).json({ error: 'Failed to deactivate account' });
+  }
+});
+
+// Reactivate account (fellow-initiated)
+router.post('/reactivate', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    await pool.execute('UPDATE profiles SET is_deactivated = FALSE WHERE id = ?', [userId]);
+    await logUserActivity(userId, 'reactivate_account', 'Reactivated user account');
+    res.json({ message: 'Account reactivated successfully' });
+  } catch (error) {
+    console.error('Reactivate account error:', error);
+    res.status(500).json({ error: 'Failed to reactivate account' });
   }
 });
 

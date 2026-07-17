@@ -162,7 +162,7 @@ export default function BlogModule() {
 
       if (coverFile && coverBase64) {
         const uploadRes = await blogs.uploadCover(coverBase64);
-        finalCoverUrl = uploadRes.imageUrl;
+        finalCoverUrl = uploadRes.coverImageUrl || uploadRes.imageUrl;
       }
 
       const payload = {

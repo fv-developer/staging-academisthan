@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { generateCertificatePDF } from '@/lib/certificate';
+import { generateAPIScoreCertificate, type APIScoreCertificateData } from '@/lib/apiScoreCertificate';
 import {
   Award,
   CheckCircle2,
@@ -67,6 +68,45 @@ export default function CertificationModule() {
     const friendlyName = FRIENDLY_TOOL_NAMES[item.tool_name] || item.tool_name;
     const certNum = item.certificate_number || `ACAD-CERT-${item.id.slice(0, 6).toUpperCase()}`;
     const issuedAt = item.certificate_issued_at || item.created_at;
+
+    if (item.tool_name && item.tool_name.includes('Academic & Research Score')) {
+      try {
+        const resData = typeof item.result_data === 'string' ? JSON.parse(item.result_data) : item.result_data;
+        const catScores = resData?.categoryScores || {};
+        
+        const certData: APIScoreCertificateData = {
+          holderName: profile?.full_name || 'Fellow',
+          membershipId: profile?.membership_id || `ACAD-${item.id.slice(0, 6).toUpperCase()}`,
+          totalScore: item.score || 0,
+          maxScore: 350,
+          cat1Score: catScores.teaching || 0,
+          cat1Max: 100,
+          cat2Score: catScores.research || 0,
+          cat2Max: 200,
+          cat3Score: catScores.other || 0,
+          cat3Max: 50,
+          designation: profile?.designation || undefined,
+          institution: profile?.institution || undefined,
+          date: issuedAt,
+        };
+
+        const doc = generateAPIScoreCertificate(certData);
+        if (action === 'view') {
+          doc.output('dataurlnewwindow');
+        } else {
+          doc.save(`UGC-Academic-Research-Score-${certNum}.pdf`);
+        }
+
+        toast({
+          title: action === 'view' ? '✓ Opening Preview' : '✓ Downloading Certificate',
+          description: `Certificate ${certNum} generated successfully.`,
+          duration: 2000,
+        });
+        return;
+      } catch (err) {
+        console.error('Failed to generate UGC Score PDF scorecard, fallback to normal PDF:', err);
+      }
+    }
 
     generateCertificatePDF({
       holderName: profile?.full_name || 'Fellow',
@@ -143,139 +183,267 @@ export default function CertificationModule() {
               </div>
             </div>
           ) : (
-            <div className="border border-border rounded-2xl overflow-hidden bg-card">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-muted/40 border-b border-border text-muted-foreground uppercase font-bold tracking-wider text-[9px]">
-                      <th className="p-4">Test Name</th>
-                      <th className="p-4">Attempt Date & Time</th>
-                      <th className="p-4">Score</th>
-                      <th className="p-4">Result</th>
-                      <th className="p-4">Certificate Status</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/60">
-                    {history.map((item) => {
-                      const isPass = item.result === 'Pass';
-                      return (
-                        <tr key={item.id} className="hover:bg-muted/20 transition-colors">
-                          <td className="p-4">
-                            <div className="font-semibold text-foreground">
-                              {getFriendlyName(item.tool_name)}
-                            </div>
-                            {item.certificate_number && (
-                              <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
-                                No. {item.certificate_number}
+            <div className="space-y-4">
+              {/* Desktop Table View */}
+              <div className="hidden md:block border border-border rounded-2xl overflow-hidden bg-card">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-muted/40 border-b border-border text-muted-foreground uppercase font-bold tracking-wider text-[9px]">
+                        <th className="p-4">Test Name</th>
+                        <th className="p-4">Attempt Date & Time</th>
+                        <th className="p-4">Score</th>
+                        <th className="p-4">Result</th>
+                        <th className="p-4">Certificate Status</th>
+                        <th className="p-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/60">
+                      {history.map((item) => {
+                        const isPass = item.result === 'Pass';
+                        return (
+                          <tr key={item.id} className="hover:bg-muted/20 transition-colors">
+                            <td className="p-4">
+                              <div className="font-semibold text-foreground max-w-[200px] lg:max-w-[320px] truncate" title={getFriendlyName(item.tool_name)}>
+                                {getFriendlyName(item.tool_name)}
                               </div>
-                            )}
-                          </td>
-                          <td className="p-4 text-muted-foreground font-medium">
-                            {new Date(item.created_at).toLocaleDateString('en-IN', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric'
-                            })} &middot; {new Date(item.created_at).toLocaleTimeString('en-IN', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </td>
-                          <td className="p-4 font-semibold text-foreground">
-                            {item.score !== null ? `${item.score} pts` : 'N/A'}
-                          </td>
-                          <td className="p-4">
-                            {isPass ? (
-                              <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/10 font-semibold text-[10px] gap-1 px-2.5">
-                                <CheckCircle2 className="w-3 h-3" /> PASS
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/10 font-semibold text-[10px] gap-1 px-2.5">
-                                <XCircle className="w-3 h-3" /> FAIL
-                              </Badge>
-                            )}
-                          </td>
-                          <td className="p-4">
-                            {item.certificate_status === 'Issued' ? (
-                              <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/10 font-semibold text-[10px] gap-1 px-2.5">
-                                Issued
-                              </Badge>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground italic font-medium">N/A</span>
-                            )}
-                          </td>
-                          <td className="p-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {isPass && (
-                                <>
-                                  <Button
-                                    onClick={() => handlePdfAction(item, 'view')}
-                                    variant="ghost"
-                                    size="sm"
-                                    title="View PDF"
-                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-gold"
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    onClick={() => handlePdfAction(item, 'download')}
-                                    variant="ghost"
-                                    size="sm"
-                                    title="Download PDF"
-                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-gold"
-                                  >
-                                    <Download className="w-4 h-4" />
-                                  </Button>
-                                </>
+                              {item.certificate_number && (
+                                <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                                  No. {item.certificate_number}
+                                </div>
                               )}
-                              
-                              <Link to={getToolUrl(item.tool_name)}>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  title="Retake Test"
-                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-teal"
-                                >
-                                  <RotateCw className="w-4 h-4" />
-                                </Button>
-                              </Link>
-
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
+                            </td>
+                            <td className="p-4 text-muted-foreground font-medium">
+                              {new Date(item.created_at).toLocaleDateString('en-IN', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                              })} &middot; {new Date(item.created_at).toLocaleTimeString('en-IN', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </td>
+                            <td className="p-4 font-semibold text-foreground">
+                              {item.score !== null ? `${item.score} pts` : 'N/A'}
+                            </td>
+                            <td className="p-4">
+                              {isPass ? (
+                                <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/10 font-semibold text-[10px] gap-1 px-2.5">
+                                  <CheckCircle2 className="w-3 h-3" /> PASS
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/10 font-semibold text-[10px] gap-1 px-2.5">
+                                  <XCircle className="w-3 h-3" /> FAIL
+                                </Badge>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              {item.certificate_status === 'Issued' ? (
+                                <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/10 font-semibold text-[10px] gap-1 px-2.5">
+                                  Issued
+                                </Badge>
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground italic font-medium">N/A</span>
+                              )}
+                            </td>
+                            <td className="p-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {isPass && (
+                                  <>
+                                    <Button
+                                      onClick={() => handlePdfAction(item, 'view')}
+                                      variant="ghost"
+                                      size="sm"
+                                      title="View PDF"
+                                      className="h-8 w-8 p-0 text-muted-foreground hover:text-gold"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      onClick={() => handlePdfAction(item, 'download')}
+                                      variant="ghost"
+                                      size="sm"
+                                      title="Download PDF"
+                                      className="h-8 w-8 p-0 text-muted-foreground hover:text-gold"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                    </Button>
+                                  </>
+                                )}
+                                
+                                <Link to={getToolUrl(item.tool_name)}>
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    title="Delete Record"
-                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                                    title="Retake Test"
+                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-teal"
                                   >
-                                    <Trash2 className="w-4 h-4" />
+                                    <RotateCw className="w-4 h-4" />
                                   </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="rounded-2xl max-w-sm">
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle className="font-serif text-sm">Delete Test Record?</AlertDialogTitle>
-                                    <AlertDialogDescription className="text-xs">
-                                      This will permanently remove this attempt and its certificate from the system. This action cannot be undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel className="rounded-xl text-xs h-9">Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(item.id)}
-                                      className="rounded-xl text-xs h-9 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                                </Link>
+
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      title="Delete Record"
+                                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                                     >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent className="rounded-2xl max-w-sm">
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle className="font-serif text-sm">Delete Test Record?</AlertDialogTitle>
+                                      <AlertDialogDescription className="text-xs">
+                                        This will permanently remove this attempt and its certificate from the system. This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel className="rounded-xl text-xs h-9">Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDelete(item.id)}
+                                        className="rounded-xl text-xs h-9 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Mobile Flex Cards View */}
+              <div className="block md:hidden space-y-3">
+                {history.map((item) => {
+                  const isPass = item.result === 'Pass';
+                  return (
+                    <div key={item.id} className="bg-card border border-border rounded-xl p-4 space-y-3 shadow-sm hover:border-gold/30 transition-colors">
+                      {/* Header info */}
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-xs text-foreground truncate" title={getFriendlyName(item.tool_name)}>
+                            {getFriendlyName(item.tool_name)}
+                          </h4>
+                          {item.certificate_number && (
+                            <span className="text-[9px] text-muted-foreground font-mono bg-muted/60 px-1.5 py-0.5 rounded-md border border-border/40 mt-1 inline-block">
+                              No. {item.certificate_number}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-shrink-0">
+                          {isPass ? (
+                            <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/10 font-semibold text-[9px] px-2 py-0.5">
+                              PASS
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/10 font-semibold text-[9px] px-2 py-0.5">
+                              FAIL
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Detail row */}
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground border-y border-border/40 py-2">
+                        <div>
+                          <span className="font-medium text-foreground">Score: </span>
+                          <span className="font-bold text-foreground">{item.score !== null ? `${item.score} pts` : 'N/A'}</span>
+                        </div>
+                        <div>
+                          {new Date(item.created_at).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                          })} &middot; {new Date(item.created_at).toLocaleTimeString('en-IN', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Actions footer */}
+                      <div className="flex items-center justify-between pt-1">
+                        <div>
+                          {item.certificate_status === 'Issued' ? (
+                            <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/10 font-semibold text-[9px] px-2 py-0.5">
+                              Certificate Issued
+                            </Badge>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground italic">No Certificate</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {isPass && (
+                            <>
+                              <Button
+                                onClick={() => handlePdfAction(item, 'view')}
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-gold"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                onClick={() => handlePdfAction(item, 'download')}
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-gold"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </Button>
+                            </>
+                          )}
+                          <Link to={getToolUrl(item.tool_name)}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-teal"
+                            >
+                              <RotateCw className="w-3.5 h-3.5" />
+                            </Button>
+                          </Link>
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="max-w-[340px] rounded-2xl border-gold/20">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="text-sm font-bold text-foreground">Delete Result?</AlertDialogTitle>
+                                <AlertDialogDescription className="text-xs text-muted-foreground leading-relaxed">
+                                  This action is permanent and cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter className="flex-row gap-2 mt-4 justify-end">
+                                <AlertDialogCancel className="rounded-xl text-xs h-8 px-3 mt-0">Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(item.id)}
+                                  className="bg-destructive hover:bg-destructive/90 text-white rounded-xl text-xs h-8 px-3"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

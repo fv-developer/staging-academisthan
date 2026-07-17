@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { supabase } from '@/lib/api-client';
+import api from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +16,7 @@ interface ImageUploadProps {
 export function ImageUpload({ value, onChange, label = 'Cover Image', folder = 'covers' }: ImageUploadProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
-  const [mode, setMode] = useState<'upload' | 'url'>(value && !value.includes('admin-uploads') ? 'url' : 'upload');
+  const [mode, setMode] = useState<'upload' | 'url'>(value && !value.includes('uploads') ? 'url' : 'upload');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,26 +33,29 @@ export function ImageUpload({ value, onChange, label = 'Cover Image', folder = '
     }
 
     setUploading(true);
-    const ext = file.name.split('.').pop();
-    const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-    const { error } = await supabase.storage
-      .from('admin-uploads')
-      .upload(path, file, { contentType: file.type, upsert: false });
-
-    if (error) {
-      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64String = reader.result as string;
+      try {
+        const res = await api.blogs.uploadCover(base64String);
+        if (res && res.coverImageUrl) {
+          onChange(res.coverImageUrl);
+          toast({ title: 'Image uploaded! ✨' });
+        } else {
+          throw new Error('No image URL returned from server');
+        }
+      } catch (err: any) {
+        toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+      } finally {
+        setUploading(false);
+      }
+    };
+    reader.onerror = () => {
+      toast({ title: 'Failed to read file', variant: 'destructive' });
       setUploading(false);
-      return;
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('admin-uploads')
-      .getPublicUrl(path);
-
-    onChange(publicUrl);
-    setUploading(false);
-    toast({ title: 'Image uploaded! ✨' });
+    };
+    reader.readAsDataURL(file);
   };
 
   const clearImage = () => {

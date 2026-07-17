@@ -14,8 +14,9 @@ import {
   GraduationCap, Lock, Award, Clock,
   ChevronRight, Download, ArrowLeft, BookOpen,
   LayoutDashboard, User, Calendar, Calculator, TrendingUp,
-  Settings, RefreshCw, X, Maximize2, Minimize2, Check, ChevronLeft,
-  Building2, Target, Globe, FileText, Sparkles, Copy, Users, Briefcase, Shield, Loader2, ArrowRight, Bookmark
+  Settings, RefreshCw, X, Maximize2, Minimize2, Check, ChevronLeft, ChevronUp,
+  Building2, Target, Globe, FileText, Sparkles, Copy, Users, Briefcase, Shield, Loader2, ArrowRight, Bookmark,
+  CheckCircle2, PlayCircle, Circle, Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -185,6 +186,38 @@ function extractYouTubeId(url: string): string | null {
   return m ? m[1] : null;
 }
 
+function cleanSyllabusHtml(html: string): string {
+  if (!html) return '';
+  let cleaned = html;
+
+  // 1. Remove duplicate wix video players/figures and their wrapper container divs
+  cleaned = cleaned.replace(/<div[^>]*class="oM1x-"[^>]*>[\s\S]*?(?:figure-VIDEO|video-player|react-player__preview)[\s\S]*?<\/div>/gi, '');
+  cleaned = cleaned.replace(/<figure[^>]+data-hook="figure-VIDEO"[\s\S]*?<\/figure>/gi, '');
+  cleaned = cleaned.replace(/<div[^>]+data-hook="video-player"[^>]*>[\s\S]*?<\/div>/gi, '');
+
+  // 1.5. Remove divider widgets and their wrapper container divs
+  cleaned = cleaned.replace(/<div[^>]*class="oM1x-"[^>]*>[\s\S]*?data-hook="divider[\s\S]*?<\/div>/gi, '');
+  cleaned = cleaned.replace(/<div[^>]*class="oM1x-"[^>]*>[\s\S]*?divider-single[\s\S]*?<\/div>/gi, '');
+  cleaned = cleaned.replace(/<div[^>]+data-hook="divider[^"]*"[^>]*>[\s\S]*?<\/div>/gi, '');
+
+  // 2. Remove gap spacers
+  cleaned = cleaned.replace(/<div[^>]+data-hook="gap-spacer"[^>]*>[\s\S]*?<\/div>/gi, '');
+  cleaned = cleaned.replace(/<div[^>]*class="vDp--"[^>]*>[\s\S]*?<\/div>/gi, '');
+
+  // 3. Remove empty paragraphs and helper spacer divs
+  cleaned = cleaned.replace(/<p[^>]*>\s*(?:<br\/?>|&nbsp;|\s)*\s*<\/p>/gi, '');
+  cleaned = cleaned.replace(/<div[^>]*>\s*(?:<br\/?>|&nbsp;|\s)*\s*<\/div>/gi, '');
+
+  // 4. Clean up trailing empty paragraphs, divs or spacers recursively at the end of the content
+  while (true) {
+    const prev = cleaned;
+    cleaned = cleaned.replace(/(?:<p[^>]*>\s*(?:<br\/?>|&nbsp;|\s)*\s*<\/p>|<div[^>]*>\s*(?:<br\/?>|&nbsp;|\s)*\s*<\/div>)\s*$/gi, '');
+    if (cleaned === prev) break;
+  }
+
+  return cleaned;
+}
+
 interface ProgramDetailProps {
   embedded?: boolean;
   embeddedSlug?: string;
@@ -221,6 +254,42 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
 
   // Full Screen State
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const resetScroll = () => {
+      // 1. Reset inner container scroll (for fullscreen and standard layouts)
+      const body = document.getElementById('lms-player-body');
+      if (body) {
+        body.scrollTop = 0;
+      }
+
+      // 2. Scroll the window to the top of the content container (not the top of the entire page) in normal view
+      if (!isFullscreen) {
+        const container = document.getElementById('lms-content-container');
+        if (container) {
+          const yOffset = -90; // offset to align below the fixed navbar
+          const y = container.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: y, behavior: 'instant' });
+        }
+      }
+    };
+
+    // Run immediately on activeStep change
+    resetScroll();
+
+    // Run at successive intervals to counter asynchronous iframe loading, autofocus, and layout recalculations
+    const t1 = setTimeout(resetScroll, 50);
+    const t2 = setTimeout(resetScroll, 150);
+    const t3 = setTimeout(resetScroll, 350);
+    const t4 = setTimeout(resetScroll, 650);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+    };
+  }, [activeStep, isFullscreen]);
 
   // Quiz Attempt State
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
@@ -301,9 +370,8 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
             return !progRecord?.completed || (s.content_type === 'quiz' && !progRecord?.passed);
           });
 
-          // Set active step
-          const resumeStep = firstIncompleteIdx !== -1 ? allFlat[firstIncompleteIdx] : (allFlat[0] || null);
-          setActiveStep(resumeStep);
+          // Default to showing the Program Overview page on mount
+          setActiveStep(null);
 
           // Check certificate
           const certIssued = enr.status === 'completed' || (firstIncompleteIdx === -1 && allFlat.length > 0);
@@ -368,27 +436,10 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
 
   // Full Screen handler
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => {
-        setIsFullscreen(true);
-      }).catch(err => {
-        console.error('Error entering fullscreen:', err);
-        toast({ title: 'Error entering Fullscreen', variant: 'destructive' });
-      });
-    } else {
-      document.exitFullscreen().then(() => {
-        setIsFullscreen(false);
-      });
-    }
+    setIsFullscreen(!isFullscreen);
   };
 
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
+
 
   const handleEnroll = async () => {
     if (!user) { navigate('/auth/signin'); return; }
@@ -502,6 +553,40 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
     setQuizScore(null);
   };
 
+  const handleUndoQuestionAnswer = (questionIdx: number) => {
+    setSelectedAnswers(prev => {
+      const next = { ...prev };
+      delete next[questionIdx];
+      return next;
+    });
+  };
+
+  const handleBypassQuiz = async () => {
+    if (!user || !enrollment || !activeStep) return;
+    setSubmittingProgress(true);
+    try {
+      const score = quizScore !== null ? quizScore : 0;
+      await api.programs.completeSyllabusStep(enrollment.id, activeStep.id, { score, bypass: true });
+      
+      setProgress(prev => ({
+        ...prev,
+        [activeStep.id]: { completed: true, score, passed: true }
+      }));
+
+      toast({ title: 'Step bypassed! ✅', description: 'Bypassed quiz to unlock next steps.' });
+      fetchData();
+      
+      // Navigate to next step
+      if (currentStepIdx < flatSteps.length - 1) {
+        setActiveStep(flatSteps[currentStepIdx + 1]);
+      }
+    } catch (err: any) {
+      toast({ title: 'Error bypassing quiz', variant: 'destructive' });
+    } finally {
+      setSubmittingProgress(false);
+    }
+  };
+
   const handleGoToRequiredStep = (requiredStep: SyllabusStep) => {
     setActiveStep(requiredStep);
     toast({
@@ -537,7 +622,7 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
       )}>
         {!isDarkFullscreen && (
           <div className="p-4 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
-            <h4 className="font-serif text-sm font-bold text-white">Course Syllabus</h4>
+            <h4 className="font-sans text-sm font-bold text-white">Course Syllabus</h4>
             <Badge className="bg-gold/10 text-gold border-gold/20 text-[9px] font-bold uppercase">
               {modules.length} Modules
             </Badge>
@@ -548,6 +633,31 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
           "divide-y divide-slate-800",
           isDarkFullscreen ? "flex-1 overflow-y-auto" : "max-h-[500px] overflow-y-auto"
         )}>
+          {/* Overview Tab Button */}
+          <button
+            onClick={() => {
+              setActiveStep(null);
+              setIsFullscreen(false);
+              if (document.fullscreenElement) {
+                document.exitFullscreen().catch(err => console.error(err));
+              }
+            }}
+            className={cn(
+              "w-full flex items-center gap-2.5 p-4 transition-colors text-left",
+              activeStep === null 
+                ? "bg-[#cfa459] hover:bg-[#cfa459] text-[#222] font-semibold" 
+                : "hover:bg-slate-800/50 text-slate-300"
+            )}
+          >
+            <Info className={cn("w-3.5 h-3.5", activeStep === null ? "text-[#222]" : "text-slate-400")} />
+            <span className={cn(
+              "text-xs font-sans font-bold",
+              activeStep === null ? "text-[#222]" : "text-slate-300"
+            )}>
+              Overview
+            </span>
+          </button>
+
           {modules.map((mod, mIdx) => {
             const chapterName = mod.chapter || 'Overview';
             const stepList = mod.steps || [];
@@ -571,8 +681,8 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
                   className="w-full flex items-center justify-between p-4 hover:bg-slate-800/50 transition-colors text-left"
                 >
                   <div className="min-w-0 pr-4">
-                    <h5 className="font-serif font-bold text-xs text-white truncate">
-                      M{mIdx + 1}. {mod.title}
+                    <h5 className="font-sans font-bold text-xs text-white truncate">
+                      {mod.title}
                     </h5>
                     <p className="text-[10px] text-slate-400 mt-0.5">{stepList.length} steps</p>
                   </div>
@@ -600,30 +710,14 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
                         const { isLocked, requiredStep } = getStepLockStatus(step);
 
                         const handleStepClick = () => {
+                          setActiveStep(step);
                           if (isLocked) {
                             toast({
-                              title: 'Step Locked 🔒',
-                              description: 'Please complete preceding steps sequentially to unlock this module.',
-                              variant: 'destructive',
-                              action: requiredStep ? (
-                                <Button size="sm" onClick={() => handleGoToRequiredStep(requiredStep)} className="bg-gold text-gold-foreground hover:bg-gold/90 font-bold text-xs h-7 rounded">
-                                  Go to Required Step
-                                </Button>
-                              ) : undefined
+                              title: 'Preview Mode 👁️',
+                              description: 'You can view this step, but you must complete preceding steps to unlock the completion button.',
                             });
-                            return;
                           }
-                          setActiveStep(step);
                         };
-
-                        let prefix = '• ';
-                        if (isLocked) {
-                          prefix = '🔒 ';
-                        } else if (isComplete) {
-                          prefix = '✓ ';
-                        } else if (isActive) {
-                          prefix = '(o) ';
-                        }
 
                         let stepLabel = step.title;
                         if (step.content_type === 'quiz') {
@@ -638,22 +732,28 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
                           <button
                             key={step.id}
                             onClick={handleStepClick}
-                            disabled={isLocked}
                             className={cn(
-                              "w-full text-left px-5 py-3 flex items-center gap-2 hover:bg-slate-900/40 transition-colors",
-                              isActive ? "bg-slate-900/80 border-l-2 border-l-gold font-medium" : "",
-                              isLocked ? "opacity-40 cursor-not-allowed" : ""
+                              "w-full text-left px-5 py-3 flex items-center gap-2.5 transition-colors",
+                              isActive 
+                                ? "bg-[#cfa459] hover:bg-[#cfa459] text-[#222] font-semibold" 
+                                : "hover:bg-slate-900/40",
+                              isLocked ? "opacity-75" : ""
                             )}
                           >
-                            <span className={cn(
-                              "text-xs",
-                              isComplete ? "text-emerald-400 font-bold" : isLocked ? "text-slate-500" : "text-slate-300"
-                            )}>
-                              {prefix}
+                            <span className="shrink-0">
+                              {isComplete ? (
+                                <CheckCircle2 className={cn("w-3.5 h-3.5", isActive ? "text-[#222]" : "text-emerald-400")} />
+                              ) : isLocked ? (
+                                <Lock className={cn("w-3.5 h-3.5", isActive ? "text-[#222]" : "text-slate-500")} />
+                              ) : isActive ? (
+                                <PlayCircle className="w-3.5 h-3.5 text-[#222]" />
+                              ) : (
+                                <Circle className="w-3.5 h-3.5 text-slate-500" />
+                              )}
                             </span>
                             <span className={cn(
                               "text-xs truncate",
-                              isActive ? "text-gold font-bold" : "text-slate-300"
+                              isActive ? "text-[#222] font-bold" : "text-slate-300"
                             )}>
                               {stepLabel}
                             </span>
@@ -673,6 +773,153 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
 
   const renderPlayerContent = (isDarkFullscreen = false) => {
     if (!activeStep) {
+      if (program) {
+        const totalSteps = flatSteps.length;
+        const completedSteps = flatSteps.filter(s => {
+          const progRecord = progress[s.id];
+          return progRecord?.completed && (s.content_type !== 'quiz' || progRecord?.passed);
+        }).length;
+        const progressPct = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+
+        // Find the first step to start/resume
+        const resumeStep = flatSteps.find(s => {
+          const progRecord = progress[s.id];
+          return !progRecord?.completed || (s.content_type === 'quiz' && !progRecord?.passed);
+        }) || flatSteps[0];
+
+        return (
+          <div className={cn(
+            "border rounded-2xl p-6 md:p-8 text-left shadow-sm space-y-6 flex flex-col justify-between min-h-[500px]",
+            isDarkFullscreen 
+              ? "bg-slate-900 border-slate-800 text-slate-200" 
+              : "bg-white border-slate-200 text-slate-800"
+          )}>
+            <div className="space-y-6">
+              {/* Header stats */}
+              <div className={cn(
+                "flex justify-between items-center border-b pb-4 relative pr-10",
+                isDarkFullscreen ? "border-slate-800" : "border-slate-100"
+              )}>
+                <span className={cn(
+                  "text-[10px] font-bold uppercase tracking-wider font-mono",
+                  isDarkFullscreen ? "text-slate-400" : "text-slate-500"
+                )}>
+                  {totalSteps} Steps
+                </span>
+                {!isDarkFullscreen && !isFullscreen && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleFullscreen}
+                    className="absolute right-0 top-0.5 rounded-lg h-8 w-8 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors hidden md:inline-flex"
+                    title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+                  >
+                    {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                  </Button>
+                )}
+              </div>
+
+              {/* Cover Image */}
+              {program.image_url && (
+                <div className={cn(
+                  "relative w-full aspect-video md:aspect-[21/9] rounded-2xl overflow-hidden border bg-slate-950",
+                  isDarkFullscreen ? "border-slate-850" : "border-slate-150"
+                )}>
+                  <img 
+                    src={program.image_url} 
+                    alt={program.title} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              {/* About description */}
+              <div className="space-y-2">
+                <h3 className={cn(
+                  "font-serif text-base font-bold",
+                  isDarkFullscreen ? "text-white" : "text-gray-900"
+                )}>
+                  About
+                </h3>
+                <p className={cn(
+                  "text-sm leading-relaxed whitespace-pre-line",
+                  isDarkFullscreen ? "text-slate-350" : "text-slate-600"
+                )}>
+                  {program.description || 'Welcome to the program! Set yourself up for success by completing each module step-by-step.'}
+                </p>
+              </div>
+
+              {/* Prerequisites & Outcomes */}
+              {(program.prerequisites || program.learning_outcomes) && (
+                <div className={cn(
+                  "grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t",
+                  isDarkFullscreen ? "border-slate-800" : "border-slate-100"
+                )}>
+                  {program.prerequisites && (
+                    <div className="space-y-1">
+                      <h4 className={cn(
+                        "text-[10px] font-bold uppercase tracking-wider font-serif",
+                        isDarkFullscreen ? "text-slate-400" : "text-slate-500"
+                      )}>
+                        Prerequisites
+                      </h4>
+                      <p className={cn(
+                        "text-xs leading-relaxed whitespace-pre-line",
+                        isDarkFullscreen ? "text-slate-350" : "text-slate-650"
+                      )}>
+                        {program.prerequisites}
+                      </p>
+                    </div>
+                  )}
+                  {program.learning_outcomes && (
+                    <div className="space-y-1">
+                      <h4 className={cn(
+                        "text-[10px] font-bold uppercase tracking-wider font-serif",
+                        isDarkFullscreen ? "text-slate-400" : "text-slate-500"
+                      )}>
+                        What you will learn
+                      </h4>
+                      <p className={cn(
+                        "text-xs leading-relaxed whitespace-pre-line",
+                        isDarkFullscreen ? "text-slate-350" : "text-slate-650"
+                      )}>
+                        {program.learning_outcomes}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom action button */}
+            {resumeStep && (
+              <div className={cn(
+                "flex justify-end pt-4 border-t w-full",
+                isDarkFullscreen ? "border-slate-800" : "border-slate-100"
+              )}>
+                <Button 
+                  onClick={() => {
+                    setActiveStep(resumeStep);
+                    // Also expand the module chapter of the resume step
+                    const parentMod = modules.find(m => (m.steps || []).some(s => s.id === resumeStep.id));
+                    if (parentMod) {
+                      const chapterName = parentMod.chapter || 'Overview';
+                      setExpandedChapters(prev => ({
+                        ...prev,
+                        [chapterName]: true
+                      }));
+                    }
+                  }}
+                  className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                >
+                  {completedSteps > 0 ? 'Resume Course' : 'Start'} &rarr;
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+      }
+
       return (
         <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center shadow-sm">
           <BookOpen className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
@@ -693,198 +940,211 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
         )}
       >
         {/* Player Header - centered path & active step title */}
-        <div className="flex flex-col items-center border-b pb-4 mb-4 text-center relative w-full pr-10 border-slate-200">
-          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider select-none">
-            {activeStep.moduleTitle || 'Module'}
-          </span>
-          <h3 className="font-serif text-base font-bold mt-1 text-navy">
-            {activeStep.title}
-          </h3>
+        {!isFullscreen && (
+          <div className="flex flex-col items-center border-b pb-4 mb-4 text-center relative w-full pr-12 border-slate-200">
+            <h3 className="font-serif text-sm md:text-base font-bold text-navy select-none">
+              {(activeStep.moduleTitle || 'Module')} / {activeStep.title}
+            </h3>
 
-          {/* Fullscreen handler on the right */}
-          {!isDarkFullscreen && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleFullscreen}
-              className="absolute right-0 top-1 rounded-lg h-8 w-8 text-slate-550"
-              title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-            >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </Button>
-          )}
-        </div>
+            {/* Fullscreen handler on the right */}
+            {!isDarkFullscreen && !isFullscreen && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleFullscreen}
+                className="absolute right-3 top-1 rounded-lg h-8 w-8 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors hidden md:inline-flex"
+                title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* Player Content Body */}
-        <div className="flex-1 overflow-y-auto min-h-[300px] mb-5 pr-1">
+        <div id="lms-player-body" className="flex-1 overflow-y-auto min-h-[300px] mb-5 pr-1 relative">
           {/* 1. Video content */}
-          {activeStep.content_type === 'video' && (
-            <div className="space-y-4">
-              {extractYouTubeId(activeStep.video_url || '') ? (
-                <div className="aspect-video bg-slate-900 rounded-xl overflow-hidden shadow-sm">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${extractYouTubeId(activeStep.video_url || '')}?rel=0&enablejsapi=1`}
-                    title={activeStep.title}
-                    className="w-full h-full border-0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              ) : activeStep.video_url ? (
-                <div className="aspect-video bg-slate-900 rounded-xl overflow-hidden shadow-sm">
-                  <video 
-                    src={activeStep.video_url} 
-                    controls 
-                    className="w-full h-full"
-                  />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center p-8 bg-slate-50 rounded-xl border border-dashed text-slate-400 italic">
-                  No video link provided for this step.
+          {/* Unified Content Viewer (Non-Quiz) */}
+          {activeStep.content_type !== 'quiz' && (
+            <div className="space-y-6">
+              {/* YouTube / Video player */}
+              {activeStep.video_url && (
+                <div className="space-y-4">
+                  {extractYouTubeId(activeStep.video_url) ? (
+                    <div className="aspect-video bg-slate-900 rounded-xl overflow-hidden shadow-sm">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${extractYouTubeId(activeStep.video_url)}?rel=0&enablejsapi=1`}
+                        title={activeStep.title}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-video bg-slate-900 rounded-xl overflow-hidden shadow-sm">
+                      <video 
+                        src={activeStep.video_url} 
+                        controls 
+                        className="w-full h-full"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* 2. Text/Article CKEditor Rendering */}
-          {activeStep.content_type === 'text' && (
-            <div className="space-y-4">
-              <style>{`
-                .lms-article-content h1,
-                .lms-article-content h1 * {
-                  font-size: 2.25rem !important;
-                  font-weight: 800 !important;
-                  line-height: 1.25 !important;
-                  margin-top: 2rem !important;
-                  margin-bottom: 1.5rem !important;
-                  color: #0f172a !important;
-                  font-family: 'Playfair Display', Georgia, serif !important;
-                }
-                .lms-article-content h2,
-                .lms-article-content h2 * {
-                  font-size: 1.75rem !important;
-                  font-weight: 700 !important;
-                  line-height: 1.35 !important;
-                  margin-top: 1.75rem !important;
-                  margin-bottom: 1rem !important;
-                  color: #1e293b !important;
-                  font-family: 'Playfair Display', Georgia, serif !important;
-                }
-                .lms-article-content h3,
-                .lms-article-content h3 * {
-                  font-size: 1.375rem !important;
-                  font-weight: 600 !important;
-                  line-height: 1.4 !important;
-                  margin-top: 1.5rem !important;
-                  margin-bottom: 0.75rem !important;
-                  color: #334155 !important;
-                  font-family: 'Playfair Display', Georgia, serif !important;
-                }
-                .lms-article-content p,
-                .lms-article-content p * {
-                  font-size: 0.9375rem !important;
-                  font-weight: 400 !important;
-                  line-height: 1.7 !important;
-                  margin-bottom: 1.25rem !important;
-                  color: #334155 !important;
-                  font-family: 'Inter', system-ui, sans-serif !important;
-                }
-                .lms-article-content.text-left p {
-                  margin-bottom: 0px !important;
-                }
-                .lms-article-content.text-left h1,
-                .lms-article-content.text-left h1 *,
-                .lms-article-content.text-left h2,
-                .lms-article-content.text-left h2 *,
-                .lms-article-content.text-left h3,
-                .lms-article-content.text-left h3 *,
-                .lms-article-content.text-left h4,
-                .lms-article-content.text-left h4 *,
-                .lms-article-content.text-left h5,
-                .lms-article-content.text-left h5 *,
-                .lms-article-content.text-left h6,
-                .lms-article-content.text-left h6 * {
-                  font-weight: 600 !important;
-                }
-                .lms-article-content ul {
-                  list-style-type: disc !important;
-                  padding-left: 1.5rem !important;
-                  margin-bottom: 1.25rem !important;
-                  font-family: 'Inter', system-ui, sans-serif !important;
-                }
-                .lms-article-content ol {
-                  list-style-type: decimal !important;
-                  padding-left: 1.5rem !important;
-                  margin-bottom: 1.25rem !important;
-                  font-family: 'Inter', system-ui, sans-serif !important;
-                }
-                .lms-article-content li,
-                .lms-article-content li * {
-                  font-size: 0.9375rem !important;
-                  margin-bottom: 0.5rem !important;
-                  color: #334155 !important;
-                  font-family: 'Inter', system-ui, sans-serif !important;
-                }
-              `}</style>
-              <div 
-                className="lms-article-content text-left"
-                dangerouslySetInnerHTML={{ __html: activeStep.text_content || 'No article content provided.' }}
-              />
-            </div>
-          )}
+              {/* Text / Article Content */}
+              {activeStep.text_content && (
+                <div className="space-y-4">
+                  <style>{`
+                    .lms-article-content h1,
+                    .lms-article-content h1 * {
+                      font-size: 2.25rem !important;
+                      font-weight: 800 !important;
+                      line-height: 1.25 !important;
+                      margin-top: 2rem !important;
+                      margin-bottom: 1.5rem !important;
+                      color: #0f172a !important;
+                      font-family: 'Playfair Display', Georgia, serif !important;
+                    }
+                    .lms-article-content h2,
+                    .lms-article-content h2 * {
+                      font-size: 1.75rem !important;
+                      font-weight: 700 !important;
+                      line-height: 1.35 !important;
+                      margin-top: 1.75rem !important;
+                      margin-bottom: 1rem !important;
+                      color: #1e293b !important;
+                      font-family: 'Playfair Display', Georgia, serif !important;
+                    }
+                    .lms-article-content h3,
+                    .lms-article-content h3 * {
+                      font-size: 1.375rem !important;
+                      font-weight: 600 !important;
+                      line-height: 1.4 !important;
+                      margin-top: 1.5rem !important;
+                      margin-bottom: 0.75rem !important;
+                      color: #334155 !important;
+                      font-family: 'Playfair Display', Georgia, serif !important;
+                    }
+                    .lms-article-content p,
+                    .lms-article-content p * {
+                      font-size: 14px !important;
+                      font-weight: 400 !important;
+                      line-height: 1.7 !important;
+                      margin-bottom: 10px !important;
+                      color: #334155 !important;
+                      font-family: 'Inter', system-ui, sans-serif !important;
+                    }
 
-          {/* 3. PDF Viewer */}
-          {activeStep.content_type === 'pdf' && (
-            <div className="space-y-4">
-              {activeStep.file_url ? (
+                    .lms-article-content.text-left h1,
+                    .lms-article-content.text-left h1 *,
+                    .lms-article-content.text-left h2,
+                    .lms-article-content.text-left h2 *,
+                    .lms-article-content.text-left h3,
+                    .lms-article-content.text-left h3 *,
+                    .lms-article-content.text-left h4,
+                    .lms-article-content.text-left h4 *,
+                    .lms-article-content.text-left h5,
+                    .lms-article-content.text-left h5 *,
+                    .lms-article-content.text-left h6,
+                    .lms-article-content.text-left h6 * {
+                      font-weight: 600 !important;
+                    }
+                    .lms-article-content ul {
+                      list-style-type: disc !important;
+                      padding-left: 1.5rem !important;
+                      margin-bottom: 1.25rem !important;
+                      font-family: 'Inter', system-ui, sans-serif !important;
+                    }
+                    .lms-article-content ol {
+                      list-style-type: decimal !important;
+                      padding-left: 1.5rem !important;
+                      margin-bottom: 1.25rem !important;
+                      font-family: 'Inter', system-ui, sans-serif !important;
+                    }
+                    .lms-article-content li,
+                    .lms-article-content li * {
+                      font-size: 0.9375rem !important;
+                      margin-bottom: 0.5rem !important;
+                      color: #334155 !important;
+                      font-family: 'Inter', system-ui, sans-serif !important;
+                    }
+                    .lms-article-content img {
+                      max-width: 100% !important;
+                      height: auto !important;
+                      border-radius: 12px !important;
+                      margin: 1.5rem 0 !important;
+                    }
+                    .lms-article-content video {
+                      max-width: 100% !important;
+                      border-radius: 12px !important;
+                      margin: 1.5rem 0 !important;
+                    }
+                  `}</style>
+                  <div 
+                    className="lms-article-content text-left"
+                    dangerouslySetInnerHTML={{ __html: cleanSyllabusHtml(activeStep.text_content) }}
+                  />
+                </div>
+              )}
+
+              {/* PDF Document Preview / Embedded View at the Bottom */}
+              {activeStep.file_url && (activeStep.content_type === 'pdf' || activeStep.file_url.toLowerCase().endsWith('.pdf')) && (
+                <div className="space-y-4 border-t border-slate-100 pt-5 text-left">
+                  <h4 className="font-serif font-bold text-sm text-navy flex items-center gap-1.5">
+                    <BookOpen className="w-4 h-4 text-gold" /> Syllabus PDF Document
+                  </h4>
+                  <div className="w-full h-[600px] border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-slate-50 relative">
+                    <iframe
+                      src={`${activeStep.file_url}#toolbar=0`}
+                      className="w-full h-full border-0"
+                      title="PDF syllabus document"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button asChild className="rounded-xl bg-gold text-gold-foreground hover:bg-gold/90 text-xs py-2 px-5">
+                      <a href={activeStep.file_url} target="_blank" rel="noopener noreferrer">
+                        Open PDF in New Tab
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Standard link & document resource downloads if type is file or link and no pdf preview rendered */}
+              {activeStep.file_url && !(activeStep.content_type === 'pdf' || activeStep.file_url.toLowerCase().endsWith('.pdf')) && (
                 <div className="flex flex-col items-center justify-center p-8 rounded-xl border border-slate-200 text-center bg-slate-50">
-                  <BookOpen className="w-12 h-12 text-gold mb-3 animate-bounce" />
-                  <h4 className="font-serif font-bold text-sm mb-2 text-navy">Read PDF Material</h4>
-                  <p className="text-slate-400 text-xs mb-4">Click below to open the PDF module document in a new window.</p>
-                  <Button asChild className="rounded-xl bg-gold text-gold-foreground hover:bg-gold/90 text-xs py-2 px-5">
-                    <a href={activeStep.file_url} target="_blank" rel="noopener noreferrer">
-                      Open PDF Document
-                    </a>
-                  </Button>
+                  {activeStep.content_type === 'link' ? (
+                    <>
+                      <BookOpen className="w-12 h-12 text-gold mb-3" />
+                      <h4 className="font-serif font-bold text-sm mb-2 text-navy">Explore Reference Link</h4>
+                      <p className="text-slate-400 text-xs mb-4">This step points to external content. Open it to proceed.</p>
+                      <Button asChild className="rounded-xl bg-navy text-warm hover:bg-navy/95 text-xs py-2 px-5">
+                        <a href={activeStep.file_url} target="_blank" rel="noopener noreferrer">
+                          Visit Link
+                        </a>
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-12 h-12 text-gold mb-3" />
+                      <h4 className="font-serif font-bold text-sm mb-2 text-navy">Download Resources</h4>
+                      <p className="text-slate-400 text-xs mb-4">Download accompanying slides, templates, or references.</p>
+                      <Button asChild className="rounded-xl bg-gold text-gold-foreground hover:bg-gold/90 text-xs py-2 px-5">
+                        <a href={activeStep.file_url} download>
+                          Download Resource File
+                        </a>
+                      </Button>
+                    </>
+                  )}
                 </div>
-              ) : (
-                <div className="text-slate-400 italic text-xs">No PDF URL configured.</div>
               )}
-            </div>
-          )}
 
-          {/* 4. External Links */}
-          {activeStep.content_type === 'link' && (
-            <div className="flex flex-col items-center justify-center p-8 rounded-xl border border-slate-200 text-center bg-slate-50">
-              <BookOpen className="w-12 h-12 text-gold mb-3" />
-              <h4 className="font-serif font-bold text-sm mb-2 text-navy">Explore Reference Link</h4>
-              <p className="text-slate-400 text-xs mb-4">This step points to external content. Open it to proceed.</p>
-              {activeStep.file_url ? (
-                <Button asChild className="rounded-xl bg-navy text-warm hover:bg-navy/95 text-xs py-2 px-5">
-                  <a href={activeStep.file_url} target="_blank" rel="noopener noreferrer">
-                    Visit Link
-                  </a>
-                </Button>
-              ) : (
-                <span className="text-xs text-slate-400 italic">No link specified</span>
-              )}
-            </div>
-          )}
-
-          {/* 5. Downloadable Resource file */}
-          {activeStep.content_type === 'file' && (
-            <div className="flex flex-col items-center justify-center p-8 rounded-xl border border-slate-200 text-center bg-slate-50">
-              <Download className="w-12 h-12 text-gold mb-3" />
-              <h4 className="font-serif font-bold text-sm mb-2 text-navy">Download Resources</h4>
-              <p className="text-slate-400 text-xs mb-4">Download accompanying slides, templates, or references.</p>
-              {activeStep.file_url ? (
-                <Button asChild className="rounded-xl bg-gold text-gold-foreground hover:bg-gold/90 text-xs py-2 px-5">
-                  <a href={activeStep.file_url} download>
-                    Download Resource
-                  </a>
-                </Button>
-              ) : (
-                <span className="text-xs text-slate-400 italic">No download path configured</span>
+              {/* Fallback if step is empty */}
+              {!activeStep.video_url && !activeStep.text_content && !activeStep.file_url && (
+                <div className="flex flex-col items-center justify-center p-12 bg-slate-55 rounded-xl border border-dashed text-slate-400 italic">
+                  No video, text content, or files attached to this step.
+                </div>
               )}
             </div>
           )}
@@ -936,7 +1196,20 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
                           <div key={qIdx} className="space-y-3 pb-5 last:border-0 last:pb-0 w-full border-b border-slate-100">
                             <div className="flex justify-between items-center">
                               <p className="text-xs font-bold text-slate-800">Q{qIdx + 1}. {q.question}</p>
-                              <span className="text-[9px] text-slate-405 font-bold uppercase">Question {qIdx + 1} of {quizQuestions.length}</span>
+                              <div className="flex items-center gap-3">
+                                {!quizSubmitted && selected && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleUndoQuestionAnswer(qIdx)}
+                                    className="h-6 text-[10px] text-rose-500 hover:text-rose-600 font-bold px-2 py-0 hover:bg-rose-50 rounded-lg"
+                                  >
+                                    Undo choice
+                                  </Button>
+                                )}
+                                <span className="text-[9px] text-slate-405 font-bold uppercase">Question {qIdx + 1} of {quizQuestions.length}</span>
+                              </div>
                             </div>
                             
                             <div className="space-y-2 w-full">
@@ -979,7 +1252,7 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
                             </div>
 
                             {/* Incorrect / Correct alerts inline inside cards (Screen 7 validation layout) */}
-                            {quizSubmitted && isSelected && (
+                            {quizSubmitted && selected && (
                               <div className={`mt-3 px-4 py-2.5 rounded-xl border text-xs flex items-center gap-2 font-semibold ${
                                 isCorrect
                                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
@@ -1016,78 +1289,107 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
             variant="outline"
             onClick={() => setActiveStep(flatSteps[currentStepIdx - 1])}
             disabled={currentStepIdx <= 0}
-            className="rounded-xl h-9 text-xs px-4 border-slate-200 text-slate-600 hover:bg-slate-50"
+            className="rounded-xl h-9 text-xs px-4 border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800"
           >
             ← Previous
           </Button>
 
           {/* Right side navigation buttons */}
-          {activeStep.content_type === 'quiz' ? (
-            quizSubmitted ? (
-              <div className="flex items-center gap-2">
-                {quizScore !== null && quizScore < (activeStep.passing_score || 80) && (
+          {(() => {
+            const { isLocked, requiredStep } = getStepLockStatus(activeStep);
+            
+            if (activeStep.content_type === 'quiz') {
+              return quizSubmitted ? (
+                <div className="flex items-center gap-2">
+                  {quizScore !== null && quizScore < (activeStep.passing_score || 80) && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={handleRetakeQuiz}
+                        variant="outline"
+                        className="rounded-xl h-9 text-xs gap-1 border-slate-200 text-slate-500 font-bold px-4 hover:bg-slate-50"
+                      >
+                        Try Again
+                      </Button>
+                      <Button
+                        onClick={handleBypassQuiz}
+                        className="rounded-xl h-9 bg-slate-600 hover:bg-slate-700 text-white font-bold text-xs px-4"
+                      >
+                        Go Next (Bypass)
+                      </Button>
+                    </div>
+                  )}
+                  {(quizScore !== null && quizScore >= (activeStep.passing_score || 80) || progress[activeStep.id]?.passed) && currentStepIdx < flatSteps.length - 1 && (
+                    <Button
+                      onClick={() => setActiveStep(flatSteps[currentStepIdx + 1])}
+                      className="rounded-xl h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4"
+                    >
+                      Next →
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-end gap-1">
                   <Button
-                    onClick={handleRetakeQuiz}
-                    variant="outline"
-                    className="rounded-xl h-9 text-xs gap-1 border-slate-200 text-slate-500 font-bold px-4 hover:bg-slate-50"
-                  >
-                    Try Again
-                  </Button>
-                )}
-                {quizScore !== null && quizScore >= (activeStep.passing_score || 80) && currentStepIdx < flatSteps.length - 1 && (
-                  <Button
-                    onClick={() => setActiveStep(flatSteps[currentStepIdx + 1])}
+                    onClick={handleSubmitQuiz}
+                    disabled={
+                      isLocked ||
+                      submittingProgress ||
+                      (() => {
+                        let questionsCount = 0;
+                        try {
+                          if (activeStep.quiz_questions) {
+                            questionsCount = (typeof activeStep.quiz_questions === 'string'
+                              ? JSON.parse(activeStep.quiz_questions)
+                              : activeStep.quiz_questions).length;
+                          }
+                        } catch (e) {}
+                        return Object.keys(selectedAnswers).length < questionsCount;
+                      })()
+                    }
                     className="rounded-xl h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4"
                   >
-                    Next →
+                    {submittingProgress ? 'Grading...' : 'Submit Quiz'}
                   </Button>
+                  {isLocked && requiredStep && (
+                    <span className="text-[10px] text-rose-500 font-medium">
+                      Complete "{requiredStep.title}" first to submit quiz
+                    </span>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              /* Non-quiz standard complete button */
+              <div className="flex gap-2">
+                {!progress[activeStep.id]?.completed ? (
+                  <div className="flex flex-col items-end gap-1">
+                    <Button
+                      onClick={handleMarkComplete}
+                      disabled={isLocked || submittingProgress}
+                      className="rounded-xl h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4"
+                    >
+                      {submittingProgress ? 'Saving...' : 'Complete & Next'}
+                    </Button>
+                    {isLocked && requiredStep && (
+                      <span className="text-[10px] text-rose-500 font-medium">
+                        Complete "{requiredStep.title}" first to unlock
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  currentStepIdx < flatSteps.length - 1 && (
+                    <Button
+                      onClick={() => setActiveStep(flatSteps[currentStepIdx + 1])}
+                      className="rounded-xl h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4"
+                    >
+                      Next →
+                    </Button>
+                  )
                 )}
               </div>
-            ) : (
-              <Button
-                onClick={handleSubmitQuiz}
-                disabled={
-                  submittingProgress ||
-                  (() => {
-                    let questionsCount = 0;
-                    try {
-                      if (activeStep.quiz_questions) {
-                        questionsCount = (typeof activeStep.quiz_questions === 'string'
-                          ? JSON.parse(activeStep.quiz_questions)
-                          : activeStep.quiz_questions).length;
-                      }
-                    } catch (e) {}
-                    return Object.keys(selectedAnswers).length < questionsCount;
-                  })()
-                }
-                className="rounded-xl h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4"
-              >
-                {submittingProgress ? 'Grading...' : 'Submit Quiz'}
-              </Button>
-            )
-          ) : (
-            /* Non-quiz standard complete button */
-            <div className="flex gap-2">
-              {!progress[activeStep.id]?.completed ? (
-                <Button
-                  onClick={handleMarkComplete}
-                  disabled={submittingProgress}
-                  className="rounded-xl h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4"
-                >
-                  {submittingProgress ? 'Saving...' : 'Complete & Next'}
-                </Button>
-              ) : (
-                currentStepIdx < flatSteps.length - 1 && (
-                  <Button
-                    onClick={() => setActiveStep(flatSteps[currentStepIdx + 1])}
-                    className="rounded-xl h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4"
-                  >
-                    Next →
-                  </Button>
-                )
-              )}
-            </div>
-          )}
+            );
+          })()}
         </div>
       </div>
     );
@@ -1149,7 +1451,7 @@ provider: {
     url: canonical,
   };
 
-  if (isFullscreen && enrollment && activeStep) {
+  if (isFullscreen && enrollment) {
     return (
       <div 
         id="lms-workspace-container"
@@ -1191,12 +1493,13 @@ provider: {
         </div>
         
         {/* Fullscreen right content area */}
-        <div className="flex-grow bg-white flex flex-col h-full overflow-hidden text-slate-800">
+        <div className="flex-grow bg-slate-50 flex flex-col h-full overflow-hidden text-slate-800">
           {/* Header */}
           <div className="h-14 border-b border-slate-200 px-6 flex items-center justify-between bg-slate-50">
-            <div className="flex flex-col text-left">
-              <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">{activeStep.moduleTitle}</span>
-              <span className="text-xs font-semibold text-slate-800">{activeStep.title}</span>
+            <div className="flex items-center text-left">
+              <span className="text-xs font-semibold text-slate-800">
+                {activeStep ? `${activeStep.moduleTitle || 'Module'} / ${activeStep.title}` : 'Overview / Program Overview'}
+              </span>
             </div>
             <button 
               onClick={toggleFullscreen} 
@@ -1207,10 +1510,9 @@ provider: {
             </button>
           </div>
           
-          {/* Content Body */}
-          <div className="flex-grow p-6 md:p-8 overflow-y-auto bg-white">
+          <div className="flex-grow overflow-y-auto bg-slate-50 p-4 md:p-6">
             <div className="mx-auto w-full max-w-5xl">
-              {renderPlayerContent(true)}
+              {renderPlayerContent(false)}
             </div>
           </div>
         </div>
@@ -1363,7 +1665,7 @@ provider: {
                           className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left"
                         >
                           <div>
-                            <h4 className="font-serif font-bold text-sm text-gray-900">M{mIdx + 1}. {mod.title}</h4>
+                             <h4 className="font-serif font-bold text-sm text-gray-900">{mod.title}</h4>
                             <p className="text-xs text-muted-foreground mt-0.5">{stepList.length} syllabus steps</p>
                           </div>
                           <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
@@ -1674,7 +1976,7 @@ provider: {
                                 className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left"
                               >
                                 <div>
-                                  <h4 className="font-serif font-bold text-sm text-gray-900">M{mIdx + 1}. {mod.title}</h4>
+                                   <h4 className="font-serif font-bold text-sm text-gray-900">{mod.title}</h4>
                                   <p className="text-xs text-muted-foreground mt-0.5">{stepList.length} syllabus steps</p>
                                 </div>
                                 <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-90' : ''}`} />

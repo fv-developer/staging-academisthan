@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { generateCertificatePDF } from '@/lib/certificate';
+import { generateAPIScoreCertificate, type APIScoreCertificateData } from '@/lib/apiScoreCertificate';
 import { DataTable, ColumnDef } from './DataTable';
 import {
   Award, CheckCircle2, XCircle, Trash2, Download, Eye,
@@ -66,6 +67,45 @@ export function CertificationsManager() {
     const friendlyName = FRIENDLY_TOOL_NAMES[row.tool_name] || row.tool_name;
     const certNum = row.certificate_number || `ACAD-CERT-${row.id.slice(0, 6).toUpperCase()}`;
     const issuedAt = row.certificate_issued_at || row.created_at;
+
+    if (row.tool_name && row.tool_name.includes('Academic & Research Score')) {
+      try {
+        const resData = typeof row.result_data === 'string' ? JSON.parse(row.result_data) : row.result_data;
+        const catScores = resData?.categoryScores || {};
+        
+        const certData: APIScoreCertificateData = {
+          holderName: row.full_name || 'Fellow',
+          membershipId: row.membership_id || `ACAD-${row.id.slice(0, 6).toUpperCase()}`,
+          totalScore: row.score || 0,
+          maxScore: 350,
+          cat1Score: catScores.teaching || 0,
+          cat1Max: 100,
+          cat2Score: catScores.research || 0,
+          cat2Max: 200,
+          cat3Score: catScores.other || 0,
+          cat3Max: 50,
+          designation: row.designation || undefined,
+          institution: row.institution || undefined,
+          date: issuedAt,
+        };
+
+        const doc = generateAPIScoreCertificate(certData);
+        if (action === 'view') {
+          doc.output('dataurlnewwindow');
+        } else {
+          doc.save(`UGC-Academic-Research-Score-${certNum}.pdf`);
+        }
+
+        toast({
+          title: action === 'view' ? '✓ Opening Preview' : '✓ Downloading Certificate',
+          description: `Certificate for ${row.full_name || 'Fellow'} generated successfully.`,
+          duration: 2000,
+        });
+        return;
+      } catch (err) {
+        console.error('Failed to generate UGC Score PDF scorecard, fallback to normal PDF:', err);
+      }
+    }
 
     generateCertificatePDF({
       holderName: row.full_name || 'Fellow',
