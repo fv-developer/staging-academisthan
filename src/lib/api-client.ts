@@ -787,14 +787,14 @@ export const profiles = {
 
 export const blogs = {
   getBySlug: async (slug: string) => {
-    const response = await fetch(`${API_BASE}/blogs/slug/${slug}`);
+    const response = await fetch(`${API_BASE}/blogs/slug/${slug}?_t=${Date.now()}`);
     if (!response.ok) throw new Error('Failed to fetch blog');
     return response.json();
   },
   
   getCategories: async () => {
     try {
-      const response = await fetch(`${API_BASE}/blogs/categories`);
+      const response = await fetch(`${API_BASE}/blogs/categories?_t=${Date.now()}`);
       if (!response.ok) {
         console.error('Failed to fetch categories');
         return [];
@@ -817,7 +817,8 @@ export const blogs = {
           }
         });
       }
-      const url = `${API_BASE}/blogs${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+      queryParams.append('_t', String(Date.now()));
+      const url = `${API_BASE}/blogs?${queryParams.toString()}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch blogs');
       const result = await response.json();
