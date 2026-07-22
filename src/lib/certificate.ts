@@ -8,36 +8,77 @@ interface CertificateData {
   certificateType: string;
 }
 
-export function generateCertificatePDF(data: CertificateData, action: 'download' | 'view' = 'download') {
+export interface FieldPos {
+  x: number;
+  y: number;
+  fontSize?: number;
+  color?: string;
+}
+
+export interface CertificateTemplateConfig {
+  backgroundImageUrl?: string;
+  fieldPositions?: {
+    holderName?: FieldPos;
+    programTitle?: FieldPos;
+    issuedAt?: FieldPos;
+    certificateNumber?: FieldPos;
+  };
+}
+
+export function generateCertificatePDF(
+  data: CertificateData,
+  action: 'download' | 'view' = 'download',
+  templateConfig?: CertificateTemplateConfig | string
+) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const w = doc.internal.pageSize.getWidth();
   const h = doc.internal.pageSize.getHeight();
 
-  // Background
-  doc.setFillColor(248, 245, 240); // warm bg
-  doc.rect(0, 0, w, h, 'F');
+  let config: CertificateTemplateConfig | null = null;
+  if (typeof templateConfig === 'string') {
+    try {
+      config = JSON.parse(templateConfig);
+    } catch (e) {}
+  } else if (templateConfig) {
+    config = templateConfig;
+  }
 
-  // Gold border
-  doc.setDrawColor(191, 155, 86); // gold
-  doc.setLineWidth(2);
-  doc.rect(8, 8, w - 16, h - 16);
-  doc.setLineWidth(0.5);
-  doc.rect(12, 12, w - 24, h - 24);
+  const positions = config?.fieldPositions;
 
-  // Corner decorations
-  const cornerSize = 15;
-  const corners = [
-    [14, 14], [w - 14 - cornerSize, 14],
-    [14, h - 14 - cornerSize], [w - 14 - cornerSize, h - 14 - cornerSize],
-  ];
-  doc.setDrawColor(191, 155, 86);
-  doc.setLineWidth(0.8);
-  corners.forEach(([x, y]) => {
-    doc.line(x, y, x + cornerSize, y);
-    doc.line(x, y, x, y + cornerSize);
-    doc.line(x + cornerSize, y + cornerSize, x, y + cornerSize);
-    doc.line(x + cornerSize, y + cornerSize, x + cornerSize, y);
-  });
+  if (config?.backgroundImageUrl) {
+    try {
+      doc.addImage(config.backgroundImageUrl, 'JPEG', 0, 0, w, h);
+    } catch (e) {
+      doc.setFillColor(248, 245, 240);
+      doc.rect(0, 0, w, h, 'F');
+    }
+  } else {
+    // Standard Background
+    doc.setFillColor(248, 245, 240); // warm bg
+    doc.rect(0, 0, w, h, 'F');
+
+    // Gold border
+    doc.setDrawColor(191, 155, 86); // gold
+    doc.setLineWidth(2);
+    doc.rect(8, 8, w - 16, h - 16);
+    doc.setLineWidth(0.5);
+    doc.rect(12, 12, w - 24, h - 24);
+
+    // Corner decorations
+    const cornerSize = 15;
+    const corners = [
+      [14, 14], [w - 14 - cornerSize, 14],
+      [14, h - 14 - cornerSize], [w - 14 - cornerSize, h - 14 - cornerSize],
+    ];
+    doc.setDrawColor(191, 155, 86);
+    doc.setLineWidth(0.8);
+    corners.forEach(([x, y]) => {
+      doc.line(x, y, x + cornerSize, y);
+      doc.line(x, y, x, y + cornerSize);
+      doc.line(x + cornerSize, y + cornerSize, x, y + cornerSize);
+      doc.line(x + cornerSize, y + cornerSize, x + cornerSize, y);
+    });
+  }
 
   // Header - Organization
   doc.setFont('helvetica', 'normal');
@@ -73,30 +114,34 @@ export function generateCertificatePDF(data: CertificateData, action: 'download'
 
   // Holder name
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(28);
-  doc.setTextColor(40, 50, 70);
-  doc.text(data.holderName, w / 2, 88, { align: 'center' });
+  doc.setFontSize(positions?.holderName?.fontSize || 28);
+  doc.setTextColor(positions?.holderName?.color || '#283246');
+  doc.text(data.holderName, positions?.holderName?.x ?? (w / 2), positions?.holderName?.y ?? 88, { align: 'center' });
 
-  // Underline
-  const nameWidth = doc.getTextWidth(data.holderName);
-  doc.setDrawColor(191, 155, 86);
-  doc.setLineWidth(0.5);
-  doc.line(w / 2 - nameWidth / 2, 91, w / 2 + nameWidth / 2, 91);
+  if (!positions?.holderName) {
+    // Underline
+    const nameWidth = doc.getTextWidth(data.holderName);
+    doc.setDrawColor(191, 155, 86);
+    doc.setLineWidth(0.5);
+    doc.line(w / 2 - nameWidth / 2, 91, w / 2 + nameWidth / 2, 91);
+  }
 
   // Has completed text
-  const actionText = data.certificateType === 'participation'
-    ? 'has successfully participated in the program'
-    : 'has successfully completed the program';
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-  doc.setTextColor(120, 110, 100);
-  doc.text(actionText, w / 2, 102, { align: 'center' });
+  if (!positions?.programTitle) {
+    const actionText = data.certificateType === 'participation'
+      ? 'has successfully participated in the program'
+      : 'has successfully completed the program';
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setTextColor(120, 110, 100);
+    doc.text(actionText, w / 2, 102, { align: 'center' });
+  }
 
   // Program title
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(191, 155, 86);
-  doc.text(`"${data.programTitle}"`, w / 2, 115, { align: 'center' });
+  doc.setFontSize(positions?.programTitle?.fontSize || 16);
+  doc.setTextColor(positions?.programTitle?.color || '#bf9b56');
+  doc.text(`"${data.programTitle}"`, positions?.programTitle?.x ?? (w / 2), positions?.programTitle?.y ?? 115, { align: 'center' });
 
   // Conducted by
   doc.setFont('helvetica', 'normal');

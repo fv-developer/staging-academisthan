@@ -145,7 +145,7 @@ export default function Programs() {
       <Navbar />
 
       {/* ════ HERO ════ */}
-      <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-screen md:min-h-[70vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0" style={{ animation: 'kenBurns 20s ease-in-out infinite alternate' }}>
           <img src={library} alt="Academic Library" className="w-full h-full object-cover" />
         </div>

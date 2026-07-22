@@ -79,7 +79,8 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
       description,
       student_count,
       faculty_count,
-      logo_url
+      logo_url,
+      leadership
     } = req.body;
 
     // Validation
@@ -106,14 +107,30 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
 
     const institutionId = uuidv4();
 
+// Auto-migrate campus media columns in institutions table if missing
+(async () => {
+  try {
+    await pool.execute('ALTER TABLE institutions ADD COLUMN IF NOT EXISTS campus_gallery LONGTEXT').catch(() => {});
+    await pool.execute('ALTER TABLE institutions ADD COLUMN IF NOT EXISTS campus_video_url TEXT').catch(() => {});
+    await pool.execute('ALTER TABLE institutions ADD COLUMN IF NOT EXISTS youtube_url TEXT').catch(() => {});
+  } catch (err) {
+    console.error('Institutions schema migration error:', err);
+  }
+})();
+
+    // Extract campus media attributes
+    const { campus_gallery, campus_video_url, youtube_url } = req.body;
+    const campusGalleryJson = campus_gallery ? (typeof campus_gallery === 'string' ? campus_gallery : JSON.stringify(campus_gallery)) : null;
+
     // Insert institution
     await pool.execute(
       `INSERT INTO institutions (
         id, name, institute_code, type, address, city, state, country, pincode,
         contact_person, contact_email, contact_phone,
         website, established_year, student_count, faculty_count, accreditation, document_url, logo_url, description,
+        campus_gallery, campus_video_url, youtube_url,
         status, membership_status, email_verified, registered_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'inactive', FALSE, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'inactive', FALSE, ?)`,
       [
         institutionId,
         name,
@@ -135,9 +152,36 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
         document_url,
         logo_url || null,
         description || null,
+        campusGalleryJson,
+        campus_video_url || null,
+        youtube_url || null,
         userId
       ]
     );
+
+    // Insert leadership profiles if provided
+    if (leadership && Array.isArray(leadership)) {
+      for (const lead of leadership) {
+        const leadId = uuidv4();
+        await pool.execute(
+          `INSERT INTO institution_leadership (
+            id, institution_id, role, full_name, designation, email, phone, photo_url, linkedin_url, google_scholar_url, admin_verified
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+          [
+            leadId,
+            institutionId,
+            lead.role,
+            lead.fullName,
+            lead.designation,
+            lead.email,
+            lead.phone,
+            lead.photoUrl || null,
+            lead.linkedinUrl || null,
+            lead.googleScholarUrl || null
+          ]
+        );
+      }
+    }
 
     // Update user profile with institution_id and designation (if provided)
     if (req.body.representative_designation) {
@@ -216,8 +260,14 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
       logo_url,
       student_count,
       faculty_count,
-      representative_designation
+      representative_designation,
+      campus_gallery,
+      campus_video_url,
+      youtube_url,
+      leadership
     } = req.body;
+
+    const campusGalleryJson = campus_gallery !== undefined ? (typeof campus_gallery === 'string' ? campus_gallery : JSON.stringify(campus_gallery)) : undefined;
 
     // Retrieve active details
     const [current]: any = await pool.execute(
@@ -246,6 +296,46 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
       );
       if (isAdmin.length === 0) {
         return res.status(403).json({ error: 'Unauthorized to edit this institution' });
+      }
+    }
+
+    // Sync leadership profiles if provided
+    if (leadership && Array.isArray(leadership)) {
+      // Check if current editor is admin
+      let isAdminEditor = false;
+      const [adminCheck]: any = await pool.execute(
+        'SELECT id FROM admin_roles WHERE user_id = ?',
+        [userId]
+      );
+      if (adminCheck.length > 0) {
+        isAdminEditor = true;
+      }
+
+      // Delete old ones first
+      await pool.execute('DELETE FROM institution_leadership WHERE institution_id = ?', [id]);
+      
+      // Insert new ones
+      for (const lead of leadership) {
+        const leadId = uuidv4();
+        const adminVerifiedVal = isAdminEditor ? (lead.admin_verified || 0) : 0;
+        await pool.execute(
+          `INSERT INTO institution_leadership (
+            id, institution_id, role, full_name, designation, email, phone, photo_url, linkedin_url, google_scholar_url, admin_verified
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            leadId,
+            id,
+            lead.role,
+            lead.fullName || lead.full_name,
+            lead.designation,
+            lead.email,
+            lead.phone,
+            lead.photoUrl || lead.photo_url || null,
+            lead.linkedinUrl || lead.linkedin_url || null,
+            lead.googleScholarUrl || lead.google_scholar_url || null,
+            adminVerifiedVal
+          ]
+        );
       }
     }
 
@@ -282,7 +372,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
         `UPDATE institutions SET
           address = ?, pincode = ?, contact_phone = ?, website = ?, 
           accreditation = ?, document_url = ?, logo_url = ?, description = ?, 
-          student_count = ?, faculty_count = ?, status = 'pending_change_approval'
+          student_count = ?, faculty_count = ?, campus_gallery = ?, campus_video_url = ?, youtube_url = ?, status = 'pending_change_approval'
          WHERE id = ?`,
         [
           address !== undefined ? address : current[0].address,
@@ -295,6 +385,9 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
           description !== undefined ? description : current[0].description,
           student_count !== undefined ? student_count : current[0].student_count,
           faculty_count !== undefined ? faculty_count : current[0].faculty_count,
+          campusGalleryJson !== undefined ? campusGalleryJson : current[0].campus_gallery,
+          campus_video_url !== undefined ? campus_video_url : current[0].campus_video_url,
+          youtube_url !== undefined ? youtube_url : current[0].youtube_url,
           id
         ]
       );
@@ -323,7 +416,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
         `UPDATE institutions SET
           name = ?, institute_code = ?, type = ?, address = ?, city = ?, state = ?, country = ?, pincode = ?, contact_phone = ?, 
           website = ?, established_year = ?, accreditation = ?, document_url = ?, logo_url = ?, description = ?,
-          student_count = ?, faculty_count = ?, status = ?, rejection_reason = NULL, suspension_reason = NULL
+          student_count = ?, faculty_count = ?, campus_gallery = ?, campus_video_url = ?, youtube_url = ?, status = ?, rejection_reason = NULL, suspension_reason = NULL
          WHERE id = ?`,
         [
           name !== undefined ? name.trim() : current[0].name,
@@ -343,6 +436,9 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
           description !== undefined ? description.trim() : current[0].description,
           student_count !== undefined ? student_count : current[0].student_count,
           faculty_count !== undefined ? faculty_count : current[0].faculty_count,
+          campusGalleryJson !== undefined ? campusGalleryJson : current[0].campus_gallery,
+          campus_video_url !== undefined ? campus_video_url : current[0].campus_video_url,
+          youtube_url !== undefined ? youtube_url : current[0].youtube_url,
           newStatus,
           id
         ]
@@ -473,7 +569,15 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Institution not found' });
     }
 
-    res.json(institutions[0]);
+    const [leadership] = await pool.execute(
+      'SELECT * FROM institution_leadership WHERE institution_id = ?',
+      [req.params.id]
+    );
+
+    res.json({
+      ...institutions[0],
+      leadership: leadership || []
+    });
   } catch (error) {
     console.error('Get institution error:', error);
     res.status(500).json({ error: 'Failed to get institution' });
@@ -553,10 +657,8 @@ router.post('/upload-document', authenticate, async (req: AuthRequest, res: Resp
 
     fs.writeFileSync(filepath, dataBuffer);
 
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-    const host = req.headers['x-forwarded-host'] || req.get('host') || 'localhost:3001';
-    const documentUrl = `${protocol}://${host}/uploads/${safeFilename}`;
-
+    const documentUrl = `/uploads/${safeFilename}`;
+ 
     res.json({ documentUrl });
   } catch (error) {
     console.error('Upload document error:', error);

@@ -203,7 +203,7 @@ export default function SignUp() {
           </div>
 
           <div className="mb-8">
-            <h1 className="font-serif text-3xl font-bold text-foreground mb-2">
+            <h1 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-2">
               Become a Fellow
             </h1>
             <p className="text-muted-foreground text-sm">

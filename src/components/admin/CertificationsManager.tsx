@@ -33,9 +33,21 @@ const FRIENDLY_TOOL_NAMES: Record<string, string> = {
 
 export function CertificationsManager() {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<'records' | 'designer'>('records');
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Template Designer States
+  const [templateBgUrl, setTemplateBgUrl] = useState('');
+  const [templateTitle, setTemplateTitle] = useState('Default A4 Certificate');
+  const [fieldPositions, setFieldPositions] = useState({
+    holderName: { x: 148, y: 88, fontSize: 28, color: '#283246' },
+    programTitle: { x: 148, y: 115, fontSize: 16, color: '#bf9b56' },
+    issuedAt: { x: 50, y: 152, fontSize: 10, color: '#3c3c46' },
+    certificateNumber: { x: 247, y: 152, fontSize: 10, color: '#3c3c46' },
+  });
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   // Filter States
   const [selectedTool, setSelectedTool] = useState('all');
@@ -85,6 +97,7 @@ export function CertificationsManager() {
           cat3Score: catScores.other || 0,
           cat3Max: 50,
           designation: row.designation || undefined,
+          department: row.department || undefined,
           institution: row.institution || undefined,
           date: issuedAt,
         };
@@ -366,26 +379,253 @@ export function CertificationsManager() {
     },
   ];
 
+  const handleSaveTemplate = async () => {
+    setSavingTemplate(true);
+    try {
+      await adminApi.saveCertificateTemplate({
+        title: templateTitle,
+        background_image_url: templateBgUrl,
+        field_positions: fieldPositions,
+        is_active: true,
+      });
+      toast({ title: '✓ Template Saved & Activated', description: 'New certificate design is active for all future completions.' });
+    } catch (err: any) {
+      toast({ title: 'Failed to save template', description: err.message, variant: 'destructive' });
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="font-serif text-xl font-bold text-foreground flex items-center gap-2">
-            <Award className="w-6 h-6 text-gold" /> Teacher Tools Certifications
+            <Award className="w-6 h-6 text-gold" /> Certificate Management
           </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">Manage and monitor all fellow certification test history records.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Manage issued certificates & configure dynamic A4 certificate templates.</p>
         </div>
 
         <div className="flex items-center gap-2">
           <Button
-            onClick={fetchRecords}
-            variant="outline"
+            onClick={() => setActiveTab('records')}
+            variant={activeTab === 'records' ? 'default' : 'outline'}
             size="sm"
-            className="rounded-xl h-9 text-xs font-semibold gap-1.5"
-            disabled={loading}
+            className="rounded-xl h-9 text-xs"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
+            <Award className="w-3.5 h-3.5 mr-1.5" /> Issued Certificates
           </Button>
+          <Button
+            onClick={() => setActiveTab('designer')}
+            variant={activeTab === 'designer' ? 'default' : 'outline'}
+            size="sm"
+            className="rounded-xl h-9 text-xs"
+          >
+            <FileText className="w-3.5 h-3.5 mr-1.5" /> Certificate Designer
+          </Button>
+        </div>
+      </div>
+
+      {activeTab === 'designer' ? (
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-6">
+          <div>
+            <h3 className="font-serif text-base font-bold text-foreground">Dynamic Certificate Template & Field Positioning</h3>
+            <p className="text-xs text-muted-foreground">Customize A4 background image and position dynamic text fields (X/Y coordinates in mm).</p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold">Template Title</label>
+              <input
+                type="text"
+                value={templateTitle}
+                onChange={e => setTemplateTitle(e.target.value)}
+                className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold">A4 Background Image URL (Landscape A4: 297x210mm)</label>
+              <input
+                type="text"
+                placeholder="https://..."
+                value={templateBgUrl}
+                onChange={e => setTemplateBgUrl(e.target.value)}
+                className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs"
+              />
+            </div>
+          </div>
+
+          {/* Coordinate settings for dynamic fields */}
+          <div className="border border-border rounded-xl p-4 space-y-4 bg-muted/20">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Dynamic Field Positioning (A4 landscape: 297mm width × 210mm height)</h4>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              {/* Fellow Name */}
+              <div className="space-y-2 border border-border rounded-xl p-3 bg-card">
+                <span className="text-xs font-bold text-foreground block">1. Fellow Name Field</span>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block">X Pos (mm)</label>
+                    <input
+                      type="number"
+                      value={fieldPositions.holderName.x}
+                      onChange={e => setFieldPositions(p => ({ ...p, holderName: { ...p.holderName, x: Number(e.target.value) } }))}
+                      className="w-full bg-background border rounded-lg px-2 py-1 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block">Y Pos (mm)</label>
+                    <input
+                      type="number"
+                      value={fieldPositions.holderName.y}
+                      onChange={e => setFieldPositions(p => ({ ...p, holderName: { ...p.holderName, y: Number(e.target.value) } }))}
+                      className="w-full bg-background border rounded-lg px-2 py-1 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block">Font Size (pt)</label>
+                    <input
+                      type="number"
+                      value={fieldPositions.holderName.fontSize}
+                      onChange={e => setFieldPositions(p => ({ ...p, holderName: { ...p.holderName, fontSize: Number(e.target.value) } }))}
+                      className="w-full bg-background border rounded-lg px-2 py-1 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Program Name */}
+              <div className="space-y-2 border border-border rounded-xl p-3 bg-card">
+                <span className="text-xs font-bold text-foreground block">2. Program Name Field</span>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block">X Pos (mm)</label>
+                    <input
+                      type="number"
+                      value={fieldPositions.programTitle.x}
+                      onChange={e => setFieldPositions(p => ({ ...p, programTitle: { ...p.programTitle, x: Number(e.target.value) } }))}
+                      className="w-full bg-background border rounded-lg px-2 py-1 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block">Y Pos (mm)</label>
+                    <input
+                      type="number"
+                      value={fieldPositions.programTitle.y}
+                      onChange={e => setFieldPositions(p => ({ ...p, programTitle: { ...p.programTitle, y: Number(e.target.value) } }))}
+                      className="w-full bg-background border rounded-lg px-2 py-1 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block">Font Size (pt)</label>
+                    <input
+                      type="number"
+                      value={fieldPositions.programTitle.fontSize}
+                      onChange={e => setFieldPositions(p => ({ ...p, programTitle: { ...p.programTitle, fontSize: Number(e.target.value) } }))}
+                      className="w-full bg-background border rounded-lg px-2 py-1 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Issue Date */}
+              <div className="space-y-2 border border-border rounded-xl p-3 bg-card">
+                <span className="text-xs font-bold text-foreground block">3. Completion Date Field</span>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block">X Pos (mm)</label>
+                    <input
+                      type="number"
+                      value={fieldPositions.issuedAt.x}
+                      onChange={e => setFieldPositions(p => ({ ...p, issuedAt: { ...p.issuedAt, x: Number(e.target.value) } }))}
+                      className="w-full bg-background border rounded-lg px-2 py-1 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block">Y Pos (mm)</label>
+                    <input
+                      type="number"
+                      value={fieldPositions.issuedAt.y}
+                      onChange={e => setFieldPositions(p => ({ ...p, issuedAt: { ...p.issuedAt, y: Number(e.target.value) } }))}
+                      className="w-full bg-background border rounded-lg px-2 py-1 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block">Font Size (pt)</label>
+                    <input
+                      type="number"
+                      value={fieldPositions.issuedAt.fontSize}
+                      onChange={e => setFieldPositions(p => ({ ...p, issuedAt: { ...p.issuedAt, fontSize: Number(e.target.value) } }))}
+                      className="w-full bg-background border rounded-lg px-2 py-1 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Certificate Number */}
+              <div className="space-y-2 border border-border rounded-xl p-3 bg-card">
+                <span className="text-xs font-bold text-foreground block">4. Certificate Number Field</span>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block">X Pos (mm)</label>
+                    <input
+                      type="number"
+                      value={fieldPositions.certificateNumber.x}
+                      onChange={e => setFieldPositions(p => ({ ...p, certificateNumber: { ...p.certificateNumber, x: Number(e.target.value) } }))}
+                      className="w-full bg-background border rounded-lg px-2 py-1 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block">Y Pos (mm)</label>
+                    <input
+                      type="number"
+                      value={fieldPositions.certificateNumber.y}
+                      onChange={e => setFieldPositions(p => ({ ...p, certificateNumber: { ...p.certificateNumber, y: Number(e.target.value) } }))}
+                      className="w-full bg-background border rounded-lg px-2 py-1 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground block">Font Size (pt)</label>
+                    <input
+                      type="number"
+                      value={fieldPositions.certificateNumber.fontSize}
+                      onChange={e => setFieldPositions(p => ({ ...p, certificateNumber: { ...p.certificateNumber, fontSize: Number(e.target.value) } }))}
+                      className="w-full bg-background border rounded-lg px-2 py-1 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              onClick={() => {
+                generateCertificatePDF({
+                  holderName: 'Dr. Sample Fellow Name',
+                  programTitle: 'Sample Higher Education Leadership Program',
+                  certificateNumber: 'ACAD-SAMPLE-1234',
+                  issuedAt: new Date().toISOString(),
+                  certificateType: 'completion',
+                }, 'view', { backgroundImageUrl: templateBgUrl, fieldPositions });
+              }}
+              variant="outline"
+              className="rounded-xl text-xs h-9"
+            >
+              <Eye className="w-3.5 h-3.5 mr-1" /> Preview Test PDF
+            </Button>
+            <Button
+              onClick={handleSaveTemplate}
+              disabled={savingTemplate}
+              className="rounded-xl bg-gold hover:bg-gold/90 text-gold-foreground text-xs h-9 px-5"
+            >
+              {savingTemplate ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Award className="w-3.5 h-3.5 mr-1" />}
+              Save & Activate Template
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
 
           {selectedIds.size > 0 && (
             <AlertDialog>
@@ -417,8 +657,6 @@ export function CertificationsManager() {
               </AlertDialogContent>
             </AlertDialog>
           )}
-        </div>
-      </div>
 
       {/* Filters Bar */}
       <div className="flex flex-col md:flex-row items-center gap-4 bg-muted/30 border border-border p-4 rounded-2xl">
@@ -472,6 +710,8 @@ export function CertificationsManager() {
           />
         </div>
       )}
-    </div>
+    </>
+  )}
+</div>
   );
 }

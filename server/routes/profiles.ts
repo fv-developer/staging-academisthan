@@ -60,10 +60,8 @@ router.post('/upload-avatar', authenticate, async (req: AuthRequest, res: Respon
 
     fs.writeFileSync(filepath, dataBuffer);
 
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-    const host = req.headers['x-forwarded-host'] || req.get('host') || 'localhost:3001';
-    const avatarUrl = `${protocol}://${host}/uploads/${filename}`;
-
+    const avatarUrl = `/uploads/${filename}`;
+ 
     res.json({ avatarUrl });
   } catch (error) {
     console.error('Upload avatar error:', error);

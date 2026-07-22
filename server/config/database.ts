@@ -16,10 +16,26 @@ const pool = mysql.createPool({
   keepAliveInitialDelay: 0,
 });
 
-// Test connection
+// Test connection and apply schema auto-migration
 pool.getConnection()
-  .then(connection => {
+  .then(async connection => {
     console.log('✅ MySQL database connected successfully');
+    try {
+      const [columns]: any = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'lms_user_step_progress' 
+          AND COLUMN_NAME = 'attempts'
+      `);
+      if (columns.length === 0) {
+        console.log('Adding "attempts" column to "lms_user_step_progress" table...');
+        await connection.query('ALTER TABLE lms_user_step_progress ADD COLUMN attempts INT DEFAULT 1 AFTER passed');
+        console.log('✅ Column "attempts" added successfully');
+      }
+    } catch (dbErr: any) {
+      console.warn('⚠️ Could not verify/alter lms_user_step_progress schema:', dbErr.message);
+    }
     connection.release();
   })
   .catch(err => {

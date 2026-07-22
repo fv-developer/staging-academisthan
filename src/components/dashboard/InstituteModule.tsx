@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import {
   Building2, Mail, Phone, MapPin, Globe, Award,
-  Upload, Check, Shield, AlertCircle, Edit3, ArrowLeft, ArrowRight, Loader2, Eye, ExternalLink, ChevronsUpDown, Calendar, Plus, Trash2
+  Upload, Check, Shield, AlertCircle, Edit3, ArrowLeft, ArrowRight, Loader2, Eye, ExternalLink, ChevronsUpDown, Calendar, Plus, Trash2, Video, Users
 } from 'lucide-react';
 import { countries, Country, stateCities, getMaxPhoneLength } from '@/utils/countryData';
 import { cn } from '@/lib/utils';
@@ -27,6 +27,41 @@ const INSTITUTION_TYPES = [
   { value: 'private_institution', label: 'Private Institution' },
   { value: 'k12_school', label: 'K-12 School' },
 ];
+
+const LEADERSHIP_CONFIGS: Record<string, Array<{ role: string; mandatoryHead?: boolean }>> = {
+  college: [
+    { role: 'Chairman / President' },
+    { role: 'Principal', mandatoryHead: true },
+    { role: 'Vice-Principal' }
+  ],
+  autonomous_college: [
+    { role: 'Chairman, Governing Body / Board of Management' },
+    { role: 'Principal', mandatoryHead: true },
+    { role: 'Controller of Examinations (CoE)' },
+    { role: 'Dean / Vice-Principal' }
+  ],
+  university: [
+    { role: 'Visitor / Chancellor' },
+    { role: 'Vice-Chancellor (VC)', mandatoryHead: true },
+    { role: 'Dean of Faculties / Schools' }
+  ],
+  deemed_university: [
+    { role: 'Chancellor' },
+    { role: 'Vice-Chancellor (VC)', mandatoryHead: true },
+    { role: 'Dean of Schools / Faculties' }
+  ],
+  private_institution: [
+    { role: 'President / Chairman' },
+    { role: 'Chancellor' },
+    { role: 'Vice-Chancellor / Director General', mandatoryHead: true },
+    { role: 'Dean & HoD' }
+  ],
+  k12_school: [
+    { role: 'Chairman / President' },
+    { role: 'Principal / Headmaster', mandatoryHead: true },
+    { role: 'Vice-Principal' }
+  ]
+};
 
 const REPRESENTATIVE_DESIGNATIONS = [
   'Professor',
@@ -57,8 +92,22 @@ export default function InstituteModule() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingInst, setEditingInst] = useState<any>(null);
   const [viewingInst, setViewingInst] = useState<any>(null);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [isOtherDesignation, setIsOtherDesignation] = useState(false);
+
+  const [leadership, setLeadership] = useState<Array<{
+    role: string;
+    checked: boolean;
+    salutation: string;
+    fullName: string;
+    designation: string;
+    email: string;
+    phone: string;
+    phoneDialCode: string;
+    linkedinUrl?: string;
+    googleScholarUrl?: string;
+  }>>([]);
+  const [leadershipErrors, setLeadershipErrors] = useState<Record<string, Record<string, string>>>({});
 
   // Form states
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -66,6 +115,8 @@ export default function InstituteModule() {
   const [docBase64, setDocBase64] = useState<string>('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoBase64, setLogoBase64] = useState<string>('');
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [campusVideoFile, setCampusVideoFile] = useState<File | null>(null);
 
   // Autocomplete search states
   const [autocompleteResults, setAutocompleteResults] = useState<string[]>([]);
@@ -138,6 +189,77 @@ export default function InstituteModule() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Initialize/reset leadership state when institution type changes
+  useEffect(() => {
+    const rolesConfig = LEADERSHIP_CONFIGS[form.type] || LEADERSHIP_CONFIGS.college;
+
+    if (editingInst && editingInst.leadership && editingInst.leadership.length > 0) {
+      setLeadership(rolesConfig.map(config => {
+        const savedLead = editingInst.leadership.find((l: any) => l.role === config.role);
+        if (savedLead) {
+          // Parse dial code and phone number if merged
+          let phoneDialCode = '+91';
+          let phone = savedLead.phone || '';
+          const matchedCountry = countries.find(c => phone.startsWith(c.dialCode));
+          if (matchedCountry) {
+            phoneDialCode = matchedCountry.dialCode;
+            phone = phone.substring(matchedCountry.dialCode.length);
+          }
+
+          // Parse salutation if merged
+          let salutation = 'Dr.';
+          let fullName = savedLead.full_name || '';
+          const salutations = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.'];
+          const matchedSal = salutations.find(s => fullName.startsWith(s + ' '));
+          if (matchedSal) {
+            salutation = matchedSal;
+            fullName = fullName.substring(matchedSal.length + 1);
+          }
+
+          return {
+            role: config.role,
+            checked: true,
+            salutation,
+            fullName: fullName,
+            designation: savedLead.designation || config.role,
+            email: savedLead.email || '',
+            phone: phone,
+            phoneDialCode: phoneDialCode,
+            linkedinUrl: savedLead.linkedin_url || '',
+            googleScholarUrl: savedLead.google_scholar_url || ''
+          };
+        } else {
+          return {
+            role: config.role,
+            checked: false,
+            salutation: 'Dr.',
+            fullName: '',
+            designation: config.role,
+            email: '',
+            phone: '',
+            phoneDialCode: '+91',
+            linkedinUrl: '',
+            googleScholarUrl: ''
+          };
+        }
+      }));
+    } else {
+      setLeadership(rolesConfig.map(r => ({
+        role: r.role,
+        checked: false,
+        salutation: 'Dr.',
+        fullName: '',
+        designation: r.role,
+        email: '',
+        phone: '',
+        phoneDialCode: '+91',
+        linkedinUrl: '',
+        googleScholarUrl: ''
+      })));
+    }
+    setLeadershipErrors({});
+  }, [form.type, editingInst?.id, editingInst?.leadership]);
+
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -145,6 +267,16 @@ export default function InstituteModule() {
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = error => reject(error);
     });
+  };
+
+  const isPublicEmailDomain = (email: string): boolean => {
+    const domain = email.split('@')[1]?.toLowerCase();
+    const publicDomains = [
+      'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 
+      'aol.com', 'zoho.com', 'yandex.com', 'mail.com', 
+      'protonmail.com', 'icloud.com', 'live.com', 'gmx.com'
+    ];
+    return publicDomains.includes(domain);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'doc' | 'logo') => {
@@ -285,7 +417,92 @@ export default function InstituteModule() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const validateStep3 = () => {
+  const validateStep3 = (): boolean => {
+    const newErrors: Record<string, Record<string, string>> = {};
+    let hasError = false;
+
+    // Check that at least one leadership profile is checked
+    const checkedLeads = leadership.filter(l => l.checked);
+    if (checkedLeads.length === 0) {
+      toast({
+        title: 'Selection Required',
+        description: 'Kindly select at least one office holder from the leadership list and fill in their respective details.',
+        variant: 'destructive'
+      });
+      return false;
+    }
+
+
+
+    // Validate details for all checked leadership members
+    leadership.forEach((lead) => {
+      if (!lead.checked) return;
+      
+      const leadErr: Record<string, string> = {};
+      
+      if (!lead.fullName || !lead.fullName.trim()) {
+        leadErr.fullName = 'Full Name is required';
+        hasError = true;
+      }
+      
+      if (!lead.designation || !lead.designation.trim()) {
+        leadErr.designation = 'Designation is required';
+        hasError = true;
+      }
+      
+      if (!lead.email || !lead.email.trim()) {
+        leadErr.email = 'Email is required';
+        hasError = true;
+      } else {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(lead.email.trim())) {
+          leadErr.email = 'Please enter a valid email address';
+          hasError = true;
+        } else if (isPublicEmailDomain(lead.email.trim())) {
+          leadErr.email = 'Please use your official institutional email address (e.g. your-name@institutename.com).';
+          hasError = true;
+        }
+      }
+      
+      if (!lead.phone || !lead.phone.trim()) {
+        leadErr.phone = 'Phone number is required';
+        hasError = true;
+      } else {
+        const countryObj = countries.find(c => c.dialCode === lead.phoneDialCode) || countries[0];
+        const maxLength = getMaxPhoneLength(countryObj);
+        const regex = new RegExp(countryObj.phoneRegex);
+        if (lead.phone.length < 7 || lead.phone.length > maxLength || !regex.test(lead.phone)) {
+          leadErr.phone = `Please enter a valid phone number for ${countryObj.name} (${countryObj.phonePlaceholder})`;
+          hasError = true;
+        }
+      }
+
+      if (lead.linkedinUrl && lead.linkedinUrl.trim()) {
+        const linkedinPattern = /^(https?:\/\/)?([a-z]{2,3}\.)?linkedin\.com\/.*$/i;
+        if (!linkedinPattern.test(lead.linkedinUrl.trim())) {
+          leadErr.linkedinUrl = 'Invalid LinkedIn URL';
+          hasError = true;
+        }
+      }
+
+      if (lead.googleScholarUrl && lead.googleScholarUrl.trim()) {
+        const scholarPattern = /^(https?:\/\/)?(www\.)?scholar\.google\.(com|co\.[a-z]{2}|[a-z]{2,3})\/.*$/i;
+        if (!scholarPattern.test(lead.googleScholarUrl.trim())) {
+          leadErr.googleScholarUrl = 'Invalid Google Scholar URL';
+          hasError = true;
+        }
+      }
+
+      if (Object.keys(leadErr).length > 0) {
+        newErrors[lead.role] = leadErr;
+      }
+    });
+
+    setLeadershipErrors(newErrors);
+    return !hasError;
+  };
+
+  const validateStep4 = () => {
     const newErrors: Record<string, string> = {};
     if (!editingInst && !docFile) {
       newErrors.document = 'Supporting verification document is required';
@@ -323,6 +540,11 @@ export default function InstituteModule() {
 
     if (inst) {
       setEditingInst(inst);
+      institutions.getById(inst.id).then(detailed => {
+        setEditingInst(detailed);
+      }).catch(err => {
+        console.error('Failed to fetch detailed institution for edit:', err);
+      });
       
       const activeCountry = countries.find(c => c.name === (inst.country || 'India')) || countries.find(c => c.code === 'IN') || countries[0];
       setSelectedCountry(activeCountry);
@@ -444,7 +666,7 @@ export default function InstituteModule() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateStep1() || !validateStep2() || !validateStep3()) {
+    if (!validateStep1() || !validateStep2() || !validateStep3() || !validateStep4()) {
       toast({ title: 'Validation failed', description: 'Please check the highlighted errors across all sections.', variant: 'destructive' });
       return;
     }
@@ -503,6 +725,64 @@ export default function InstituteModule() {
         logoUrl = logoRes.documentUrl;
       }
 
+      // Existing gallery URLs from editingInst
+      let existingGallery: string[] = [];
+      if (editingInst?.campus_gallery) {
+        if (Array.isArray(editingInst.campus_gallery)) {
+          existingGallery = editingInst.campus_gallery;
+        } else if (typeof editingInst.campus_gallery === 'string') {
+          try {
+            existingGallery = JSON.parse(editingInst.campus_gallery);
+          } catch (e) {
+            existingGallery = editingInst.campus_gallery.split(',').filter(Boolean);
+          }
+        }
+      }
+
+      // Upload new gallery files
+      const newGalleryUrls: string[] = [];
+      if (galleryFiles && galleryFiles.length > 0) {
+        for (const file of galleryFiles) {
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = err => reject(err);
+          });
+          const galRes = await institutions.uploadDocument(base64, file.name);
+          if (galRes.documentUrl) {
+            newGalleryUrls.push(galRes.documentUrl);
+          }
+        }
+      }
+      const combinedGallery = [...existingGallery, ...newGalleryUrls];
+
+      // Upload campus video file
+      let campusVideoUrl = editingInst?.campus_video_url || null;
+      if (campusVideoFile) {
+        const videoBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(campusVideoFile);
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = err => reject(err);
+        });
+        const vidRes = await institutions.uploadDocument(videoBase64, campusVideoFile.name);
+        campusVideoUrl = vidRes.documentUrl;
+      }
+
+      // Prepare checked leadership profiles
+      const checkedLeadership = leadership
+        .filter(l => l.checked)
+        .map(l => ({
+          role: l.role,
+          fullName: `${l.salutation} ${l.fullName.trim()}`,
+          designation: l.role,
+          email: l.email.trim(),
+          phone: `${l.phoneDialCode}${l.phone.trim()}`,
+          linkedinUrl: l.linkedinUrl ? l.linkedinUrl.trim() : undefined,
+          googleScholarUrl: l.googleScholarUrl ? l.googleScholarUrl.trim() : undefined
+        }));
+
       const payload = {
         name: form.name.trim(),
         institute_code: form.institute_code.trim() || null,
@@ -523,7 +803,11 @@ export default function InstituteModule() {
         pincode: form.pincode.trim(),
         document_url: documentUrl,
         logo_url: logoUrl,
-        representative_designation: form.representative_designation.trim()
+        campus_gallery: combinedGallery.length > 0 ? combinedGallery : null,
+        campus_video_url: campusVideoUrl,
+        youtube_url: form.youtube_url ? form.youtube_url.trim() : null,
+        representative_designation: form.representative_designation.trim(),
+        leadership: checkedLeadership
       };
 
       if (editingInst) {
@@ -900,7 +1184,7 @@ export default function InstituteModule() {
 
       {/* Step Indicators */}
       <div className="flex items-center justify-between gap-1 mb-6 bg-muted/40 border border-border/60 rounded-xl p-3">
-        {[1, 2, 3].map((s) => (
+        {[1, 2, 3, 4].map((s) => (
           <div key={s} className="flex items-center gap-1.5 flex-1 justify-center sm:last:flex-none">
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all shrink-0 ${
               s < step ? 'bg-emerald-600 text-white' :
@@ -909,12 +1193,12 @@ export default function InstituteModule() {
             }`}>
               {s < step ? <Check className="w-3.5 h-3.5" /> : s}
             </div>
-            <span className={`text-[10px] font-semibold hidden sm:inline truncate ${
+            <span className={`text-xs font-semibold hidden sm:inline truncate ${
               s === step ? 'text-foreground font-bold' : 'text-muted-foreground'
             }`}>
-              {s === 1 ? 'Representative' : s === 2 ? 'Institution' : 'Showcase & Docs'}
+              {s === 1 ? 'Representative' : s === 2 ? 'Institution' : s === 3 ? 'Leadership' : 'Showcase & Docs'}
             </span>
-            {s < 3 && <div className="h-px bg-border flex-1 mx-2 hidden sm:block" />}
+            {s < 4 && <div className="h-px bg-border flex-1 mx-2 hidden sm:block" />}
           </div>
         ))}
       </div>
@@ -977,7 +1261,7 @@ export default function InstituteModule() {
             </div>
 
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">Official Office Email *</Label>
+              <Label className="text-xs">Official Email *</Label>
               <Input
                 type="email"
                 value={form.contact_email}
@@ -1389,14 +1673,186 @@ export default function InstituteModule() {
               }}
               className="rounded-xl bg-gold text-gold-foreground hover:bg-gold/90 h-9 px-4 text-xs gap-1.5"
             >
+              Next: Leadership Details <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 3: Institution Leadership Details */}
+      {step === 3 && (
+        <div className="space-y-4">
+          <div className="p-3 bg-amber-50 border border-amber-200/50 rounded-xl flex items-start gap-2.5">
+            <AlertCircle className="w-4.5 h-4.5 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-800 leading-normal font-medium">
+              Kindly select at least one office holder from the leadership list and fill in their respective details.
+            </p>
+          </div>
+
+          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+            {leadership.map((lead, idx) => {
+              const leadErrs = leadershipErrors[lead.role] || {};
+
+              return (
+                <div key={lead.role} className="border border-border/80 rounded-xl overflow-hidden shadow-sm bg-card text-xs">
+                  <div className={cn(
+                    "flex items-center justify-between p-3 cursor-pointer transition-colors select-none",
+                    lead.checked ? "bg-muted/30 border-b border-border/40" : "hover:bg-muted/20"
+                  )}
+                    onClick={() => {
+                      setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, checked: !l.checked } : l));
+                    }}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        checked={lead.checked}
+                        readOnly
+                        className="w-3.5 h-3.5 rounded border-slate-300 text-[#8B1538] focus:ring-[#8B1538]"
+                      />
+                      <div>
+                        <span className="font-semibold text-foreground">
+                          {lead.role}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      {lead.checked ? 'Collapse' : 'Expand'}
+                    </span>
+                  </div>
+
+                  {lead.checked && (
+                    <div className="p-4 space-y-3.5 bg-card">
+                      <div className="grid sm:grid-cols-2 gap-3.5">
+                        {/* Full Name with Salutation */}
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label className="text-[10px] font-semibold text-muted-foreground">Full Name *</Label>
+                          <div className="flex gap-2">
+                            <Select
+                              value={lead.salutation || 'Dr.'}
+                              onValueChange={(val) => setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, salutation: val } : l))}
+                            >
+                              <SelectTrigger className="w-[80px] rounded-xl text-xs h-9 pl-2 pr-1 bg-transparent border-slate-200">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.'].map(sal => (
+                                  <SelectItem key={sal} value={sal} className="text-xs">{sal}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              value={lead.fullName}
+                              onChange={e => setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, fullName: e.target.value } : l))}
+                              placeholder="Enter full name"
+                              className={cn("flex-1 rounded-xl h-9 text-xs", leadErrs.fullName && "border-red-500")}
+                              maxLength={150}
+                            />
+                          </div>
+                          {leadErrs.fullName && <p className="text-[10px] text-red-500 mt-0.5">{leadErrs.fullName}</p>}
+                        </div>
+
+                        {/* Official Email */}
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-semibold text-muted-foreground">Official Email ID *</Label>
+                          <Input
+                            type="email"
+                            value={lead.email}
+                            onChange={e => setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, email: e.target.value } : l))}
+                            placeholder="e.g. principal@college.edu.in"
+                            className={cn("rounded-xl h-9 text-xs", leadErrs.email && "border-red-500")}
+                            maxLength={150}
+                          />
+                          {leadErrs.email && <p className="text-[10px] text-red-500 mt-0.5">{leadErrs.email}</p>}
+                        </div>
+
+                        {/* Contact Number */}
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-semibold text-muted-foreground">Official Contact Number *</Label>
+                          <div className="flex gap-1.5">
+                            <Select
+                              value={countries.find(c => c.dialCode === lead.phoneDialCode)?.code || 'IN'}
+                              onValueChange={(val) => {
+                                const country = countries.find(c => c.code === val);
+                                if (country) {
+                                  setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, phoneDialCode: country.dialCode } : l));
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="w-[75px] rounded-xl text-xs h-9 pl-2 pr-1 bg-transparent">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {countries.map(c => (
+                                  <SelectItem key={c.code} value={c.code} className="text-xs">
+                                    {c.dialCode} ({c.code})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              value={lead.phone}
+                              onChange={e => setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, phone: e.target.value.replace(/\D/g, '') } : l))}
+                              placeholder="Contact number"
+                              className={cn("flex-1 rounded-xl h-9 text-xs", leadErrs.phone && "border-red-500")}
+                              maxLength={15}
+                            />
+                          </div>
+                          {leadErrs.phone && <p className="text-[10px] text-red-500 mt-0.5">{leadErrs.phone}</p>}
+                        </div>
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-3.5 border-t border-border/40 pt-3">
+                        {/* LinkedIn URL */}
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-semibold text-muted-foreground">LinkedIn Profile URL</Label>
+                          <Input
+                            value={lead.linkedinUrl || ''}
+                            onChange={e => setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, linkedinUrl: e.target.value } : l))}
+                            placeholder="https://linkedin.com/in/username"
+                            className={cn("rounded-xl h-8 text-[11px]", leadErrs.linkedinUrl && "border-red-500")}
+                          />
+                          {leadErrs.linkedinUrl && <p className="text-[10px] text-red-500 mt-0.5">{leadErrs.linkedinUrl}</p>}
+                        </div>
+
+                        {/* Google Scholar URL */}
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-semibold text-muted-foreground">Google Scholar Profile URL</Label>
+                          <Input
+                            value={lead.googleScholarUrl || ''}
+                            onChange={e => setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, googleScholarUrl: e.target.value } : l))}
+                            placeholder="https://scholar.google.com/citations?user=..."
+                            className={cn("rounded-xl h-8 text-[11px]", leadErrs.googleScholarUrl && "border-red-500")}
+                          />
+                          {leadErrs.googleScholarUrl && <p className="text-[10px] text-red-500 mt-0.5">{leadErrs.googleScholarUrl}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex justify-between pt-4 border-t border-border">
+            <Button type="button" onClick={() => setStep(2)} variant="outline" className="rounded-xl h-9 px-4 text-xs gap-1.5">
+              <ArrowLeft className="w-3.5 h-3.5" /> Back
+            </Button>
+            <Button 
+              type="button"
+              onClick={() => {
+                if (validateStep3()) setStep(4);
+              }} 
+              className="rounded-xl bg-gold text-gold-foreground hover:bg-gold/90 h-9 px-4 text-xs gap-1.5"
+            >
               Next: Showcase & Docs <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
       )}
 
-      {/* STEP 3: Showcase & Achievements */}
-      {step === 3 && (
+      {/* STEP 4: Showcase & Achievements */}
+      {step === 4 && (
         <div className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -1443,6 +1899,18 @@ export default function InstituteModule() {
                 <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">
                   {docFile ? docFile.name : editingInst?.document_url ? 'Keep current file' : 'No file selected'}
                 </span>
+                {(docFile || editingInst?.document_url) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setDocFile(null); setDocBase64(''); }}
+                    className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 h-7 w-7 p-0 shrink-0 rounded-lg"
+                    title="Remove file"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                )}
               </div>
               {errors.document && <span className="text-[10px] text-rose-500 block">{errors.document}</span>}
             </div>
@@ -1470,13 +1938,157 @@ export default function InstituteModule() {
                 <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">
                   {logoFile ? logoFile.name : editingInst?.logo_url ? 'Keep current logo' : 'No logo selected'}
                 </span>
+                {(logoFile || editingInst?.logo_url) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setLogoFile(null); setLogoBase64(''); }}
+                    className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 h-7 w-7 p-0 shrink-0 rounded-lg"
+                    title="Remove logo"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                )}
               </div>
               {errors.logo && <span className="text-[10px] text-rose-500 block">{errors.logo}</span>}
+            </div>
+
+            {/* Campus Tour / Institute Overview */}
+            <div className="sm:col-span-2 border-t border-border pt-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Video className="w-4 h-4 text-gold" />
+                <Label className="text-xs font-bold text-foreground">Campus Tour / Institute Overview</Label>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Upload media files to showcase your campus infrastructure and facilities.
+              </p>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Campus Gallery Images (JPG, PNG, WEBP — max 5MB)</Label>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById('dash-gallery-input')?.click()}
+                      className="rounded-xl h-9 text-xs gap-1.5"
+                    >
+                      <Upload className="w-3.5 h-3.5" /> Select Images
+                    </Button>
+                    <input
+                      type="file"
+                      id="dash-gallery-input"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          const newFiles: File[] = [];
+                          Array.from(e.target.files).forEach(file => {
+                            if (file.size > 5 * 1024 * 1024) {
+                              toast({ title: 'Image too large', description: `${file.name} exceeds 5MB limit.`, variant: 'destructive' });
+                            } else {
+                              newFiles.push(file);
+                            }
+                          });
+                          setGalleryFiles(prev => [...prev, ...newFiles]);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <span className="text-[10px] text-muted-foreground truncate">
+                      {galleryFiles.length > 0 ? `${galleryFiles.length} file(s) selected` : 'No images selected'}
+                    </span>
+                  </div>
+                  {galleryFiles.length > 0 && (
+                    <div className="mt-2 space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                      {galleryFiles.map((file, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-1.5 bg-muted/40 border border-border rounded-lg text-xs">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <Upload className="w-3.5 h-3.5 text-gold shrink-0" />
+                            <span className="truncate max-w-[180px] text-[11px] font-medium text-foreground">{file.name}</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setGalleryFiles(prev => prev.filter((_, i) => i !== idx))}
+                            className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 h-6 w-6 p-0 shrink-0"
+                            title="Remove image"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Campus MP4 Video (Max 25MB)</Label>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById('dash-video-input')?.click()}
+                      className="rounded-xl h-9 text-xs gap-1.5"
+                    >
+                      <Upload className="w-3.5 h-3.5" /> Select Video
+                    </Button>
+                    <input
+                      type="file"
+                      id="dash-video-input"
+                      accept="video/mp4"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          const file = e.target.files[0];
+                          if (!file.name.toLowerCase().endsWith('.mp4')) {
+                            toast({ title: 'Invalid video format', description: 'Only MP4 videos are supported.', variant: 'destructive' });
+                          } else if (file.size > 25 * 1024 * 1024) {
+                            toast({ title: 'Video too large', description: 'Video exceeds 25MB limit.', variant: 'destructive' });
+                          } else {
+                            setCampusVideoFile(file);
+                          }
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">
+                      {campusVideoFile ? campusVideoFile.name : 'No video selected'}
+                    </span>
+                    {campusVideoFile && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCampusVideoFile(null)}
+                        className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 h-7 w-7 p-0 shrink-0 rounded-lg"
+                        title="Remove video"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="sm:col-span-2 space-y-1.5">
+                  <Label className="text-xs font-medium">YouTube Video Link</Label>
+                  <Input
+                    type="url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={form.youtube_url || ''}
+                    onChange={e => updateForm('youtube_url', e.target.value)}
+                    className="rounded-xl text-xs h-9"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="border-t border-border pt-4 flex justify-between gap-2">
-            <Button type="button" onClick={() => setStep(2)} variant="outline" className="rounded-xl h-9 px-4 text-xs gap-1.5">
+            <Button type="button" onClick={() => setStep(3)} variant="outline" className="rounded-xl h-9 px-4 text-xs gap-1.5">
               <ArrowLeft className="w-3.5 h-3.5" /> Back
             </Button>
             <Button

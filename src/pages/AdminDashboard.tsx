@@ -20,7 +20,7 @@ import {
   CheckCircle2, XCircle, AlertTriangle, Search, Filter, Edit, Plus, Trash2,
   Calendar, Mail, Phone, Download, Eye, RefreshCw, Clock, BookOpen,
   Loader2, Sparkles, Info, ChevronRight, ChevronLeft, X, ArrowRight, Upload, Tag, Check, ArrowLeft,
-  Award, User, MapPin, ExternalLink
+  Award, User, MapPin, ExternalLink, Video
 } from 'lucide-react';
 
 interface Stats {
@@ -262,6 +262,7 @@ export default function AdminDashboard() {
   // Modal / Detail views
   const [viewingFellow, setViewingFellow] = useState<any | null>(null);
   const [viewingInst, setViewingInst] = useState<any | null>(null);
+  const [viewingInstDetails, setViewingInstDetails] = useState<any | null>(null);
   const [viewingBlog, setViewingBlog] = useState<any | null>(null);
   const [editingProgram, setEditingProgram] = useState<any | null>(null);
   const [showProgramModal, setShowProgramModal] = useState(false);
@@ -310,6 +311,18 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     setRejectReason('');
+    if (viewingInst?.id) {
+      api.apiRequest(`/admin/institutions/${viewingInst.id}`)
+        .then(res => {
+          setViewingInstDetails(res);
+        })
+        .catch(err => {
+          console.error('Failed to fetch detailed institution details:', err);
+          setViewingInstDetails(null);
+        });
+    } else {
+      setViewingInstDetails(null);
+    }
   }, [viewingInst?.id]);
 
   // Generic prompt/reason modal state
@@ -1063,6 +1076,29 @@ export default function AdminDashboard() {
       setRejectReason('');
     } catch (err: any) {
       toast({ title: 'Operation failed', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const handleToggleLeaderVerification = async (leaderId: string, currentVerified: boolean) => {
+    try {
+      await api.apiRequest(`/admin/institutions/${viewingInst.id}/leadership/${leaderId}/verify`, {
+        method: 'PUT',
+        body: { verified: !currentVerified }
+      });
+      
+      // Update local detailed state
+      setViewingInstDetails((prev: any) => {
+        if (!prev) return prev;
+        const updatedLeads = prev.leadership.map((l: any) => 
+          l.id === leaderId ? { ...l, admin_verified: currentVerified ? 0 : 1 } : l
+        );
+        return { ...prev, leadership: updatedLeads };
+      });
+      
+      toast({ title: 'Verification updated', description: 'Leadership profile verification updated successfully.' });
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: 'Error', description: 'Failed to update verification status', variant: 'destructive' });
     }
   };
 
@@ -3028,7 +3064,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                         <a href={viewingFellow.avatar_url} target="_blank" rel="noreferrer">
-                          <Button size="xs" variant="outline" className="rounded-lg text-[10px] gap-1 bg-slate-50 hover:bg-slate-100">
+                          <Button size="sm" className="rounded-lg text-xs gap-1.5 px-4 h-8 bg-[#8B1538] hover:bg-[#720E2C] text-white font-semibold shadow-sm border-0">
                             <Download className="w-3.5 h-3.5" /> View
                           </Button>
                         </a>
@@ -3206,6 +3242,119 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
+              {/* Institution Leadership details */}
+              <div className="space-y-4 bg-slate-50/40 p-4 rounded-xl border border-slate-100 text-xs">
+                <h4 className="font-serif text-[13px] font-bold text-navy border-b border-slate-100 pb-2 flex items-center gap-2">
+                  <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  Institution Leadership Details
+                </h4>
+
+                {(!viewingInstDetails || !viewingInstDetails.leadership || viewingInstDetails.leadership.length === 0) ? (
+                  <p className="text-slate-400 italic">No leadership profiles registered for this institution.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {viewingInstDetails.leadership.map((lead: any) => {
+                      const isVerified = lead.admin_verified === 1;
+
+                      return (
+                        <div key={lead.id} className="bg-white border border-slate-200/60 rounded-xl p-3.5 shadow-sm space-y-3 relative hover:shadow transition-shadow">
+                          {/* Top row with name, designation, verification badge */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-3">
+                              {lead.photo_url ? (
+                                <img src={lead.photo_url} alt={lead.full_name} className="w-9 h-9 object-cover rounded-full border border-slate-200 shrink-0" />
+                              ) : (
+                                <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 shrink-0">
+                                  {lead.full_name?.charAt(0) || 'L'}
+                                </div>
+                              )}
+                              <div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <h5 className="font-bold text-slate-800 text-xs">{lead.full_name}</h5>
+                                  <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono">
+                                    {lead.role}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 mt-0.5">{lead.designation}</p>
+                              </div>
+                            </div>
+                            
+                            {/* Verification Badge */}
+                            <Badge className={cn(
+                              "text-[8px] font-bold px-1.5 py-0.5 border rounded uppercase tracking-wider shrink-0",
+                              isVerified 
+                                ? "bg-emerald-50 text-emerald-600 border-emerald-200" 
+                                : "bg-amber-50 text-amber-600 border-amber-200"
+                            )}>
+                              {isVerified ? 'Verified' : 'Pending Verification'}
+                            </Badge>
+                          </div>
+
+                          {/* Contact Details & Links */}
+                          <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 pt-2 border-t border-slate-100">
+                            <div>
+                              <span className="text-slate-400 font-medium">Email ID</span>
+                              <p className="font-semibold text-slate-700 break-all">{lead.email || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 font-medium">Contact Number</span>
+                              <p className="font-semibold text-slate-700">{lead.phone || 'N/A'}</p>
+                            </div>
+                          </div>
+
+                          {/* Social links & Admin Toggle Button */}
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2 flex-wrap">
+                            <div className="flex items-center gap-2">
+                              {lead.linkedin_url && (
+                                <a 
+                                  href={lead.linkedin_url.startsWith('http') ? lead.linkedin_url : `https://${lead.linkedin_url}`} 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  className="text-[10px] text-indigo-600 hover:underline font-semibold flex items-center gap-0.5"
+                                >
+                                  LinkedIn ↗
+                                </a>
+                              )}
+                              {lead.google_scholar_url && (
+                                <a 
+                                  href={lead.google_scholar_url.startsWith('http') ? lead.google_scholar_url : `https://${lead.google_scholar_url}`} 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  className="text-[10px] text-amber-600 hover:underline font-semibold flex items-center gap-0.5"
+                                >
+                                  Google Scholar ↗
+                                </a>
+                              )}
+                              {!lead.linkedin_url && !lead.google_scholar_url && (
+                                <span className="text-[9px] text-slate-350 italic">No social profiles</span>
+                              )}
+                            </div>
+
+                            {/* Verification Toggle */}
+                            <Button
+                              type="button"
+                              onClick={() => handleToggleLeaderVerification(lead.id, isVerified)}
+                              variant={isVerified ? "outline" : "default"}
+                              size="xs"
+                              className={cn(
+                                "rounded-lg text-[9px] h-6 px-2.5 font-semibold",
+                                isVerified 
+                                  ? "border-slate-200 text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200" 
+                                  : "bg-[#8B1538] hover:bg-[#720E2C] text-white"
+                              )}
+                            >
+                              {isVerified ? 'Revoke Verify' : 'Verify Profile'}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               {/* Institute details */}
               <div className="space-y-3 bg-slate-50/40 p-4 rounded-xl border border-slate-100 text-xs">
                 <h4 className="font-serif text-[13px] font-bold text-navy border-b border-slate-100 pb-2 flex items-center gap-2">
@@ -3283,12 +3432,80 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <a href={viewingInst.document_url} target="_blank" rel="noreferrer">
-                    <Button size="xs" variant="outline" className="rounded-lg text-[10px] gap-1 px-3">
+                    <Button size="sm" className="rounded-lg text-xs gap-1.5 px-4 h-8 bg-[#8B1538] hover:bg-[#720E2C] text-white font-semibold shadow-sm border-0">
                       <Download className="w-3.5 h-3.5" /> View / Download
                     </Button>
                   </a>
                 </div>
               )}
+
+              {/* Campus Tour & Overview Media Review */}
+              <div className="bg-slate-50 border border-slate-150 rounded-xl p-3.5 space-y-3 text-xs">
+                <div className="flex items-center gap-2 border-b border-slate-200/60 pb-2">
+                  <Video className="w-4 h-4 text-gold shrink-0" />
+                  <span className="font-semibold text-slate-700">Campus Tour / Overview Media</span>
+                </div>
+
+                {/* Campus Gallery Images */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Campus Gallery Images</span>
+                  {(() => {
+                    let gallery: string[] = [];
+                    if (Array.isArray(viewingInst.campus_gallery)) {
+                      gallery = viewingInst.campus_gallery;
+                    } else if (typeof viewingInst.campus_gallery === 'string') {
+                      try {
+                        gallery = JSON.parse(viewingInst.campus_gallery);
+                      } catch (e) {
+                        gallery = viewingInst.campus_gallery.split(',').filter(Boolean);
+                      }
+                    }
+                    if (!gallery || gallery.length === 0) {
+                      return <p className="text-[11px] text-slate-400 italic">No gallery images uploaded</p>;
+                    }
+                    return (
+                      <div className="grid grid-cols-3 gap-2 pt-1">
+                        {gallery.map((imgUrl, idx) => (
+                          <a key={idx} href={imgUrl} target="_blank" rel="noreferrer" className="block group relative overflow-hidden rounded-lg border border-slate-200 aspect-video bg-slate-100">
+                            <img src={imgUrl} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                            <span className="absolute bottom-0 inset-x-0 bg-slate-900/60 text-white text-[9px] px-1 py-0.5 text-center truncate">
+                              Image {idx + 1}
+                            </span>
+                          </a>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Campus MP4 Video */}
+                <div className="space-y-1.5 pt-2 border-t border-slate-200/60">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Campus MP4 Video</span>
+                  {viewingInst.campus_video_url ? (
+                    <div className="space-y-2">
+                      <video src={viewingInst.campus_video_url} controls className="w-full max-h-48 rounded-xl border border-slate-200 bg-black" />
+                      <a href={viewingInst.campus_video_url} target="_blank" rel="noreferrer" className="inline-block">
+                        <Button size="sm" className="rounded-lg text-xs gap-1.5 px-4 h-8 bg-[#8B1538] hover:bg-[#720E2C] text-white font-semibold shadow-sm border-0">
+                          <Download className="w-3.5 h-3.5" /> View Full Video
+                        </Button>
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 italic">No campus video uploaded</p>
+                  )}
+                </div>
+
+                {/* YouTube Video Link */}
+                {viewingInst.youtube_url && (
+                  <div className="space-y-1 pt-2 border-t border-slate-200/60">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">YouTube Link</span>
+                    <a href={viewingInst.youtube_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-[11px] font-medium flex items-center gap-1.5 truncate">
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{viewingInst.youtube_url}</span>
+                    </a>
+                  </div>
+                )}
+              </div>
 
               {viewingInst.status === 'rejected' && viewingInst.rejection_reason && (
                 <div className="bg-rose-50 text-rose-600 text-xs p-3.5 rounded-xl border border-rose-100 space-y-1">

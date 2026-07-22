@@ -107,7 +107,7 @@ export default function SignIn() {
           </div>
 
           <div className="mb-8">
-            <h1 className="font-serif text-3xl font-bold text-foreground mb-2">
+            <h1 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-2">
               Sign In
             </h1>
             <p className="text-muted-foreground text-sm">
@@ -205,7 +205,7 @@ export default function SignIn() {
               type="button"
               variant="outline"
               onClick={() => navigate('/institution-register')}
-              className="w-full h-11 border-gold/30 hover:border-gold hover:bg-gold/5 text-gold rounded-xl font-medium text-sm transition-all"
+              className="w-full h-11 border-gold/60 hover:border-gold bg-gold/10 hover:bg-gold text-foreground hover:text-black font-semibold text-sm transition-all shadow-sm rounded-xl"
             >
               Register Your Institution
             </Button>

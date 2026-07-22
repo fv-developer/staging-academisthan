@@ -126,6 +126,11 @@
     line-height: 1.3 !important;
   }
 
+  .website-page h2.legal-heading {
+    font-size: 15px !important;
+    line-height: 1.5 !important;
+  }
+
   .website-page h3 {
     font-size: 18px !important;
     line-height: 1.4 !important;
@@ -149,11 +154,11 @@
   /* Tablet/Mobile (≤640px) */
   @media (max-width: 640px) {
     .website-page h1 {
-      font-size: 36px !important;
+      font-size: 25px !important;
     }
 
     .website-page h2 {
-      font-size: 26px !important;
+      font-size: 22px !important;
     }
 
     .website-page h3 {
@@ -176,11 +181,11 @@
   /* Tiny Mobile (≤380px) */
   @media (max-width: 380px) {
     .website-page h1 {
-      font-size: 25px !important;
+      font-size: 22px !important;
     }
 
     .website-page h2 {
-      font-size: 22px !important;
+      font-size: 20px !important;
     }
 
     .website-page h3 {

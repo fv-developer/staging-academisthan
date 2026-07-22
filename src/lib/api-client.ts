@@ -422,6 +422,16 @@ export const tools = {
     
     return response.json();
   },
+
+  saveCertificateTemplate: async (data: any) => {
+    const response = await fetch(`${API_URL}/admin/certificate-templates`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to save certificate template');
+    return response.json();
+  },
 };
 
 class TableQuery {
@@ -753,6 +763,17 @@ export const institutions = {
       },
     });
     if (!response.ok) throw new Error('Failed to delete institution');
+    return response.json();
+  },
+
+  getById: async (id: string) => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/institutions/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) throw new Error('Failed to fetch institution details');
     return response.json();
   },
 };

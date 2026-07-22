@@ -29,7 +29,7 @@ export default function Terms() {
 
       {/* Content */}
       <section className="py-12 md:py-16">
-        <div className="container mx-auto px-4 max-w-3xl">
+        <div className="container mx-auto px-4">
           <div className="bg-card border border-border rounded-2xl p-8 md:p-12 space-y-8">
             {[
               {
@@ -82,7 +82,7 @@ export default function Terms() {
               },
             ].map(section => (
               <div key={section.title}>
-                <h2 className="font-serif text-lg font-bold text-foreground mb-3">{section.title}</h2>
+                <h2 className="font-serif legal-heading text-[15px] font-bold text-foreground mb-3">{section.title}</h2>
                 <p className="text-muted-foreground text-sm leading-relaxed">{section.content}</p>
               </div>
             ))}

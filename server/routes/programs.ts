@@ -122,10 +122,8 @@ router.post('/upload-cover', authenticate, isAdmin, async (req: AuthRequest, res
 
     fs.writeFileSync(filepath, dataBuffer);
 
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-    const host = req.headers['x-forwarded-host'] || req.get('host') || 'localhost:3001';
-    const coverImageUrl = `${protocol}://${host}/uploads/${filename}`;
-
+    const coverImageUrl = `/uploads/${filename}`;
+ 
     res.json({ coverImageUrl });
   } catch (error) {
     console.error('Upload program cover error:', error);
@@ -366,10 +364,18 @@ router.put('/enrollments/:id', authenticate, async (req: AuthRequest, res: Respo
       if (existingCert.length === 0) {
         const certId = uuidv4();
         const certNum = `ACAD-CERT-${Math.floor(100000 + Math.random() * 900000)}`;
+
+        const [activeTemplates]: any = await pool.execute('SELECT * FROM certificate_templates WHERE is_active = 1 LIMIT 1').catch(() => [[]]);
+        const activeTemplate = activeTemplates && activeTemplates.length > 0 ? activeTemplates[0] : null;
+        const templateSnapshot = activeTemplate ? JSON.stringify({
+          backgroundImageUrl: activeTemplate.background_image_url,
+          fieldPositions: typeof activeTemplate.field_positions === 'string' ? JSON.parse(activeTemplate.field_positions) : activeTemplate.field_positions
+        }) : null;
+
         await pool.execute(
-          `INSERT INTO certificates (id, user_id, program_id, certificate_number, certificate_type, issued_date)
-           VALUES (?, ?, ?, ?, 'program', CURDATE())`,
-          [certId, enrollments[0].user_id, enrollments[0].program_id, certNum]
+          `INSERT INTO certificates (id, user_id, program_id, certificate_number, certificate_type, issued_at, template_snapshot)
+           VALUES (?, ?, ?, ?, 'program', NOW(), ?)`,
+          [certId, enrollments[0].user_id, enrollments[0].program_id, certNum, templateSnapshot]
         );
 
         if (enrollmentDetails.length > 0) {
@@ -709,13 +715,14 @@ router.post('/enrollments/:enrollmentId/steps/:stepId/complete', authenticate, a
     // Upsert progress
     const progressId = uuidv4();
     await pool.execute(
-      `INSERT INTO lms_user_step_progress (id, enrollment_id, step_id, user_id, completed, score, passed, completed_at)
-       VALUES (?, ?, ?, ?, TRUE, ?, ?, NOW())
+      `INSERT INTO lms_user_step_progress (id, enrollment_id, step_id, user_id, completed, score, passed, attempts, completed_at)
+       VALUES (?, ?, ?, ?, TRUE, ?, ?, 1, NOW())
        ON DUPLICATE KEY UPDATE 
-         score = VALUES(score),
-         passed = VALUES(passed),
+         attempts = attempts + 1,
+         score = ?,
+         passed = ?,
          completed_at = NOW()`,
-      [progressId, enrollmentId, stepId, enrollment.user_id, finalScore, passed]
+      [progressId, enrollmentId, stepId, enrollment.user_id, finalScore, passed, finalScore, passed]
     );
 
     // Calculate overall enrollment progress percentage
@@ -766,10 +773,18 @@ router.post('/enrollments/:enrollmentId/steps/:stepId/complete', authenticate, a
       if (existingCert.length === 0) {
         const certId = uuidv4();
         const certNum = `ACAD-CERT-${Math.floor(100000 + Math.random() * 900000)}`;
+
+        const [activeTemplates]: any = await pool.execute('SELECT * FROM certificate_templates WHERE is_active = 1 LIMIT 1').catch(() => [[]]);
+        const activeTemplate = activeTemplates && activeTemplates.length > 0 ? activeTemplates[0] : null;
+        const templateSnapshot = activeTemplate ? JSON.stringify({
+          backgroundImageUrl: activeTemplate.background_image_url,
+          fieldPositions: typeof activeTemplate.field_positions === 'string' ? JSON.parse(activeTemplate.field_positions) : activeTemplate.field_positions
+        }) : null;
+
         await pool.execute(
-          `INSERT INTO certificates (id, user_id, program_id, certificate_number, certificate_type, issued_at)
-           VALUES (?, ?, ?, ?, 'program', NOW())`,
-          [certId, enrollment.user_id, enrollment.program_id, certNum]
+          `INSERT INTO certificates (id, user_id, program_id, certificate_number, certificate_type, issued_at, template_snapshot)
+           VALUES (?, ?, ?, ?, 'program', NOW(), ?)`,
+          [certId, enrollment.user_id, enrollment.program_id, certNum, templateSnapshot]
         );
       }
     }
@@ -813,10 +828,12 @@ router.get('/admin/progress-reports', authenticate, isAdmin, async (req: AuthReq
     const reportsWithDetails = [];
     for (const rep of (reports as any[])) {
       const [grades]: any = await pool.execute(
-        `SELECT sp.step_id, sp.score, sp.passed, sp.completed_at, s.title as step_title
+        `SELECT sp.step_id, sp.score, sp.passed, sp.attempts, sp.completed_at, s.title as step_title, m.sort_order as mod_order, s.sort_order as step_order
          FROM lms_user_step_progress sp
          JOIN lms_syllabus_steps s ON sp.step_id = s.id
-         WHERE sp.enrollment_id = ? AND s.content_type = 'quiz'`,
+         LEFT JOIN program_modules m ON s.module_id = m.id
+         WHERE sp.enrollment_id = ? AND s.content_type = 'quiz'
+         ORDER BY m.sort_order ASC, s.sort_order ASC, s.title ASC`,
         [rep.enrollment_id]
       );
       

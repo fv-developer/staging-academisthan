@@ -18,7 +18,7 @@ import {
   Building2, User, Mail, Phone, MapPin, Globe, Award,
   GraduationCap, Upload, ArrowRight, ArrowLeft, Check,
   Sparkles, Shield, Users, BookOpen, Star, ChevronsUpDown,
-  Plus, FileText, AlertCircle, Trash2
+  Plus, FileText, AlertCircle, Trash2, Video
 } from 'lucide-react';
 
 // Institution Types mapping options
@@ -30,6 +30,41 @@ const INSTITUTION_TYPES = [
   { value: 'private_institution', label: 'Private Institution' },
   { value: 'k12_school', label: 'K-12 School' },
 ];
+
+const LEADERSHIP_CONFIGS: Record<string, Array<{ role: string; mandatoryHead?: boolean }>> = {
+  college: [
+    { role: 'Chairman / President' },
+    { role: 'Principal', mandatoryHead: true },
+    { role: 'Vice-Principal' }
+  ],
+  autonomous_college: [
+    { role: 'Chairman, Governing Body / Board of Management' },
+    { role: 'Principal', mandatoryHead: true },
+    { role: 'Controller of Examinations (CoE)' },
+    { role: 'Dean / Vice-Principal' }
+  ],
+  university: [
+    { role: 'Visitor / Chancellor' },
+    { role: 'Vice-Chancellor (VC)', mandatoryHead: true },
+    { role: 'Dean of Faculties / Schools' }
+  ],
+  deemed_university: [
+    { role: 'Chancellor' },
+    { role: 'Vice-Chancellor (VC)', mandatoryHead: true },
+    { role: 'Dean of Schools / Faculties' }
+  ],
+  private_institution: [
+    { role: 'President / Chairman' },
+    { role: 'Chancellor' },
+    { role: 'Vice-Chancellor / Director General', mandatoryHead: true },
+    { role: 'Dean & HoD' }
+  ],
+  k12_school: [
+    { role: 'Chairman / President' },
+    { role: 'Principal / Headmaster', mandatoryHead: true },
+    { role: 'Vice-Principal' }
+  ]
+};
 
 const NAAC_GRADES = ['A++', 'A+', 'A', 'B++', 'B+'];
 
@@ -44,7 +79,7 @@ const REPRESENTATIVE_DESIGNATIONS = [
   'Other'
 ];
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 export default function InstitutionRegister() {
   const { user, profile } = useAuth();
@@ -58,6 +93,20 @@ export default function InstitutionRegister() {
 
   // Error state for validation
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [leadership, setLeadership] = useState<Array<{
+    role: string;
+    checked: boolean;
+    salutation: string;
+    fullName: string;
+    designation: string;
+    email: string;
+    phone: string;
+    phoneDialCode: string;
+    linkedinUrl?: string;
+    googleScholarUrl?: string;
+  }>>([]);
+  const [leadershipErrors, setLeadershipErrors] = useState<Record<string, Record<string, string>>>({});
 
   // Dynamic Country / State / City state variables
   const [selectedCountry, setSelectedCountry] = useState<Country>(
@@ -86,6 +135,10 @@ export default function InstitutionRegister() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoBase64, setLogoBase64] = useState<string>('');
   const [logoError, setLogoError] = useState<string>('');
+
+  // Campus Tour Media states
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [campusVideoFile, setCampusVideoFile] = useState<File | null>(null);
 
   const [isOtherDesignation, setIsOtherDesignation] = useState(false);
 
@@ -164,6 +217,24 @@ export default function InstitutionRegister() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Initialize/reset leadership state when institution_type changes
+  useEffect(() => {
+    const roles = LEADERSHIP_CONFIGS[form.institution_type] || LEADERSHIP_CONFIGS.college;
+    setLeadership(roles.map(r => ({
+      role: r.role,
+      checked: false,
+      salutation: 'Dr.',
+      fullName: '',
+      designation: r.role,
+      email: '',
+      phone: '',
+      phoneDialCode: '+91',
+      linkedinUrl: '',
+      googleScholarUrl: ''
+    })));
+    setLeadershipErrors({});
+  }, [form.institution_type]);
+
   const updateForm = (key: string, value: string) => {
     setForm(prev => {
       const updated = { ...prev, [key]: value };
@@ -221,9 +292,9 @@ export default function InstitutionRegister() {
     if (!file) return;
 
     // Type validation
-    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      setDocError('Only PDF, PNG, and JPG formats are accepted.');
+      setDocError('Only PDF, PNG, JPG, and WEBP formats are accepted.');
       return;
     }
 
@@ -248,9 +319,9 @@ export default function InstitutionRegister() {
     if (!file) return;
 
     // Type validation (only images for logo)
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      setLogoError('Only PNG and JPG formats are accepted for the logo.');
+      setLogoError('Only PNG, JPG, and WEBP formats are accepted for the logo.');
       return;
     }
 
@@ -368,6 +439,89 @@ export default function InstitutionRegister() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const validateStep3 = (): boolean => {
+    const newErrors: Record<string, Record<string, string>> = {};
+    let hasError = false;
+
+    // Check that at least one leadership profile is checked
+    const checkedLeads = leadership.filter(l => l.checked);
+    if (checkedLeads.length === 0) {
+      toast({
+        title: 'Selection Required',
+        description: 'Kindly select at least one office holder from the leadership list and fill in their respective details.',
+        variant: 'destructive'
+      });
+      return false;
+    }
+
+    // Validate details for all checked leadership members
+    leadership.forEach((lead) => {
+      if (!lead.checked) return;
+      
+      const leadErr: Record<string, string> = {};
+      
+      if (!lead.fullName || !lead.fullName.trim()) {
+        leadErr.fullName = 'Full Name is required';
+        hasError = true;
+      }
+      
+      if (!lead.designation || !lead.designation.trim()) {
+        leadErr.designation = 'Designation is required';
+        hasError = true;
+      }
+      
+      if (!lead.email || !lead.email.trim()) {
+        leadErr.email = 'Email is required';
+        hasError = true;
+      } else {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(lead.email.trim())) {
+          leadErr.email = 'Please enter a valid email address';
+          hasError = true;
+        } else if (isPublicEmailDomain(lead.email.trim())) {
+          leadErr.email = 'Please use your official institutional email address (e.g. your-name@institutename.com).';
+          hasError = true;
+        }
+      }
+      
+      if (!lead.phone || !lead.phone.trim()) {
+        leadErr.phone = 'Phone number is required';
+        hasError = true;
+      } else {
+        const countryObj = countries.find(c => c.dialCode === lead.phoneDialCode) || countries[0];
+        const maxLength = getMaxPhoneLength(countryObj);
+        const regex = new RegExp(countryObj.phoneRegex);
+        if (lead.phone.length < 7 || lead.phone.length > maxLength || !regex.test(lead.phone)) {
+          leadErr.phone = `Please enter a valid phone number for ${countryObj.name} (${countryObj.phonePlaceholder})`;
+          hasError = true;
+        }
+      }
+
+      if (lead.linkedinUrl && lead.linkedinUrl.trim()) {
+        const linkedinPattern = /^(https?:\/\/)?([a-z]{2,3}\.)?linkedin\.com\/.*$/i;
+        if (!linkedinPattern.test(lead.linkedinUrl.trim())) {
+          leadErr.linkedinUrl = 'Invalid LinkedIn URL';
+          hasError = true;
+        }
+      }
+
+      if (lead.googleScholarUrl && lead.googleScholarUrl.trim()) {
+        const scholarPattern = /^(https?:\/\/)?(www\.)?scholar\.google\.(com|co\.[a-z]{2}|[a-z]{2,3})\/.*$/i;
+        if (!scholarPattern.test(lead.googleScholarUrl.trim())) {
+          leadErr.googleScholarUrl = 'Invalid Google Scholar URL';
+          hasError = true;
+        }
+      }
+
+      if (Object.keys(leadErr).length > 0) {
+        newErrors[lead.role] = leadErr;
+      }
+    });
+
+    setLeadershipErrors(newErrors);
+    return !hasError;
+  };
+
   const handleSubmit = async () => {
     if (!user) {
       toast({ title: 'Please sign in first', variant: 'destructive' });
@@ -419,7 +573,49 @@ export default function InstitutionRegister() {
         logoUrl = logoUploadRes.documentUrl;
       }
 
-      // 2. Prepare payload
+      // 1c. Upload Campus Gallery Images if available
+      const galleryUrls: string[] = [];
+      if (galleryFiles && galleryFiles.length > 0) {
+        for (const file of galleryFiles) {
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = err => reject(err);
+          });
+          const galRes = await institutions.uploadDocument(base64, file.name);
+          if (galRes.documentUrl) {
+            galleryUrls.push(galRes.documentUrl);
+          }
+        }
+      }
+
+      // 1d. Upload Campus MP4 Video if available
+      let campusVideoUrl: string | undefined = undefined;
+      if (campusVideoFile) {
+        const videoBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(campusVideoFile);
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = err => reject(err);
+        });
+        const vidRes = await institutions.uploadDocument(videoBase64, campusVideoFile.name);
+        campusVideoUrl = vidRes.documentUrl;
+      }
+
+      // 1e. Prepare leadership profiles payload
+      const checkedLeadership = leadership
+        .filter(l => l.checked)
+        .map(l => ({
+          role: l.role,
+          fullName: `${l.salutation} ${l.fullName.trim()}`,
+          designation: l.role,
+          email: l.email.trim(),
+          phone: `${l.phoneDialCode}${l.phone.trim()}`,
+          linkedinUrl: l.linkedinUrl ? l.linkedinUrl.trim() : undefined,
+          googleScholarUrl: l.googleScholarUrl ? l.googleScholarUrl.trim() : undefined
+        }));
+
       const institutionData = {
         name: form.institution_name.trim(),
         institute_code: form.institute_code.trim() || undefined,
@@ -437,10 +633,14 @@ export default function InstitutionRegister() {
         accreditation: form.naac_grade,
         document_url: documentUrl,
         logo_url: logoUrl,
+        campus_gallery: galleryUrls.length > 0 ? galleryUrls : undefined,
+        campus_video_url: campusVideoUrl,
+        youtube_url: form.youtube_url ? form.youtube_url.trim() : undefined,
         description: form.description.trim() || undefined,
         student_count: form.student_count ? parseInt(form.student_count) : undefined,
         faculty_count: form.faculty_count ? parseInt(form.faculty_count) : undefined,
-        representative_designation: form.representative_designation.trim()
+        representative_designation: form.representative_designation.trim(),
+        leadership: checkedLeadership
       };
 
       await institutions.create(institutionData);
@@ -471,7 +671,7 @@ export default function InstitutionRegister() {
   });
   const availableCities = (countryStates && form.state) ? (countryStates[form.state] || []).sort() : [];
 
-  const stepLabels = ['Representative Info', 'Institution Info', 'Supporting Documentation'];
+  const stepLabels = ['Representative Info', 'Institution Info', 'Leadership Details', 'Supporting Documentation'];
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 website-page">
@@ -522,15 +722,15 @@ export default function InstitutionRegister() {
           <>
             {/* Step Indicators */}
             <div className="w-full mb-8 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-              <div className="flex items-center justify-between max-w-lg mx-auto relative">
+              <div className="flex items-center justify-between max-w-xl mx-auto relative">
                 {/* Background line */}
                 <div className="absolute top-4 left-0 right-0 h-0.5 bg-slate-100 -z-0" />
                 <div 
                   className="absolute top-4 left-0 h-0.5 bg-[#8B1538] transition-all duration-300 -z-0" 
-                  style={{ width: `${((step - 1) / 2) * 100}%` }} 
+                  style={{ width: `${((step - 1) / 3) * 100}%` }} 
                 />
 
-                {[1, 2, 3].map((s) => (
+                {[1, 2, 3, 4].map((s) => (
                   <div key={s} className="flex flex-col items-center relative z-10 px-2">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
                       s < step ? 'bg-[#8B1538] text-white' :
@@ -540,10 +740,10 @@ export default function InstitutionRegister() {
                       {s < step ? <Check className="w-4 h-4" /> : s}
                     </div>
                     <span className={cn(
-                      "text-[9px] sm:text-xs mt-2 font-semibold text-center whitespace-nowrap",
+                      "text-xs mt-2 font-semibold text-center whitespace-nowrap",
                       s === step ? "text-slate-800 font-bold" : "text-slate-400"
                     )}>
-                      {s === 1 ? 'Step 1: Rep Info' : s === 2 ? 'Step 2: Institute Info' : 'Step 3: Documents'}
+                      {s === 1 ? 'Step 1: Rep Info' : s === 2 ? 'Step 2: Institute Info' : s === 3 ? 'Step 3: Leadership' : 'Step 4: Documents'}
                     </span>
                   </div>
                 ))}
@@ -628,7 +828,7 @@ export default function InstitutionRegister() {
 
                     <div className="grid md:grid-cols-2 gap-5">
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-700">Official Office Email *</Label>
+                        <Label className="text-sm font-medium text-slate-700">Official Email *</Label>
                         <Input 
                           type="email" 
                           value={form.representative_email} 
@@ -651,15 +851,20 @@ export default function InstitutionRegister() {
                         <Label className="text-sm font-medium text-slate-700">Representative Mobile Number *</Label>
                         <div className="flex gap-1.5">
                           <Select
-                            value={form.representative_dial_code}
-                            onValueChange={(val) => updateForm('representative_dial_code', val)}
+                            value={countries.find(c => c.dialCode === form.representative_dial_code)?.code || 'IN'}
+                            onValueChange={(val) => {
+                              const country = countries.find(c => c.code === val);
+                              if (country) {
+                                updateForm('representative_dial_code', country.dialCode);
+                              }
+                            }}
                           >
                             <SelectTrigger className="w-[95px] rounded-lg text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="max-h-48 text-sm">
                               {countries.map(c => (
-                                <SelectItem key={c.code} value={c.dialCode}>{c.code} ({c.dialCode})</SelectItem>
+                                <SelectItem key={c.code} value={c.code}>{c.code} ({c.dialCode})</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -774,15 +979,20 @@ export default function InstitutionRegister() {
                       <Label className="text-sm font-medium text-slate-700">Institution Contact Number *</Label>
                       <div className="flex gap-1.5">
                         <Select
-                          value={form.institution_dial_code}
-                          onValueChange={(val) => updateForm('institution_dial_code', val)}
+                          value={countries.find(c => c.dialCode === form.institution_dial_code)?.code || 'IN'}
+                          onValueChange={(val) => {
+                            const country = countries.find(c => c.code === val);
+                            if (country) {
+                              updateForm('institution_dial_code', country.dialCode);
+                            }
+                          }}
                         >
                           <SelectTrigger className="w-[95px] rounded-lg text-sm">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="max-h-48 text-sm">
                             {countries.map(c => (
-                              <SelectItem key={c.code} value={c.dialCode}>{c.code} ({c.dialCode})</SelectItem>
+                              <SelectItem key={c.code} value={c.code}>{c.code} ({c.dialCode})</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -1092,14 +1302,196 @@ export default function InstitutionRegister() {
                       }} 
                       className="rounded-lg bg-[#8B1538] hover:bg-[#720E2C] text-white gap-2 font-medium text-sm h-10"
                     >
+                      Next: Leadership Details <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 3: Institution Leadership Details */}
+              {step === 3 && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                    <div className="w-10 h-10 rounded-xl bg-[#8B1538]/10 flex items-center justify-center text-[#8B1538]">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="font-serif text-lg font-bold text-slate-800">Institution Leadership Details</h2>
+                      <p className="text-xs text-slate-500">Provide official contact details of key leadership figures</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-amber-50 border border-amber-200/50 rounded-xl flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-800 leading-normal font-medium">
+                      Kindly select at least one office holder from the leadership list and fill in their respective details.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {leadership.map((lead, idx) => {
+                      const leadErrs = leadershipErrors[lead.role] || {};
+
+                      return (
+                        <div key={lead.role} className="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                          <div className={cn(
+                            "flex items-center justify-between p-4 cursor-pointer transition-colors select-none",
+                            lead.checked ? "bg-slate-50 border-b border-slate-100" : "hover:bg-slate-50/50"
+                          )}
+                            onClick={() => {
+                              setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, checked: !l.checked } : l));
+                            }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={lead.checked}
+                                readOnly
+                                className="w-4 h-4 rounded border-slate-300 text-[#8B1538] focus:ring-[#8B1538]"
+                              />
+                              <div>
+                                <span className="text-sm font-semibold text-slate-800">
+                                  {lead.role}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-xs text-slate-400">
+                              {lead.checked ? 'Click to collapse' : 'Click to expand'}
+                            </span>
+                          </div>
+
+                          {lead.checked && (
+                            <div className="p-5 bg-white space-y-4">
+                              <div className="grid sm:grid-cols-2 gap-4">
+                                {/* Full Name with Salutation */}
+                                <div className="space-y-1.5 sm:col-span-2">
+                                  <Label className="text-xs font-semibold text-slate-700">Full Name *</Label>
+                                  <div className="flex gap-2">
+                                    <Select
+                                      value={lead.salutation || 'Dr.'}
+                                      onValueChange={(val) => setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, salutation: val } : l))}
+                                    >
+                                      <SelectTrigger className="w-[85px] rounded-lg text-xs h-9 pl-2 pr-1 bg-white border-slate-200">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.'].map(sal => (
+                                          <SelectItem key={sal} value={sal} className="text-xs">{sal}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Input
+                                      value={lead.fullName}
+                                      onChange={e => setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, fullName: e.target.value } : l))}
+                                      placeholder="Enter full name"
+                                      className={cn("flex-1 rounded-lg text-xs h-9", leadErrs.fullName && "border-red-500")}
+                                      maxLength={150}
+                                    />
+                                  </div>
+                                  {leadErrs.fullName && <p className="text-[10px] text-red-500">{leadErrs.fullName}</p>}
+                                </div>
+
+                                {/* Official Email */}
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs font-semibold text-slate-700">Official Email ID *</Label>
+                                  <Input
+                                    type="email"
+                                    value={lead.email}
+                                    onChange={e => setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, email: e.target.value } : l))}
+                                    placeholder="e.g. principal@college.edu.in"
+                                    className={cn("rounded-lg text-xs h-9", leadErrs.email && "border-red-500")}
+                                    maxLength={150}
+                                  />
+                                  {leadErrs.email && <p className="text-[10px] text-red-500">{leadErrs.email}</p>}
+                                </div>
+
+                                {/* Contact Number */}
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs font-semibold text-slate-700">Official Contact Number *</Label>
+                                  <div className="flex gap-1.5">
+                                    <Select
+                                      value={countries.find(c => c.dialCode === lead.phoneDialCode)?.code || 'IN'}
+                                      onValueChange={(val) => {
+                                        const country = countries.find(c => c.code === val);
+                                        if (country) {
+                                          setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, phoneDialCode: country.dialCode } : l));
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger className="w-[80px] rounded-lg text-xs h-9 pl-2 pr-1">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {countries.map(c => (
+                                          <SelectItem key={c.code} value={c.code} className="text-xs">
+                                            {c.dialCode} ({c.code})
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Input
+                                      value={lead.phone}
+                                      onChange={e => setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, phone: e.target.value.replace(/\D/g, '') } : l))}
+                                      placeholder="Contact number"
+                                      className={cn("flex-1 rounded-lg text-xs h-9", leadErrs.phone && "border-red-500")}
+                                      maxLength={15}
+                                    />
+                                  </div>
+                                  {leadErrs.phone && <p className="text-[10px] text-red-500">{leadErrs.phone}</p>}
+                                </div>
+                              </div>
+
+                              <div className="grid sm:grid-cols-2 gap-4 border-t border-slate-100 pt-4">
+                                {/* LinkedIn URL */}
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs font-semibold text-slate-700">LinkedIn Profile URL</Label>
+                                  <Input
+                                    value={lead.linkedinUrl || ''}
+                                    onChange={e => setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, linkedinUrl: e.target.value } : l))}
+                                    placeholder="https://linkedin.com/in/username"
+                                    className={cn("rounded-lg text-xs h-9", leadErrs.linkedinUrl && "border-red-500")}
+                                  />
+                                  {leadErrs.linkedinUrl && <p className="text-[10px] text-red-500">{leadErrs.linkedinUrl}</p>}
+                                </div>
+
+                                {/* Google Scholar URL */}
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs font-semibold text-slate-700">Google Scholar Profile URL</Label>
+                                  <Input
+                                    value={lead.googleScholarUrl || ''}
+                                    onChange={e => setLeadership(prev => prev.map((l, i) => i === idx ? { ...l, googleScholarUrl: e.target.value } : l))}
+                                    placeholder="https://scholar.google.com/citations?user=..."
+                                    className={cn("rounded-lg text-xs h-9", leadErrs.googleScholarUrl && "border-red-500")}
+                                  />
+                                  {leadErrs.googleScholarUrl && <p className="text-[10px] text-red-500">{leadErrs.googleScholarUrl}</p>}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex justify-between pt-4 border-t border-slate-100">
+                    <Button type="button" variant="outline" onClick={() => setStep(2)} className="rounded-lg text-sm h-10 gap-2">
+                      <ArrowLeft className="w-4 h-4" /> Back
+                    </Button>
+                    <Button 
+                      type="button"
+                      onClick={() => {
+                        if (validateStep3()) setStep(4);
+                      }} 
+                      className="rounded-lg bg-[#8B1538] hover:bg-[#720E2C] text-white gap-2 font-medium text-sm h-10"
+                    >
                       Next: Documentation <ArrowRight className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
               )}
 
-              {/* STEP 3: Documentation & Showcase */}
-              {step === 3 && (
+              {/* STEP 4: Documentation & Showcase */}
+              {step === 4 && (
                 <div className="space-y-6">
                   <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
                     <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600">
@@ -1113,105 +1505,82 @@ export default function InstitutionRegister() {
 
                   <div className="grid sm:grid-cols-2 gap-5">
                     {/* File Upload supporting document */}
+                    {/* Verification Document Upload */}
                     <div className="sm:col-span-1 space-y-2">
-                      <Label className="text-sm font-semibold text-slate-700 flex items-center gap-1">
-                        Supporting Verification Document * <span className="text-slate-400 font-normal">(Required)</span>
-                      </Label>
-                      <div className="mt-2 border-2 border-dashed border-slate-200 rounded-xl p-5 bg-slate-50 hover:bg-slate-100/50 transition-colors flex flex-col items-center justify-center text-center h-[200px]">
-                        <Upload className="w-6 h-6 text-slate-400 mb-2" />
-                        <label className="cursor-pointer">
-                          <span className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors inline-block shadow-sm">
-                            Choose File
-                          </span>
-                          <input 
-                            type="file" 
-                            accept=".pdf,.png,.jpg,.jpeg" 
-                            onChange={handleDocumentChange} 
-                            className="hidden" 
-                          />
-                        </label>
-                        <p className="text-[10px] text-slate-400 mt-1">
-                          PDF, JPG, or PNG up to 5 MB.
-                        </p>
-
+                      <Label className="text-xs font-semibold text-slate-700">Verification Document (PDF/JPG/PNG) *</Label>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => document.getElementById('reg-doc-input')?.click()}
+                          className="rounded-lg h-9 text-xs gap-1.5 bg-white border-slate-200 hover:bg-slate-50"
+                        >
+                          <Upload className="w-3.5 h-3.5" /> Select File
+                        </Button>
+                        <input
+                          type="file"
+                          id="reg-doc-input"
+                          accept=".pdf,.png,.jpg,.jpeg,.webp"
+                          onChange={handleDocumentChange}
+                          className="hidden"
+                        />
+                        <span className="text-[11px] text-slate-500 truncate max-w-[150px]">
+                          {docFile ? docFile.name : 'No file selected'}
+                        </span>
                         {docFile && (
-                          <div className="mt-2 p-2 bg-white border border-slate-200 rounded-lg flex items-center justify-between gap-2 text-[10px] text-slate-700 font-medium w-full">
-                            <div className="flex items-center gap-1.5 overflow-hidden">
-                              <FileText className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                              <span className="truncate max-w-[120px]">{docFile.name}</span>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => {
-                                setDocFile(null);
-                                setDocBase64('');
-                              }} 
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md p-0.5 h-6 w-6"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        )}
-                        {docError && (
-                          <p className="text-[10px] text-red-500 mt-1 font-medium flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" /> {docError}
-                          </p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => { setDocFile(null); setDocBase64(''); }}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7 w-7 p-0 shrink-0 rounded-md"
+                            title="Remove file"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
                         )}
                       </div>
+                      {docError && <p className="text-[10px] text-red-500 mt-1">{docError}</p>}
                     </div>
 
-                    {/* Logo upload */}
+                    {/* Logo Upload */}
                     <div className="sm:col-span-1 space-y-2">
-                      <Label className="text-sm font-semibold text-slate-700 flex items-center gap-1">
-                        Institution Logo *
-                      </Label>
-                      <div className="mt-2 border-2 border-dashed border-slate-200 rounded-xl p-5 bg-slate-50 hover:bg-slate-100/50 transition-colors flex flex-col items-center justify-center text-center h-[200px]">
-                        {logoFile ? (
-                          <img src={logoBase64} alt="Preview" className="w-12 h-12 object-contain rounded-lg border border-slate-200 bg-white mb-2" />
-                        ) : (
-                          <Building2 className="w-6 h-6 text-slate-400 mb-2" />
-                        )}
-                        <label className="cursor-pointer">
-                          <span className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors inline-block shadow-sm">
-                            Choose Image
-                          </span>
-                          <input 
-                            type="file" 
-                            accept=".png,.jpg,.jpeg" 
-                            onChange={handleLogoChange} 
-                            className="hidden" 
-                          />
-                        </label>
-                        <p className="text-[10px] text-slate-400 mt-1">
-                          PNG or JPG up to 2 MB.
-                        </p>
-
+                      <Label className="text-xs font-semibold text-slate-700">Institute Logo *</Label>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => document.getElementById('reg-logo-input')?.click()}
+                          className="rounded-lg h-9 text-xs gap-1.5 bg-white border-slate-200 hover:bg-slate-50"
+                        >
+                          <Upload className="w-3.5 h-3.5" /> Select Logo
+                        </Button>
+                        <input
+                          type="file"
+                          id="reg-logo-input"
+                          accept=".png,.jpg,.jpeg,.webp"
+                          onChange={handleLogoChange}
+                          className="hidden"
+                        />
+                        <span className="text-[11px] text-slate-500 truncate max-w-[150px]">
+                          {logoFile ? logoFile.name : 'No logo selected'}
+                        </span>
                         {logoFile && (
-                          <div className="mt-2 p-2 bg-white border border-slate-200 rounded-lg flex items-center justify-between gap-2 text-[10px] text-slate-700 font-medium w-full">
-                            <div className="flex items-center gap-1.5 overflow-hidden">
-                              <FileText className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                              <span className="truncate max-w-[120px]">{logoFile.name}</span>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => {
-                                setLogoFile(null);
-                                setLogoBase64('');
-                              }} 
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md p-0.5 h-6 w-6"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        )}
-                        {logoError && (
-                          <p className="text-[10px] text-red-500 mt-1 font-medium flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" /> {logoError}
-                          </p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => { setLogoFile(null); setLogoBase64(''); }}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7 w-7 p-0 shrink-0 rounded-md"
+                            title="Remove logo"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
                         )}
                       </div>
+                      {logoError && <p className="text-[10px] text-red-500 mt-1">{logoError}</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -1231,10 +1600,142 @@ export default function InstitutionRegister() {
                       <Label className="text-sm font-medium text-slate-700">Key Achievements</Label>
                       <Textarea value={form.achievements} onChange={e => updateForm('achievements', e.target.value)} placeholder="Awards, accreditations, notable achievements..." className="rounded-lg text-sm resize-none" rows={2} maxLength={2000} />
                     </div>
+
+                    {/* Campus Tour / Institute Overview */}
+                    <div className="sm:col-span-2 border-t border-slate-100 pt-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Video className="w-4 h-4 text-[#8B1538]" />
+                        <h3 className="font-serif text-sm font-bold text-slate-800">Campus Tour / Institute Overview</h3>
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        Upload media files to showcase your campus infrastructure and facilities.
+                      </p>
+
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold text-slate-700">Campus Gallery Images (JPG, PNG, WEBP — max 5MB)</Label>
+                          <div className="flex items-center gap-3">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => document.getElementById('reg-gallery-input')?.click()}
+                              className="rounded-lg h-9 text-xs gap-1.5 bg-white border-slate-200 hover:bg-slate-50"
+                            >
+                              <Upload className="w-3.5 h-3.5" /> Select Images
+                            </Button>
+                            <input
+                              type="file"
+                              id="reg-gallery-input"
+                              accept="image/jpeg,image/png,image/webp"
+                              multiple
+                              onChange={(e) => {
+                                if (e.target.files) {
+                                  const newFiles: File[] = [];
+                                  Array.from(e.target.files).forEach(file => {
+                                    if (file.size > 5 * 1024 * 1024) {
+                                      toast({ title: 'Image too large', description: `${file.name} exceeds 5MB limit.`, variant: 'destructive' });
+                                    } else {
+                                      newFiles.push(file);
+                                    }
+                                  });
+                                  setGalleryFiles(prev => [...prev, ...newFiles]);
+                                }
+                              }}
+                              className="hidden"
+                            />
+                            <span className="text-[11px] text-slate-500 truncate">
+                              {galleryFiles.length > 0 ? `${galleryFiles.length} file(s) selected` : 'No images selected'}
+                            </span>
+                          </div>
+                          {galleryFiles.length > 0 && (
+                            <div className="mt-2 space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                              {galleryFiles.map((file, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                                  <div className="flex items-center gap-1.5 truncate">
+                                    <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                    <span className="truncate max-w-[180px] text-[11px] font-medium text-slate-700">{file.name}</span>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setGalleryFiles(prev => prev.filter((_, i) => i !== idx))}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0 shrink-0"
+                                    title="Remove image"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold text-slate-700">Campus MP4 Video (Max 25MB)</Label>
+                          <div className="flex items-center gap-3">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => document.getElementById('reg-video-input')?.click()}
+                              className="rounded-lg h-9 text-xs gap-1.5 bg-white border-slate-200 hover:bg-slate-50"
+                            >
+                              <Upload className="w-3.5 h-3.5" /> Select Video
+                            </Button>
+                            <input
+                              type="file"
+                              id="reg-video-input"
+                              accept="video/mp4"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  const file = e.target.files[0];
+                                  if (!file.name.toLowerCase().endsWith('.mp4')) {
+                                    toast({ title: 'Invalid video format', description: 'Only MP4 videos are supported.', variant: 'destructive' });
+                                  } else if (file.size > 25 * 1024 * 1024) {
+                                    toast({ title: 'Video too large', description: 'Video exceeds 25MB limit.', variant: 'destructive' });
+                                  } else {
+                                    setCampusVideoFile(file);
+                                  }
+                                }
+                              }}
+                              className="hidden"
+                            />
+                            <span className="text-[11px] text-slate-500 truncate max-w-[150px]">
+                              {campusVideoFile ? campusVideoFile.name : 'No video selected'}
+                            </span>
+                            {campusVideoFile && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setCampusVideoFile(null)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7 w-7 p-0 shrink-0 rounded-md"
+                                title="Remove video"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="sm:col-span-2 space-y-1.5">
+                          <Label className="text-xs font-medium text-slate-700">YouTube Video Link</Label>
+                          <Input
+                            type="url"
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            value={form.youtube_url || ''}
+                            onChange={e => updateForm('youtube_url', e.target.value)}
+                            className="rounded-lg text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex justify-between pt-4 border-t border-slate-100">
-                    <Button type="button" variant="outline" onClick={() => setStep(2)} className="rounded-lg text-sm h-10 gap-2">
+                    <Button type="button" variant="outline" onClick={() => setStep(3)} className="rounded-lg text-sm h-10 gap-2">
                       <ArrowLeft className="w-4 h-4" /> Back
                     </Button>
                     <Button

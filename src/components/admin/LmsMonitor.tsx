@@ -314,58 +314,63 @@ export function LmsMonitor() {
 
             {/* Card Fields matching mock schema */}
             <div className="space-y-3.5 text-xs">
-              {/* 1. Completed Modules */}
-              <div className="space-y-1">
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Completed Modules</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedStudent.modules && selectedStudent.modules.filter((m: any) => m.completed).map((m: any, idx: number) => (
-                    <Badge key={m.id} className="bg-slate-100 text-slate-700 border-none font-bold py-0.5 text-[9px] rounded-lg">
-                      M{idx + 1}
-                    </Badge>
-                  ))}
-                  {(!selectedStudent.modules || selectedStudent.modules.filter((m: any) => m.completed).length === 0) && (
-                    <span className="text-[10px] text-slate-400 italic">None completed yet</span>
-                  )}
-                </div>
-              </div>
-
-              {/* 2. Completed Quiz */}
-              <div className="space-y-1">
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Completed Quiz</span>
+              {/* 1. Module Progress Details */}
+              <div className="space-y-2">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Module Status</span>
+                
+                {/* Completed Modules list */}
                 <div className="space-y-1">
-                  {selectedStudent.quizzes && selectedStudent.quizzes.filter((q: any) => q.passed).map((q: any) => (
-                    <div key={q.step_id} className="flex items-center gap-1 text-[10px] text-slate-600 font-medium">
-                      <span className="text-emerald-500 font-bold">✓</span> {q.step_title}
-                    </div>
-                  ))}
-                  {(!selectedStudent.quizzes || selectedStudent.quizzes.filter((q: any) => q.passed).length === 0) && (
-                    <span className="text-[10px] text-slate-400 italic">No quizzes passed yet</span>
-                  )}
+                  <span className="text-[8px] font-semibold text-slate-450 uppercase block">Completed</span>
+                  <div className="space-y-1 pl-1">
+                    {selectedStudent.modules && selectedStudent.modules.filter((m: any) => m.completed).map((m: any) => (
+                      <div key={m.id} className="text-[10px] text-slate-700 font-semibold flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        <span>{m.title} <span className="text-[8px] text-slate-400 font-normal">({m.progress})</span></span>
+                      </div>
+                    ))}
+                    {(!selectedStudent.modules || selectedStudent.modules.filter((m: any) => m.completed).length === 0) && (
+                      <span className="text-[10px] text-slate-400 italic pl-1 block">None completed yet</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Pending Modules list */}
+                <div className="space-y-1 pt-1">
+                  <span className="text-[8px] font-semibold text-slate-450 uppercase block">Pending / In Progress</span>
+                  <div className="space-y-1 pl-1">
+                    {selectedStudent.modules && selectedStudent.modules.filter((m: any) => !m.completed).map((m: any) => (
+                      <div key={m.id} className="text-[10px] text-slate-500 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-350 shrink-0" />
+                        <span>{m.title} <span className="text-[8px] text-slate-400 font-normal">({m.progress})</span></span>
+                      </div>
+                    ))}
+                    {(!selectedStudent.modules || selectedStudent.modules.filter((m: any) => !m.completed).length === 0) && (
+                      <span className="text-[10px] text-emerald-600 font-semibold pl-1 block">No pending modules! 🎉</span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* 3. Current Step */}
-              <div className="space-y-1">
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Current Step</span>
-                <div className="text-[10px] text-slate-700 font-bold flex items-center gap-1">
-                  <BookOpen className="w-3.5 h-3.5 text-gold" />
+              {/* 2. Current Module */}
+              <div className="space-y-1 border-t border-slate-100 pt-2.5">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Current Module</span>
+                <div className="text-[10px] text-slate-700 font-bold flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-gold shrink-0" />
                   <span>
                     {(() => {
                       if (!selectedStudent.modules || selectedStudent.modules.length === 0) return 'N/A';
-                      for (const mod of selectedStudent.modules) {
-                        if (!mod.completed) return mod.title;
-                      }
-                      return 'Program Completed! 🎉';
+                      const firstIncomplete = selectedStudent.modules.find((m: any) => !m.completed);
+                      return firstIncomplete ? firstIncomplete.title : 'Program Completed! 🎉';
                     })()}
                   </span>
                 </div>
               </div>
 
-              {/* 4. Last Activity */}
-              <div className="space-y-1">
+              {/* 3. Last Activity */}
+              <div className="space-y-1 border-t border-slate-100 pt-2.5">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Last Activity</span>
-                <div className="text-[10px] text-slate-600 font-medium flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <div className="text-[10px] text-slate-650 font-medium flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span>
                     {selectedStudent.last_activity 
                       ? new Date(selectedStudent.last_activity).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -374,14 +379,32 @@ export function LmsMonitor() {
                 </div>
               </div>
 
-              {/* 5. Quiz Score */}
-              <div className="space-y-1">
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Quiz Score</span>
-                <div className="space-y-1">
-                  {selectedStudent.quizzes && selectedStudent.quizzes.map((q: any) => (
-                    <div key={q.step_id} className="flex justify-between items-center text-[10px] text-slate-600">
-                      <span>{q.step_title}</span>
-                      <span className={`font-bold ${q.passed ? 'text-emerald-600' : 'text-red-500'}`}>{q.score}%</span>
+              {/* 4. Quiz Performance details */}
+              <div className="space-y-2 border-t border-slate-100 pt-2.5">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Quiz Performance</span>
+                <div className="space-y-2">
+                  {selectedStudent.quizzes && [...selectedStudent.quizzes].sort((a: any, b: any) => {
+                    if (a.mod_order !== undefined && b.mod_order !== undefined) {
+                      if (a.mod_order !== b.mod_order) return a.mod_order - b.mod_order;
+                      return (a.step_order || 0) - (b.step_order || 0);
+                    }
+                    return (a.step_title || '').localeCompare(b.step_title || '', undefined, { numeric: true });
+                  }).map((q: any) => (
+                    <div key={q.step_id} className="border border-slate-100 rounded-xl p-2.5 space-y-1.5 bg-slate-50/40">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="font-semibold text-slate-750 text-[10px] leading-tight">{q.step_title}</span>
+                        <Badge className={`text-[8px] font-bold py-0.5 px-1.5 rounded-md border shrink-0 ${
+                          q.passed 
+                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                            : 'bg-red-50 text-red-500 border-red-100'
+                        }`}>
+                          {q.passed ? 'Passed' : 'Failed'}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center text-[9px] text-slate-500 font-mono">
+                        <span>Score: <strong className="text-slate-700">{q.score}%</strong></span>
+                        <span>Attempts: <strong className="text-slate-700">{q.attempts || 1}</strong></span>
+                      </div>
                     </div>
                   ))}
                   {(!selectedStudent.quizzes || selectedStudent.quizzes.length === 0) && (
@@ -390,8 +413,8 @@ export function LmsMonitor() {
                 </div>
               </div>
 
-              {/* 6. Certificate Status */}
-              <div className="space-y-1">
+              {/* 5. Certificate Status */}
+              <div className="space-y-1 border-t border-slate-100 pt-2.5">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Certificate Status</span>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <Badge className={`text-[9px] font-bold border ${

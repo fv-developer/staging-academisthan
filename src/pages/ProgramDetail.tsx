@@ -16,7 +16,7 @@ import {
   LayoutDashboard, User, Calendar, Calculator, TrendingUp,
   Settings, RefreshCw, X, Maximize2, Minimize2, Check, ChevronLeft, ChevronUp,
   Building2, Target, Globe, FileText, Sparkles, Copy, Users, Briefcase, Shield, Loader2, ArrowRight, Bookmark,
-  CheckCircle2, PlayCircle, Circle, Info
+  CheckCircle2, PlayCircle, Circle, Info, AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -308,8 +308,15 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
     return flatSteps.findIndex(s => s.id === activeStep.id);
   }, [activeStep, flatSteps]);
 
+  const isAdmin = user?.role === 'admin' || profile?.role === 'admin';
+
   // Lock status check for a step
   const getStepLockStatus = useCallback((step: SyllabusStep) => {
+    // Admin Testing Mode: No restrictions for Admin
+    if (isAdmin) {
+      return { isLocked: false, requiredStep: null };
+    }
+
     const stepIdx = flatSteps.findIndex(s => s.id === step.id);
     if (stepIdx <= 0) return { isLocked: false, requiredStep: null };
 
@@ -324,7 +331,7 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
     }
 
     return { isLocked: false, requiredStep: null };
-  }, [flatSteps, progress]);
+  }, [flatSteps, progress, isAdmin]);
 
   // Check if a module is unlocked (unlocked if its first step is unlocked)
   const isModuleUnlocked = useCallback((mod: ProgramModule) => {
@@ -370,9 +377,6 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
             return !progRecord?.completed || (s.content_type === 'quiz' && !progRecord?.passed);
           });
 
-          // Default to showing the Program Overview page on mount
-          setActiveStep(null);
-
           // Check certificate
           const certIssued = enr.status === 'completed' || (firstIncompleteIdx === -1 && allFlat.length > 0);
           if (certIssued) {
@@ -395,6 +399,11 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Reset active step when program slug changes
+  useEffect(() => {
+    setActiveStep(null);
+  }, [slug]);
 
   // Accordion management: Auto-expand active step's chapter
   useEffect(() => {
@@ -533,6 +542,11 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
       if (hasPassed) {
         toast({ title: '🎉 Quiz Passed!', description: `Grade: ${percent}% (Passed). Next items unlocked!` });
         fetchData();
+        if (currentStepIdx < flatSteps.length - 1) {
+          setTimeout(() => {
+            setActiveStep(flatSteps[currentStepIdx + 1]);
+          }, 1500);
+        }
       } else {
         toast({
           title: '❌ Quiz Failed',
@@ -637,10 +651,6 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
           <button
             onClick={() => {
               setActiveStep(null);
-              setIsFullscreen(false);
-              if (document.fullscreenElement) {
-                document.exitFullscreen().catch(err => console.error(err));
-              }
             }}
             className={cn(
               "w-full flex items-center gap-2.5 p-4 transition-colors text-left",
@@ -710,13 +720,23 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
                         const { isLocked, requiredStep } = getStepLockStatus(step);
 
                         const handleStepClick = () => {
-                          setActiveStep(step);
                           if (isLocked) {
+                            if (requiredStep && requiredStep.content_type === 'quiz') {
+                              toast({
+                                title: 'Quiz Not Passed ⚠️',
+                                description: "Please pass the quiz before proceeding to the next module. Click 'Try Again' to retake the quiz.",
+                                variant: 'destructive',
+                              });
+                              return;
+                            }
+                            setActiveStep(step);
                             toast({
                               title: 'Preview Mode 👁️',
                               description: 'You can view this step, but you must complete preceding steps to unlock the completion button.',
                             });
+                            return;
                           }
+                          setActiveStep(step);
                         };
 
                         let stepLabel = step.title;
@@ -1178,12 +1198,41 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
                         <div className={cn("px-2.5 py-0.5 border rounded-lg text-center",
                           quizScore >= (activeStep.passing_score || 80)
                             ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
-                            : 'bg-red-50 border-red-100 text-red-700'
+                            : 'bg-red-50 border-red-100 text-red-750'
                         )}>
-                          <span className="text-[10px] font-bold">{quizScore}% Passed</span>
+                          <span className="text-[10px] font-bold">
+                            {quizScore >= (activeStep.passing_score || 80) ? `${quizScore}% Passed` : `${quizScore}% Failed`}
+                          </span>
                         </div>
                       )}
                     </div>
+
+                    {/* Prominent Fail Alert Banner */}
+                    {quizSubmitted && quizScore !== null && quizScore < (activeStep.passing_score || 80) && (
+                      <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-xl p-4 flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-1 duration-200">
+                        <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-xs">Quiz Failed (Score: {quizScore}%)</h4>
+                          <p className="text-[11px] leading-relaxed text-rose-700">
+                            You did not achieve the passing score of {activeStep.passing_score || 80}%. 
+                            Please review the correct answers highlighted in green below and click <strong>Try Again</strong> in the footer to retake the quiz.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Prominent Pass Alert Banner */}
+                    {quizSubmitted && quizScore !== null && quizScore >= (activeStep.passing_score || 80) && (
+                      <div className="bg-emerald-50 border border-emerald-250 text-emerald-800 rounded-xl p-4 flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-1 duration-200">
+                        <Check className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-xs">Quiz Passed! 🎉 (Score: {quizScore}%)</h4>
+                          <p className="text-[11px] leading-relaxed text-emerald-700">
+                            Congratulations! You have successfully passed this quiz. You can now proceed to the next syllabus module.
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Questions List stack */}
                     <div className="space-y-5 w-full">
@@ -1220,14 +1269,30 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
                                 let radioStyle = "border-slate-350 bg-white";
                                 
                                 if (quizSubmitted) {
-                                  if (opt === correct) {
-                                    containerStyle = "bg-emerald-50 border-emerald-300 text-emerald-800 font-bold";
-                                    radioStyle = "border-emerald-500 bg-emerald-500 text-white flex items-center justify-center";
-                                  } else if (isSelected && !isCorrect) {
-                                    containerStyle = "bg-rose-50 border-rose-300 text-rose-800";
-                                    radioStyle = "border-rose-500 bg-rose-500 text-white flex items-center justify-center";
+                                  const passedQuiz = quizScore >= (activeStep.passing_score || 80);
+                                  if (passedQuiz) {
+                                    if (opt === correct) {
+                                      containerStyle = "bg-emerald-50 border-emerald-300 text-emerald-800 font-bold";
+                                      radioStyle = "border-emerald-500 bg-emerald-500 text-white flex items-center justify-center";
+                                    } else if (isSelected && !isCorrect) {
+                                      containerStyle = "bg-rose-50 border-rose-300 text-rose-800";
+                                      radioStyle = "border-rose-500 bg-rose-500 text-white flex items-center justify-center";
+                                    } else {
+                                      containerStyle = "border-slate-100 opacity-60 text-slate-400";
+                                    }
                                   } else {
-                                    containerStyle = "border-slate-100 opacity-60 text-slate-400";
+                                    // Failed attempt: keep user's original selection visible (red if wrong, green if right), but DO NOT reveal correct answer for unselected options
+                                    if (isSelected) {
+                                      if (isCorrect) {
+                                        containerStyle = "bg-emerald-50 border-emerald-300 text-emerald-800 font-bold";
+                                        radioStyle = "border-emerald-500 bg-emerald-500 text-white flex items-center justify-center";
+                                      } else {
+                                        containerStyle = "bg-rose-50 border-rose-300 text-rose-800 font-bold";
+                                        radioStyle = "border-rose-500 bg-rose-500 text-white flex items-center justify-center";
+                                      }
+                                    } else {
+                                      containerStyle = "border-slate-100 text-slate-500 opacity-60";
+                                    }
                                   }
                                 } else if (isSelected) {
                                   containerStyle = "border-blue-600 bg-blue-50/50 text-blue-800 font-bold";
@@ -1309,12 +1374,6 @@ export default function ProgramDetail({ embedded = false, embeddedSlug, onCloseL
                         className="rounded-xl h-9 text-xs gap-1 border-slate-200 text-slate-500 font-bold px-4 hover:bg-slate-50"
                       >
                         Try Again
-                      </Button>
-                      <Button
-                        onClick={handleBypassQuiz}
-                        className="rounded-xl h-9 bg-slate-600 hover:bg-slate-700 text-white font-bold text-xs px-4"
-                      >
-                        Go Next (Bypass)
                       </Button>
                     </div>
                   )}

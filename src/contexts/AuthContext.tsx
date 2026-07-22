@@ -71,6 +71,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setProfile(data);
+      } else if (response.status === 401 || response.status === 404) {
+        console.warn('Profile not found or unauthorized. Clearing session.');
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        localStorage.removeItem('auth_session');
+        localStorage.removeItem('auth_token');
       }
     } catch (error) {
       console.error('Failed to fetch profile:', error);

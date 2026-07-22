@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>API Score Calculator — India-Wide · UGC CAS Frameworks · Institution-Customizable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy-900:#0F172A; --navy-800:#1E293B; --navy-700:#334155;
+  --cream:#FDFBF7; --card:#FFFFFF; --line:#E8E3D9; --line-2:#EEF0F4;
+  --gold:#D97706; --gold-deep:#B45309; --gold-soft:#FBF3E2; --gold-line:#EBCE9E;
+  --coral:#EF4444; --coral-soft:#FDECEC;
+  --ink:#1E293B; --muted:#64748B; --hint:#8B94A7;
+  --ok:#15803D; --ok-soft:#EAF6EE;
+  --radius:14px; --shadow:0 6px 24px rgba(15,23,42,.07),0 1px 3px rgba(15,23,42,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--cream);color:var(--ink);font-size:15px;line-height:1.55}
+button{font-family:inherit;cursor:pointer}
+input,select{font-family:inherit}
+
+.hero{background:linear-gradient(160deg,#0B1120 0%,var(--navy-900) 45%,var(--navy-800) 100%);color:#F1F5F9;padding:52px 20px 128px;text-align:center}
+.hero .badge{display:inline-block;font-size:11.5px;font-weight:600;letter-spacing:.08em;color:#E6C285;border:1px solid rgba(217,119,6,.55);background:rgba(217,119,6,.10);padding:7px 16px;border-radius:999px;margin-bottom:22px}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(34px,5.4vw,56px);letter-spacing:.5px}
+.hero h1 em{font-style:italic;color:var(--gold);font-weight:700}
+.hero p.sub{max-width:700px;margin:16px auto 0;color:#B6C2D4;font-size:14.5px}
+.hero p.refs{max-width:760px;margin:14px auto 0;color:#7B8AA0;font-size:12px}
+
+.wrap{max-width:1180px;margin:-76px auto 60px;padding:0 20px;display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:26px;align-items:start}
+main{min-width:0}
+aside{position:sticky;top:18px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card .pad{padding:20px 22px}
+.card h3.ct{font-family:'Playfair Display',Georgia,serif;font-size:18.5px;font-weight:700;color:var(--navy-900)}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-deep);display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.small{font-size:12.5px;color:var(--muted)}
+.hintline{font-size:12px;color:var(--hint);margin-top:2px}
+.hintline b{color:var(--navy-700);font-weight:600}
+.detline{font-size:11.5px;color:#7C6A3F;background:#FCF8EE;border:1px solid #F0E4C8;border-radius:7px;padding:5px 9px;margin-top:6px;line-height:1.5}
+.detline b{color:var(--gold-deep)}
+
+.seg{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.seg button{flex:1 1 150px;border:1px solid var(--line);background:#FFFDF9;border-radius:10px;padding:10px 12px;font-size:12.5px;font-weight:600;color:var(--navy-700);transition:all .15s;text-align:center}
+.seg button small{display:block;font-weight:500;color:var(--hint);font-size:11px;margin-top:2px}
+.seg button.on{background:var(--gold-soft);border-color:var(--gold-line);color:var(--gold-deep);box-shadow:inset 0 0 0 1px var(--gold-line)}
+.seg button.on small{color:var(--gold-deep)}
+.seg.fw button.on{background:var(--navy-900);border-color:var(--navy-900);color:#F5D9A8;box-shadow:none}
+.seg.fw button.on small{color:#C9A15E}
+.multnote{font-size:12px;color:var(--muted);margin-top:9px}
+.multnote b{color:var(--gold-deep)}
+.applicant{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.applicant input{border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:13px;background:#FFFDF9;width:100%}
+.applicant input:focus{outline:2px solid var(--gold-line);border-color:var(--gold-line)}
+.applicant .full{grid-column:1/-1}
+.nauth{display:inline-flex;align-items:center;gap:7px;margin-left:10px}
+.nauth input{width:58px;border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center;font-weight:600;background:#FFFDF9}
+
+.acc{margin-top:16px}
+.acc-head{width:100%;display:flex;align-items:center;gap:14px;padding:18px 22px;background:transparent;border:none;text-align:left}
+.acc-ico{width:42px;height:42px;border-radius:11px;background:var(--navy-900);color:#F5D9A8;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.acc-title{flex:1;min-width:0}
+.acc-title h2{font-family:'Playfair Display',Georgia,serif;font-size:17.5px;font-weight:700;color:var(--navy-900);line-height:1.3}
+.acc-title p{font-size:12px;color:var(--hint);margin-top:3px}
+.acc-score{font-family:'Playfair Display',Georgia,serif;font-size:22px;font-weight:700;color:var(--navy-900);white-space:nowrap}
+.acc-score small{font-size:12px;color:var(--hint);font-family:'Inter',sans-serif;font-weight:500}
+.chev{color:var(--hint);transition:transform .25s;flex-shrink:0}
+.acc.open .chev{transform:rotate(180deg)}
+.acc-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.acc.open .acc-body{max-height:6200px}
+.acc-inner{padding:2px 22px 20px;border-top:1px dashed var(--line-2)}
+.row{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line-2)}
+.row:last-child{border-bottom:none}
+.row .lbl{flex:1;min-width:0}
+.row .lbl .t{font-size:13.5px;font-weight:600;color:#25406B}
+.row .rt{display:flex;align-items:center;gap:9px;flex-shrink:0}
+.row input[type=number]{width:78px;border:1px solid var(--line);border-radius:8px;padding:8px 9px;font-size:14px;font-weight:600;text-align:center;color:var(--navy-900);background:#FFFDF9}
+.row input[type=number]:focus{outline:2px solid var(--gold-line);border-color:var(--gold-line)}
+.row select{border:1px solid var(--line);border-radius:8px;padding:8px 9px;font-size:13px;font-weight:600;color:var(--navy-900);background:#FFFDF9}
+.unit{font-size:12px;color:var(--hint);white-space:nowrap;min-width:44px}
+.rowscore{font-size:12.5px;font-weight:700;color:var(--gold-deep);min-width:52px;text-align:right}
+.rowscore.zero{color:#C6CCD8;font-weight:600}
+.subhead{margin:16px 0 4px;font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-700);display:flex;align-items:center;gap:8px}
+.subhead::after{content:"";flex:1;height:1px;background:var(--line-2)}
+.subtot{display:flex;justify-content:flex-end;gap:8px;align-items:center;padding:9px 0 2px;font-size:12.5px;color:var(--muted)}
+.subtot b{color:var(--navy-900);font-weight:700}
+.dual{display:flex;gap:7px;align-items:center}
+.dual .dwrap{display:flex;flex-direction:column;align-items:center;gap:2px}
+.dual .dcap{font-size:10px;color:var(--hint)}
+
+.tch{width:100%;border-collapse:collapse;margin-top:8px}
+.tch th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--hint);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line-2)}
+.tch td{padding:7px 6px;border-bottom:1px solid var(--line-2)}
+.tch input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 9px;font-size:13px;background:#FFFDF9}
+.tch input[type=number]{text-align:center;font-weight:600}
+.tch .pc{font-size:12.5px;font-weight:700;color:var(--navy-700);text-align:center;white-space:nowrap}
+.tch .del{background:none;border:none;color:#C6CCD8;font-size:16px;padding:4px 8px}
+.tch .del:hover{color:var(--coral)}
+.addrow{margin-top:10px;border:1px dashed var(--gold-line);background:var(--gold-soft);color:var(--gold-deep);font-size:12.5px;font-weight:600;border-radius:9px;padding:8px 14px}
+.gradepill{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:700}
+.g-good{background:var(--ok-soft);color:var(--ok)}
+.g-sat{background:var(--gold-soft);color:var(--gold-deep)}
+.g-not{background:var(--coral-soft);color:#C0392B}
+.g-na{background:var(--line-2);color:var(--muted)}
+.gradebar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px;padding:13px 15px;background:#FBFAF6;border:1px solid var(--line);border-radius:11px}
+.gradebar .gl{font-size:12px;color:var(--muted);font-weight:600}
+
+.score-card{background:linear-gradient(165deg,var(--navy-900),var(--navy-800));border-radius:var(--radius);color:#E7EDF5;padding:24px 22px;box-shadow:0 14px 34px rgba(15,23,42,.28)}
+.score-card .cap{font-size:11px;font-weight:700;letter-spacing:.22em;color:#C9A15E;text-transform:uppercase;text-align:center}
+.bignum{font-family:'Playfair Display',Georgia,serif;font-size:54px;font-weight:700;text-align:center;margin:8px 0 2px;color:#FFF;line-height:1}
+.capline{font-size:11.5px;color:#8FA0B8;text-align:center;min-height:16px}
+.capline.warn{color:#F0B35C;font-weight:600}
+.meter{margin-top:15px}
+.meter .mrow{display:flex;justify-content:space-between;font-size:12px;color:#B7C3D6;margin-bottom:5px}
+.meter .mrow b{color:#F1F5F9;font-weight:600}
+.meter .bar{height:5px;border-radius:99px;background:rgba(255,255,255,.10);overflow:hidden;margin-bottom:12px}
+.meter .fill{height:100%;width:0%;background:linear-gradient(90deg,#D97706,#F3B75B);border-radius:99px;transition:width .35s}
+.usedline{margin-top:6px;padding-top:12px;border-top:1px solid rgba(255,255,255,.10);font-size:11.5px;color:#8FA0B8;text-align:center}
+.usedline.warn{color:#F0B35C;font-weight:600}
+.thchip{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#B7C3D6;padding:7px 10px;border:1px solid rgba(255,255,255,.12);border-radius:9px;margin-top:8px}
+.thchip b{font-weight:700}
+.thchip.pass b{color:#7BD68F}.thchip.fail b{color:#F0B35C}
+.rubbadge{display:none;margin-top:10px;text-align:center;font-size:11px;font-weight:700;letter-spacing:.06em;color:#F0B35C;border:1px dashed rgba(240,179,92,.6);border-radius:8px;padding:6px}
+.side-grades{display:flex;flex-direction:column;gap:10px}
+.side-grades .gr{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--muted)}
+.side-grades .gr b{color:var(--navy-800);font-weight:600}
+.btn-gold{width:100%;background:var(--gold);border:none;color:#fff;font-weight:700;font-size:13.5px;border-radius:10px;padding:12px;box-shadow:0 4px 14px rgba(217,119,6,.35)}
+.btn-gold:hover{background:var(--gold-deep)}
+.btn-ghost{width:100%;background:#fff;border:1px solid var(--gold-line);color:var(--gold-deep);font-weight:700;font-size:13px;border-radius:10px;padding:11px;margin-top:9px}
+.btn-ghost:hover{background:var(--gold-soft)}
+.disc{font-size:11.5px;color:var(--muted);line-height:1.6}
+.disc b{color:var(--navy-800)}
+.disc .warnhead{display:flex;gap:7px;align-items:center;font-size:12px;font-weight:700;color:var(--navy-900);margin-bottom:7px}
+.resetwrap{text-align:center;margin-top:26px}
+.btn-reset{border:1px solid #F3B9B9;background:#FFF7F7;color:var(--coral);font-size:13px;font-weight:600;border-radius:999px;padding:10px 22px}
+.btn-reset:hover{background:var(--coral-soft)}
+.mobilebar{display:none;position:sticky;top:0;z-index:40;background:var(--navy-900);color:#fff;padding:10px 18px;align-items:center;justify-content:space-between;box-shadow:0 4px 14px rgba(15,23,42,.3)}
+.mobilebar .cap{font-size:10px;letter-spacing:.18em;color:#C9A15E;font-weight:700}
+.mobilebar .n{font-family:'Playfair Display',serif;font-size:22px;font-weight:700}
+
+/* Rubric Studio */
+.studio .rgrid{display:grid;grid-template-columns:1fr 74px 84px;gap:6px 12px;align-items:center;margin-top:6px}
+.studio .rgrid .rh{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--hint);font-weight:700}
+.studio .rlbl{font-size:12.5px;color:var(--navy-700)}
+.studio .rdef{font-size:12px;color:var(--hint);text-align:center}
+.studio input[type=number]{width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:13px;font-weight:600;text-align:center;background:#FFFDF9}
+.studio input.dev{border-color:var(--gold);background:var(--gold-soft)}
+.studio input.viol{border-color:var(--coral);background:var(--coral-soft)}
+.comp{margin-top:14px;border-radius:11px;border:1px solid var(--line);background:#FBFAF6;padding:13px 15px;font-size:12px;color:var(--muted)}
+.comp .ok{color:var(--ok);font-weight:700}
+.comp .permit{color:var(--gold-deep)}
+.comp .viol{color:#C0392B;font-weight:600}
+.comp li{margin:4px 0 4px 16px}
+.studio .btnrow{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+.studio .btnrow button{flex:1 1 140px;border-radius:9px;padding:10px;font-size:12.5px;font-weight:700;border:1px solid var(--line);background:#fff;color:var(--navy-700)}
+.studio .btnrow .primary{background:var(--gold);border-color:var(--gold);color:#fff}
+.studio .btnrow .danger{color:var(--coral);border-color:#F3B9B9}
+
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:60;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;max-width:760px;width:100%;padding:28px 30px;box-shadow:0 24px 60px rgba(15,23,42,.35)}
+.modal h2{font-family:'Playfair Display',Georgia,serif;font-size:22px;color:var(--navy-900)}
+.modal h4{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep);margin:18px 0 6px}
+.modal p,.modal li{font-size:13px;color:var(--navy-700);line-height:1.65}
+.modal li{margin:5px 0 5px 18px}
+.modal .close{float:right;border:none;background:var(--line-2);border-radius:8px;padding:7px 12px;font-weight:700;color:var(--navy-700)}
+.modal .src{font-size:11px;color:var(--hint);font-style:italic}
+
+@media (max-width:1020px){
+  .wrap{grid-template-columns:1fr;margin-top:-88px}
+  aside{position:static;order:2}
+  .mobilebar{display:flex}
+}
+@media (max-width:560px){
+  .applicant{grid-template-columns:1fr}
+  .row{flex-wrap:wrap}
+  .row .rt{width:100%;justify-content:flex-end}
+  .studio .rgrid{grid-template-columns:1fr 60px 74px}
+}
+input:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+#printSheet{display:none}
+@media print{
+  body *{visibility:hidden}
+  #printSheet,#printSheet *{visibility:visible}
+  #printSheet{display:block;position:absolute;left:0;top:0;width:100%;background:#fff;color:#000;font-family:Georgia,'Times New Roman',serif;font-size:12px;padding:28px 34px;line-height:1.45}
+  #printSheet h1{font-size:17px;text-align:center;margin-bottom:2px}
+  #printSheet h2{font-size:13.5px;text-align:center;font-weight:600;margin-bottom:2px}
+  #printSheet .pref{text-align:center;font-size:10px;font-style:italic;margin-bottom:14px}
+  #printSheet table{width:100%;border-collapse:collapse;margin:8px 0 16px}
+  #printSheet th,#printSheet td{border:1px solid #444;padding:5px 8px;font-size:11px;text-align:left;vertical-align:top}
+  #printSheet th{background:#EFEBE2;font-weight:700}
+  #printSheet .sechead{font-size:12.5px;font-weight:700;margin:16px 0 4px}
+  #printSheet .meta td{border:none;padding:2.5px 4px;font-size:11.5px}
+  #printSheet .num{text-align:center;white-space:nowrap}
+  #printSheet .tot td{font-weight:700;background:#F5F2EA}
+  #printSheet .sig{display:flex;justify-content:space-between;gap:24px;margin-top:38px}
+  #printSheet .sig div{flex:1;text-align:center;font-size:10.5px;border-top:1px solid #000;padding-top:5px}
+  #printSheet .nb{font-size:9.5px;font-style:italic;margin-top:22px}
+  #printSheet .undert{font-size:11px;margin-top:16px}
+}
+</style>
+</head>
+<body>
+
+<div class="mobilebar" aria-hidden="true">
+  <span class="cap" id="mCap">Research Score</span>
+  <span class="n" id="mTotal">0</span>
+</div>
+
+<header class="hero">
+  <span class="badge" id="heroBadge">India-Wide · UGC CAS Assessment Frameworks · Institution-Customizable</span>
+  <h1>API Score <em>Calculator</em></h1>
+  <p class="sub">Pan-India self-assessment for teacher promotion under the Career Advancement Scheme — with gazette-curated scoring-determination guidance and a compliance-guarded Rubric Studio for university-specific adaptations.</p>
+  <p class="refs">UGC Regulations 2018 (Gazette 18-07-2018) — operative national standard · UGC Regulations 2010, 2nd Amendment (Gazette 13-06-2013) — legacy API · Draft UGC Regulations 2025 — consultation stage, not notified</p>
+</header>
+
+<div class="wrap">
+<main>
+
+  <!-- FRAMEWORK + GLOBAL -->
+  <section class="card">
+    <div class="pad">
+      <div class="eyebrow">✦ Assessment framework</div>
+      <h3 class="ct">Choose the regulation regime for this assessment period</h3>
+      <div class="seg fw" id="segFW" role="radiogroup" aria-label="Assessment framework">
+        <button data-v="f18" class="on" aria-pressed="true">UGC 2018 — CAS<small>Current national standard · graded Table 1 + Research Score Table 2</small></button>
+        <button data-v="f13" aria-pressed="false">UGC 2010 · 2nd Amendment 2013 — API/PBAS<small>Legacy point system · Categories I, II &amp; III (Appendix-III Table I)</small></button>
+      </div>
+
+      <div class="applicant">
+        <input id="apName" class="full" type="text" placeholder="Name of the teacher (appears on the exported proforma)" aria-label="Name of the teacher">
+        <input id="apInst" type="text" placeholder="University / Institute / College" aria-label="Institution">
+        <input id="apDept" type="text" placeholder="Department" aria-label="Department">
+        <input id="apYear" class="full" type="text" placeholder="Academic year / assessment period (e.g., 2025–26)" aria-label="Academic year">
+      </div>
+
+      <div class="subhead">Faculty stream</div>
+      <div class="seg" id="segFaculty" role="radiogroup" aria-label="Faculty stream">
+        <button data-v="sci" aria-pressed="false">Engineering · Agriculture · Veterinary · Sciences · Medical<small>2018: base 8 / paper · 2013: science-column thresholds</small></button>
+        <button data-v="hum" class="on" aria-pressed="true">Languages · Arts · Humanities · Social Sciences · Library · Phys-Ed · Commerce · Management<small>2018: base 10 / paper · 2013: humanities-column thresholds</small></button>
+      </div>
+
+      <div class="subhead">Authorship distribution — publications</div>
+      <div id="authWrap18">
+        <div class="seg" id="segAuth18" role="radiogroup" aria-label="Authorship distribution UGC 2018">
+          <button data-v="sole" class="on" aria-pressed="true">Sole author<small>×1.00 of item value</small></button>
+          <button data-v="first" aria-pressed="false">First / Principal / Corresponding<small>×0.70 · incl. either of two authors</small></button>
+          <button data-v="joint" aria-pressed="false">Joint co-author (3+ authors)<small>×0.30 of item value</small></button>
+        </div>
+        <p class="multnote">UGC 2018 note: two authors share <b>70% each</b>; more than two — First/Principal/Corresponding <b>70%</b>, each remaining joint author <b>30%</b>. Multiplier applied: <b id="multShow18">×1.00</b></p>
+      </div>
+      <div id="authWrap13" style="display:none">
+        <div class="seg" id="segAuth13" role="radiogroup" aria-label="Authorship distribution UGC 2013">
+          <button data-v="sole" class="on" aria-pressed="true">Sole author<small>×1.00</small></button>
+          <button data-v="lead1" aria-pressed="false">First/Principal &amp; also Corresponding<small>Sole claimant of the 60% pool · ×0.60</small></button>
+          <button data-v="lead2" aria-pressed="false">First/Principal or Corresponding<small>60% pool shared by two · ×0.30</small></button>
+          <button data-v="co" aria-pressed="false">Other co-author<small>Shares the 40% pool equally</small></button>
+        </div>
+        <p class="multnote">Gazette Note 2: first/Principal author and corresponding author/supervisor/mentor <b>share 60% equally</b>; the remaining <b>40% is shared equally by all other authors</b>. Applies to Categories III-A &amp; III-B.
+        <span class="nauth" id="nAuthWrap" style="display:none">Total authors: <input type="number" id="nAuth" min="3" step="1" value="4" oninput="recalc()" aria-label="Total number of authors"></span>
+        Multiplier applied: <b id="multShow13">×1.00</b></p>
+      </div>
+      <button class="btn-ghost" onclick="openModal()" style="margin-top:16px">📋 Scoring rules &amp; evidence guide — how each item is determined</button>
+    </div>
+  </section>
+
+  <!-- RUBRIC STUDIO -->
+  <section class="card acc studio" id="accStudio">
+    <button class="acc-head" aria-expanded="false" onclick="toggleAcc('accStudio',this)">
+      <span class="acc-ico">⚙️</span>
+      <span class="acc-title">
+        <h2>Rubric Studio — institution customization</h2>
+        <p>Adapt weightages, minima and values to your university's statutes. Deviations are compliance-checked against the gazettes in real time.</p>
+      </span>
+      <span class="acc-score" style="font-size:13px" id="studioChip">Gazette defaults</span>
+      <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="acc-body"><div class="acc-inner">
+      <p class="hintline" style="margin-top:10px">ⓘ What universities may lawfully change — <b>Gazette 13-06-2013, cl. 6.0.2</b>: institutions may devise their own PBAS forms and <b>increase minimum required scores or add screening criteria</b>, but <b>shall not change the categories or scores of the API in Appendix-III</b>. Category I &amp; II notes permit <b>detailing activities and adjusting internal weightages</b> without changing the category's minimum totals. Under the <b>2018 regime</b>, adoption is through university statutes / state GRs — deviations must be backed by your statute.</p>
+      <div class="applicant" style="margin-top:12px">
+        <input id="profName" class="full" type="text" placeholder="Institution profile name (e.g., XYZ University — CAS Rubric 2026)" aria-label="Profile name" oninput="compliance()">
+      </div>
+      <div id="studioMount"></div>
+      <div class="comp" id="compPanel"><span class="ok">✔ Gazette defaults active — no deviations.</span></div>
+      <div class="btnrow">
+        <button class="primary" onclick="recalc()">Apply &amp; recalculate</button>
+        <button onclick="exportProfile()">Export profile (.json)</button>
+        <button onclick="document.getElementById('profFile').click()">Import profile</button>
+        <button class="danger" onclick="resetRubric()">Reset to gazette defaults</button>
+      </div>
+      <input type="file" id="profFile" accept="application/json" style="display:none" onchange="importProfile(event)">
+    </div></div>
+  </section>
+
+  <!-- ENGINE: UGC 2018 -->
+  <div id="fw18">
+    <section class="card acc open" id="accT1">
+      <button class="acc-head" aria-expanded="true" onclick="toggleAcc('accT1',this)">
+        <span class="acc-ico">📖</span>
+        <span class="acc-title">
+          <h2>Table 1 — Teaching, Learning &amp; Evaluation + Involvement</h2>
+          <p>Graded assessment (Good / Satisfactory / Not satisfactory) — no points under this table.</p>
+        </span>
+        <span class="acc-score" id="t1Chip" style="font-size:14px"></span>
+        <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="acc-body"><div class="acc-inner">
+        <div class="subhead">1-A · Teaching</div>
+        <p class="hintline">Formula: <b>(classes taught ÷ classes assigned) × 100%</b> — includes tutorials, lab and other teaching-related sessions. Grading: <b>≥ <span id="thG18">80</span>% Good</b> · <b><span id="thS18">70</span>–<span id="thS18b">79</span>% Satisfactory</b> · below that Not satisfactory.</p>
+        <div class="detline">📋 <b>How determined:</b> classes assigned are taken from the sanctioned workload / time-table; classes taken from attendance and teaching records. The institution verifies both; the Screening-cum-Evaluation Committee's verified figure prevails over self-assessment.</div>
+        <table class="tch" aria-label="Teaching workload rows">
+          <thead><tr><th style="width:38%">Course / Paper</th><th>Classes assigned</th><th>Classes taken</th><th style="width:64px">%</th><th style="width:34px"></th></tr></thead>
+          <tbody id="tchBody"></tbody>
+        </table>
+        <button class="addrow" onclick="addTeachRow()">+ Add course / paper row</button>
+        <div class="gradebar">
+          <span class="gl">Overall teaching:</span>
+          <span id="teachPct" style="font-weight:700;color:var(--navy-800);font-size:13px">—</span>
+          <span id="teachGrade" class="gradepill g-na">Awaiting input</span>
+        </div>
+        <div class="subhead" style="margin-top:22px">2 · Involvement in University / College student-related &amp; research activities</div>
+        <p class="hintline">Enter the number of activities undertaken under each head. Grading: <b>Good — ≥ <span id="thAG18">3</span></b> · <b>Satisfactory — <span id="thAS18">1</span>–2</b> · <b>Not satisfactory — 0</b>. Activities may fall within or across the broad categories.</p>
+        <div class="detline">📋 <b>How positions convert to activities:</b> holding a listed position or duty during the assessment period counts as <b>one activity</b> — evidenced by the appointment / office order with designation and From–To dates (proforma Annexures 2A–2G). Concurrent or successive roles count individually; there is no hour-logging under this framework. Example: Warden + one exam duty + NSS mentoring = 3 activities = Good.</div>
+        <div id="actRows"></div>
+        <div class="gradebar">
+          <span class="gl">Activities counted:</span>
+          <span id="actCount" style="font-weight:700;color:var(--navy-800);font-size:13px">0</span>
+          <span id="actGrade" class="gradepill g-not">Not satisfactory</span>
+        </div>
+        <div class="gradebar" style="background:var(--gold-soft);border-color:var(--gold-line)">
+          <span class="gl" style="color:var(--gold-deep)">Table 1 — Overall grading:</span>
+          <span id="overallGrade" class="gradepill g-na">Awaiting input</span>
+          <span class="small" style="flex-basis:100%;color:var(--muted)">Good = Good in teaching <i>and</i> Good/Satisfactory in activities · Satisfactory = Satisfactory in teaching <i>and</i> Good/Satisfactory in activities · otherwise Not satisfactory.</span>
+        </div>
+      </div></div>
+    </section>
+    <div id="t2Mount"></div>
+  </div>
+
+  <!-- ENGINE: UGC 2010/2013 -->
+  <div id="fw13" style="display:none">
+    <div id="c13Mount"></div>
+  </div>
+
+  <div class="resetwrap">
+    <button class="btn-reset" onclick="resetAll()">⟲ Reset All Scores</button>
+  </div>
+</main>
+
+<aside>
+  <div class="score-card">
+    <div class="cap" id="scoreCap">Academic / Research Score · Table 2</div>
+    <div class="bignum" id="grandTotal">0</div>
+    <div class="capline" id="capNote"></div>
+    <div class="meter" id="meterMount"></div>
+    <div id="thMount"></div>
+    <div class="usedline" id="usedLine"></div>
+    <div class="rubbadge" id="rubBadge">⚙ CUSTOM INSTITUTION RUBRIC ACTIVE</div>
+  </div>
+
+  <div class="card" id="gradeCard18"><div class="pad side-grades">
+    <div class="eyebrow">✦ Table 1 grading</div>
+    <div class="gr"><span>Teaching (1-A)</span><b id="sgTeach">—</b></div>
+    <div class="gr"><span>Involvement (2)</span><b id="sgAct">—</b></div>
+    <div class="gr" style="padding-top:8px;border-top:1px dashed var(--line-2)"><span><b>Overall grading</b></span><b id="sgOverall">—</b></div>
+  </div></div>
+
+  <div class="card"><div class="pad">
+    <div class="eyebrow">✦ Self-appraisal export</div>
+    <p class="small" style="margin-bottom:12px">Generates a proforma-style summary for the selected framework — scores, thresholds, any custom-rubric deviations, undertaking and signature blocks.</p>
+    <button class="btn-gold" onclick="exportPDF()">Export Self-Appraisal Summary (PDF)</button>
+  </div></div>
+
+  <div class="card"><div class="pad disc">
+    <div class="warnhead">⚠ Legal disclaimer — read carefully</div>
+    Two UGC frameworks implemented verbatim: <b>UGC Regulations 2018</b> (Gazette 18-07-2018 — current national CAS standard) and the <b>legacy UGC Regulations 2010, 2nd Amendment</b> (Gazette 13-06-2013). Per the gazette, API scores are for <b>screening purposes</b> and have no bearing on expert assessment by the Selection Committee. Rubric Studio deviations are the adopting institution's responsibility and are compliance-flagged, not blocked. Draft UGC Regulations 2025 remain unnotified. This is an <b>indicative, self-declared assessment</b>; final scores rest exclusively with your institution's <b>IQAC and Screening-cum-Evaluation / Selection Committee</b>. No liability is accepted for decisions taken on the basis of this tool.
+  </div></div>
+</aside>
+</div>
+
+<!-- SCORING RULES MODAL -->
+<div class="overlay" id="rulesOverlay" role="dialog" aria-modal="true" aria-label="Scoring rules and evidence guide">
+  <div class="modal">
+    <button class="close" onclick="closeModal()">✕ Close</button>
+    <h2>Scoring Rules &amp; Evidence Guide</h2>
+    <p class="src">Curated verbatim from: UGC Gazette 13-06-2013 (2nd Amendment, Notes 1–5 &amp; cl. 6.0.2) and the UGC-2018-pattern CAS PBAS proforma (as adopted by University of Mumbai, GR 08-03-2019).</p>
+
+    <h4>1 · Administrative positions — two regimes, two methods</h4>
+    <ul>
+      <li><b>UGC 2018 (Table 1, §2-A) — activity count.</b> Holding a listed position (Head, Chairperson, Dean, Director, Convenor, Coordinator, Warden, etc.) during the assessment period = <b>one activity</b>. Evidence: appointment/office order with designation and From–To dates (Annexure 2-A). Concurrent or successive roles count individually. Activities across families 2-A to 2-G total into the grade: ≥3 Good · 1–2 Satisfactory · 0 Not satisfactory.</li>
+      <li><b>UGC 2013 (Category II, 6-A) — hours, not position.</b> Only duties "that require regular office hours for its discharge" (Dean, Principal, Chairperson, Convenor, Teacher-in-charge or similar). Unit: <b>actual hours spent per academic year</b>, score = hours ÷ 10, combined with 6-B committee hours, capped at 30. The post itself carries no fixed points — time on task does.</li>
+    </ul>
+
+    <h4>2 · Hours-based items (2013 Categories I &amp; II)</h4>
+    <ul>
+      <li>Compute hours from the official time-table or actual hours spent in the previous academic year; the institution verifies from the Time Table and attendance records. <b>Only working days/weeks count.</b></li>
+      <li>Gazette worked example: 20 hrs/week × 16 weeks = 320 hrs allocated (+2 hrs/week above norm = 32 hrs excess) + 275 hrs actually taught = <b>627 hrs → 62.7 points</b>.</li>
+      <li><b>Excess beyond a sub-total cap is credited at the maximum</b> — e.g., 900 scripts (300 hrs) + 40 hrs duty = 340 hrs = 34 points, but the award is the sub-total maximum of 20.</li>
+      <li>Script evaluation is normed at a <b>maximum of 20 minutes per full script</b> (≈3 scripts/hour).</li>
+    </ul>
+
+    <h4>3 · Committee-graded items (2013: 4-A, 4-B, 5-A, 5-B, 5-C, 7)</h4>
+    <ul>
+      <li>The teacher submits <b>evidence of work done</b> and self-proposes a band; the <b>screening committee finalizes</b> the grade: Outstanding 10 · Very good 7 · Good 5 · Average 3 · Modest 1.</li>
+      <li>Institutions "may further develop these criteria and specify the requirements" — this is the lawful hook for university-specific rubrics (see Rubric Studio).</li>
+      <li><b>4-C exception:</b> proof of administering an anonymous student-feedback questionnaire earns the points (2/course, max 10) <b>irrespective of the feedback's content</b>; comments may not be used against the teacher.</li>
+    </ul>
+
+    <h4>4 · Publications, joint work &amp; counting-once rules</h4>
+    <ul>
+      <li><b>2013 split:</b> first/Principal author and corresponding author/supervisor/mentor <b>share 60% equally</b>; all other authors share the remaining <b>40% equally</b>.</li>
+      <li><b>2018 split:</b> two authors — 70% each; more than two — First/Principal/Corresponding 70%, each other joint author 30%. Joint supervision: 70% each. Joint projects: PI and Co-PI 50% each.</li>
+      <li>A paper presented at a conference <b>and</b> published as full proceedings is claimed <b>once</b> — under publications (2013 III-A / 2018 Cat 1), not under presentations.</li>
+      <li>Impact factor is determined per the Thomson Reuters (Clarivate) list.</li>
+    </ul>
+
+    <h4>5 · Caps, screening role &amp; verification chain</h4>
+    <ul>
+      <li>2013 sub-category caps as % of total API claimed: III-A 30 · III-B 25 · III-C 20 · III-D 10 · III-E 15. 2018: combined 5(b)+Category 6 ≤ 30% of the research score; score must come from ≥3 of 6 categories.</li>
+      <li>Gazette proviso: API scores are used for <b>screening only</b> and have no bearing on the expert assessment of candidates.</li>
+      <li>Verification chain: self-assessment on objectively verifiable criteria → institutional verification (Time Table, attendance, annexure evidence) → IQAC → Screening-cum-Evaluation / Selection Committee, whose figures prevail.</li>
+    </ul>
+
+    <h4>6 · What universities may customize</h4>
+    <ul>
+      <li><b>May:</b> devise their own PBAS proforma; <b>increase</b> minimum required scores; add screening criteria; <b>detail activities and adjust internal weightages</b> within Categories I &amp; II without changing category minimum totals (2013). Under 2018, adopt and adapt through university statutes / state GRs.</li>
+      <li><b>May not (2013, cl. 6.0.2):</b> change the categories or scores of the API given in Appendix-III — i.e., Category III point values are fixed; minima may only move upward.</li>
+    </ul>
+  </div>
+</div>
+
+<div id="printSheet" aria-hidden="true"></div>
+
+<script>
+/* =====================================================================
+   FRAMEWORK REGISTRY — gazette defaults + live (editable) copies.
+   DEF holds immutable gazette values; FW holds the active rubric
+   (mutated by the Rubric Studio; serialized as institution profiles).
+===================================================================== */
+const DEF = {
+ f18:{
+  paperBase:{sci:8,hum:10},
+  aug:{aug0:5,aug1:10,aug12:15,aug25:20,aug510:25,aug10p:30},
+  items:{bkI:12,bkN:10,chE:5,edI:10,edN:8,trC:3,trB:8,
+         ped:5,curr:2,mo20:20,moCr:5,moMod:5,moSme:2,moCo:8,moCoCr:2,
+         ec12:12,ecMod:5,ecCon:2,ecEd:10,
+         phdA:10,phdS:5,mpg:2,pcA:10,pcB:5,poA:5,poB:2,cons:3,
+         patI:10,patN:7,polI:10,polN:7,polS:4,awI:7,awN:5,
+         l7:7,l5:5,l3:3,l2:2},
+  capShare:30, teachGood:80, teachSat:70, actGood:3, target:0
+ },
+ f13:{
+  paperBase:15,
+  aug:{pIdx:5,pI12:10,pI25:15,pI510:25},
+  items:{pNR:10,pCP:10,
+         b50:50,b25:25,b15:15,ch10:10,ch5:5,ch3:3,
+         prA:20,prB:15,prC:10,qeMaj:20,qeMin:10,outI:50,outN:30,
+         dMph:3,dPhA:10,dPhS:7,
+         tc2w:20,tc1w:10,ppI:10,ppN:7.5,ppR:5,ppL:3,ilI:10,ilN:5,
+         h4cPer:2},
+  sub:{s1:100,s2:30,s3:20,s6:30,e1:30,fbMax:10},
+  caps:{IIIA:30,IIIB:25,IIIC:20,IIID:10,IIIE:15},
+  consultDiv:{sci:10,hum:2}, consultPer:10,
+  min:{cI:100,cII:20,comb:150}
+ }
+};
+let FW = JSON.parse(JSON.stringify(DEF));
+
+/* Rubric Studio field registry: [fwKey, path, label, guard]
+   guards: fixed13 = Appendix-III score (may not change, cl.6.0.2)
+           weight13 = Cat I/II internal weightage (permitted; keep category minima)
+           minUp    = minimum (may only increase)
+           adopt18  = 2018 value (permitted via university statute / state GR) */
+const FIELDS = [
+ ["f13","items.prA","III-C project — tier (a) major","fixed13"],
+ ["f13","items.prB","III-C project — tier (b) major","fixed13"],
+ ["f13","items.prC","III-C project — tier (c) minor","fixed13"],
+ ["f13","items.qeMaj","III-C quality evaluation — major","fixed13"],
+ ["f13","items.qeMin","III-C quality evaluation — minor","fixed13"],
+ ["f13","items.outI","III-C output — International","fixed13"],
+ ["f13","items.outN","III-C output — National","fixed13"],
+ ["f13","paperBase","III-A refereed paper base","fixed13"],
+ ["f13","aug.pIdx","III-A augmentation — indexed","fixed13"],
+ ["f13","aug.pI12","III-A augmentation — IF 1–2","fixed13"],
+ ["f13","aug.pI25","III-A augmentation — IF 2–5","fixed13"],
+ ["f13","aug.pI510","III-A augmentation — IF 5–10","fixed13"],
+ ["f13","items.pNR","III-A non-refereed journal","fixed13"],
+ ["f13","items.pCP","III-A conference proceedings","fixed13"],
+ ["f13","items.b50","III-B book — International","fixed13"],
+ ["f13","items.b25","III-B book — National / Govt.","fixed13"],
+ ["f13","items.b15","III-B book — local","fixed13"],
+ ["f13","items.ch10","III-B chapter — International","fixed13"],
+ ["f13","items.ch5","III-B chapter — National","fixed13"],
+ ["f13","items.ch3","III-B chapter — local","fixed13"],
+ ["f13","items.dMph","III-D M.Phil. awarded","fixed13"],
+ ["f13","items.dPhA","III-D Ph.D. awarded","fixed13"],
+ ["f13","items.dPhS","III-D Ph.D. thesis submitted","fixed13"],
+ ["f13","items.tc2w","III-E course ≥ 2 weeks","fixed13"],
+ ["f13","items.tc1w","III-E course 1 week","fixed13"],
+ ["f13","items.ppI","III-E paper — International","fixed13"],
+ ["f13","items.ppN","III-E paper — National","fixed13"],
+ ["f13","items.ppR","III-E paper — Regional/State","fixed13"],
+ ["f13","items.ppL","III-E paper — Local/University","fixed13"],
+ ["f13","items.ilI","III-E invited lecture — International","fixed13"],
+ ["f13","items.ilN","III-E invited lecture — National","fixed13"],
+ ["f13","caps.IIIA","Cap % — III-A","fixed13"],
+ ["f13","caps.IIIB","Cap % — III-B","fixed13"],
+ ["f13","caps.IIIC","Cap % — III-C","fixed13"],
+ ["f13","caps.IIID","Cap % — III-D","fixed13"],
+ ["f13","caps.IIIE","Cap % — III-E","fixed13"],
+ ["f13","sub.s1","Cat I sub-total 1 max (teaching hours)","weight13"],
+ ["f13","sub.s2","Cat I sub-total 2 max (supervision)","weight13"],
+ ["f13","sub.s3","Cat I sub-total 3 max (exam duties)","weight13"],
+ ["f13","items.h4cPer","Cat I 4-C points per course","weight13"],
+ ["f13","sub.fbMax","Cat I 4-C maximum","weight13"],
+ ["f13","sub.s6","Cat II sub-total 6 max (admin hours)","weight13"],
+ ["f13","sub.e1","III-E(i) courses sub-cap","fixed13"],
+ ["f13","min.cI","Minimum — Category I","minUp"],
+ ["f13","min.cII","Minimum — Category II","minUp"],
+ ["f13","min.comb","Minimum — Categories I + II","minUp"],
+ ["f18","paperBase.sci","Cat 1 paper base — science stream","adopt18"],
+ ["f18","paperBase.hum","Cat 1 paper base — humanities stream","adopt18"],
+ ["f18","aug.aug0","Cat 1 augmentation — no IF","adopt18"],
+ ["f18","aug.aug1","Cat 1 augmentation — IF < 1","adopt18"],
+ ["f18","aug.aug12","Cat 1 augmentation — IF 1–2","adopt18"],
+ ["f18","aug.aug25","Cat 1 augmentation — IF 2–5","adopt18"],
+ ["f18","aug.aug510","Cat 1 augmentation — IF 5–10","adopt18"],
+ ["f18","aug.aug10p","Cat 1 augmentation — IF > 10","adopt18"],
+ ["f18","items.bkI","Cat 2 book — International","adopt18"],
+ ["f18","items.bkN","Cat 2 book — National","adopt18"],
+ ["f18","items.chE","Cat 2 chapter in edited book","adopt18"],
+ ["f18","items.edI","Cat 2 editor — International","adopt18"],
+ ["f18","items.edN","Cat 2 editor — National","adopt18"],
+ ["f18","items.trC","Cat 2 translation — chapter/paper","adopt18"],
+ ["f18","items.trB","Cat 2 translation — book","adopt18"],
+ ["f18","items.ped","Cat 3 innovative pedagogy","adopt18"],
+ ["f18","items.curr","Cat 3 new curricula/course","adopt18"],
+ ["f18","items.mo20","Cat 3 complete 4-credit MOOC","adopt18"],
+ ["f18","items.moCr","Cat 3 lesser-credit MOOC (per credit)","adopt18"],
+ ["f18","items.moMod","Cat 3 MOOC module/lecture","adopt18"],
+ ["f18","items.moSme","Cat 3 MOOC content writer/SME","adopt18"],
+ ["f18","items.moCo","Cat 3 MOOC coordinator (4-credit)","adopt18"],
+ ["f18","items.moCoCr","Cat 3 coordinator lesser-credit (per credit)","adopt18"],
+ ["f18","items.ec12","Cat 3 complete e-content course","adopt18"],
+ ["f18","items.ecMod","Cat 3 e-content module","adopt18"],
+ ["f18","items.ecCon","Cat 3 e-content contribution","adopt18"],
+ ["f18","items.ecEd","Cat 3 e-content editor","adopt18"],
+ ["f18","items.phdA","Cat 4 Ph.D. awarded","adopt18"],
+ ["f18","items.phdS","Cat 4 Ph.D. thesis submitted","adopt18"],
+ ["f18","items.mpg","Cat 4 M.Phil./P.G. dissertation","adopt18"],
+ ["f18","items.pcA","Cat 4 project completed > ₹10 L","adopt18"],
+ ["f18","items.pcB","Cat 4 project completed < ₹10 L","adopt18"],
+ ["f18","items.poA","Cat 4 project ongoing > ₹10 L","adopt18"],
+ ["f18","items.poB","Cat 4 project ongoing < ₹10 L","adopt18"],
+ ["f18","items.cons","Cat 4 consultancy","adopt18"],
+ ["f18","items.patI","Cat 5 patent — International","adopt18"],
+ ["f18","items.patN","Cat 5 patent — National","adopt18"],
+ ["f18","items.polI","Cat 5 policy — International","adopt18"],
+ ["f18","items.polN","Cat 5 policy — Central Govt.","adopt18"],
+ ["f18","items.polS","Cat 5 policy — State Govt.","adopt18"],
+ ["f18","items.awI","Cat 5 award — International","adopt18"],
+ ["f18","items.awN","Cat 5 award — National","adopt18"],
+ ["f18","items.l7","Cat 6 lecture — International abroad","adopt18"],
+ ["f18","items.l5","Cat 6 lecture — International in-country","adopt18"],
+ ["f18","items.l3","Cat 6 lecture — National","adopt18"],
+ ["f18","items.l2","Cat 6 lecture — State/University","adopt18"],
+ ["f18","capShare","Cat 5(b)+6 cap — % of research score","adopt18"],
+ ["f18","teachGood","Table 1 teaching threshold — Good (%)","adopt18"],
+ ["f18","teachSat","Table 1 teaching threshold — Satisfactory (%)","adopt18"],
+ ["f18","actGood","Table 1 activities for Good (count)","adopt18"],
+ ["f18","target","Institution minimum research score (screening target; 0 = none)","minUp"]
+];
+const getP=(o,p)=>p.split(".").reduce((a,k)=>a[k],o);
+const setP=(o,p,v)=>{const ks=p.split("."); const last=ks.pop(); ks.reduce((a,k)=>a[k],o)[last]=v;};
+
+const ACTIVITIES = [
+  {id:"a2a", t:"2-A · Administrative responsibilities", h:"Head, Chairperson, Dean, Director, Convenor, Coordinator, Warden, etc. — each position held = 1 activity (office order as evidence)."},
+  {id:"a2b", t:"2-B · Examination &amp; evaluation duties", h:"Question-paper setting, invigilation, flying squad, CS/ACS/Custodian, CAP Director, Unfair-Means &amp; Grievance Committees, internal/external assessment, revaluation, result preparation, thesis evaluation — each duty discharged = 1 activity."},
+  {id:"a2c", t:"2-C · Student-related co-curricular, extension &amp; field-based activities", h:"Educational tours, field work/visits &amp; extension; centre visits; 4-week internships; student seminars, cultural, sports, NCC, NSS &amp; community service; mentoring a student group."},
+  {id:"a2d", t:"2-D · Organising seminars / conferences / workshops", h:"Including other college / university activities — each event organised = 1 activity."},
+  {id:"a2e", t:"2-E · Actively guiding Ph.D. students", h:"Registered and/or awarded candidates."},
+  {id:"a2f", t:"2-F · Conducting minor or major research project", h:"Sponsored by national or international agencies — above or below ₹10 lakhs."},
+  {id:"a2g", t:"2-G · At least one single or joint publication", h:"In peer-reviewed or UGC-listed journals."}
+];
+
+const CATS18 = [
+ {id:"c1", num:"1", ico:"🧪", title:"Research Papers in Peer-Reviewed / UGC-Listed Journals",
+  sub:"Per-paper value = faculty base + impact-factor augmentation, scaled by authorship.", auth:true, kind:"papers",
+  det:"Evidence: copy of publication with ISSN, journal indexing / impact factor proof (Clarivate list). Verified figures entered by the committee prevail."},
+ {id:"c2", num:"2", ico:"📚", title:"Publications other than Research Papers",
+  sub:"Books, chapters, editorships and translation works — scaled by authorship.", auth:true,
+  det:"Evidence: title/copyright pages showing ISBN/ISSN, publisher tier and authorship position.", items:[
+    {id:"bkI", t:"(2)(a)(i) Book — International publisher", h:"With ISSN / ISBN."},
+    {id:"bkN", t:"(2)(a)(i) Book — National publisher", h:"With ISSN / ISBN."},
+    {id:"chE", t:"(2)(a)(ii) Chapter in an edited book", h:"With ISSN / ISBN."},
+    {id:"edI", t:"(2)(a)(iii) Editor of book — International publisher", h:"Per book."},
+    {id:"edN", t:"(2)(a)(iii) Editor of book — National publisher", h:"Per book."},
+    {id:"trC", t:"(2)(b) Translation — chapter or research paper", h:"Indian &amp; foreign languages, by qualified faculty."},
+    {id:"trB", t:"(2)(b) Translation — book", h:"Indian &amp; foreign languages, by qualified faculty."}
+  ]},
+ {id:"c3", num:"3", ico:"💻", title:"ICT-Mediated Pedagogy, Content &amp; New Courses / Curricula",
+  sub:"Innovative pedagogy, curricula, MOOCs and e-content. Authorship scaling applies to e-content (3-D) only.", auth:false,
+  det:"Evidence: approval date from authority, implementation date, ICT resource links (per proforma columns); MOOC credits from course records.", items:[
+    {id:"ped",  t:"(3)(a) Development of innovative pedagogy", h:"Per innovation."},
+    {id:"curr", t:"(3)(b) Design of new curricula / courses", h:"Per curriculum or course."},
+    {id:"mo20", t:"(3)(c)(i) Complete MOOC in 4 quadrants — 4-credit course", h:"Per course."},
+    {id:"moCr", t:"(3)(c)(i) Lesser-credit MOOC — total credits", h:"Marks per credit; enter total credits.", unit:"credits"},
+    {id:"moMod",t:"(3)(c)(ii) MOOC module / lecture (4-quadrant)", h:"Per module or lecture."},
+    {id:"moSme",t:"(3)(c)(iii) Content writer / subject-matter expert", h:"Per MOOC module (at least one quadrant)."},
+    {id:"moCo", t:"(3)(c)(iv) Course coordinator — 4-credit MOOC", h:"Per course."},
+    {id:"moCoCr",t:"(3)(c)(iv) Coordinator, lesser-credit MOOC — total credits", h:"Marks per credit; enter total credits.", unit:"credits"},
+    {id:"ec12", t:"(3)(d)(i) Complete e-content course / e-book (4 quadrants)", h:"Per course — authorship applies.", auth:true},
+    {id:"ecMod",t:"(3)(d)(ii) E-content module (4 quadrants)", h:"Per module — authorship applies.", auth:true},
+    {id:"ecCon",t:"(3)(d)(iii) Contribution to an e-content module", h:"At least one quadrant — authorship applies.", auth:true},
+    {id:"ecEd", t:"(3)(d)(iv) Editor of e-content — complete course / paper / e-book", h:"Per course — authorship applies.", auth:true}
+  ]},
+ {id:"c4", num:"4", ico:"🎓", title:"Research Guidance, Projects &amp; Consultancy",
+  sub:"Joint supervision at 70% each; joint projects (PI &amp; Co-PI) at 50% each, per the UGC notes.", auth:false,
+  det:"Evidence: Ph.D. award / submission letters, project sanction &amp; completion certificates, consultancy orders (per gazette evidence list).", items:[
+    {id:"phdA", t:"(4)(a) Ph.D. — degree awarded", h:"Per degree awarded.", dual:{mult:0.70,cap:"Joint ×0.70"}},
+    {id:"phdS", t:"(4)(a) Ph.D. — thesis submitted", h:"Per thesis submitted.", dual:{mult:0.70,cap:"Joint ×0.70"}},
+    {id:"mpg",  t:"(4)(a) M.Phil. / P.G. dissertation — awarded", h:"Per degree awarded.", dual:{mult:0.70,cap:"Joint ×0.70"}},
+    {id:"pcA",  t:"(4)(b) Project completed — above ₹10 lakhs", h:"Per project.", dual:{mult:0.50,cap:"Co-PI ×0.50"}},
+    {id:"pcB",  t:"(4)(b) Project completed — below ₹10 lakhs", h:"Per project.", dual:{mult:0.50,cap:"Co-PI ×0.50"}},
+    {id:"poA",  t:"(4)(c) Project ongoing — above ₹10 lakhs", h:"Per project.", dual:{mult:0.50,cap:"Co-PI ×0.50"}},
+    {id:"poB",  t:"(4)(c) Project ongoing — below ₹10 lakhs", h:"Per project.", dual:{mult:0.50,cap:"Co-PI ×0.50"}},
+    {id:"cons", t:"(4)(d) Consultancy", h:"Per consultancy project."}
+  ]},
+ {id:"c5", num:"5", ico:"🏅", title:"Patents · Policy Documents · Awards / Fellowships",
+  sub:"Policy documents (5-b) fall under the combined cap with Category 6.", auth:false,
+  det:"Evidence: patent filing/approval letters, acceptance of the policy document by the receiving body, award citations.", items:[
+    {id:"patI", t:"(5)(a) Patent — International", h:"Per patent."},
+    {id:"patN", t:"(5)(a) Patent — National", h:"Per patent."},
+    {id:"polI", t:"(5)(b) Policy document — International body", h:"UNO / UNESCO / World Bank / IMF etc.", cap:true},
+    {id:"polN", t:"(5)(b) Policy document — Central Government", h:"Per document.", cap:true},
+    {id:"polS", t:"(5)(b) Policy document — State Government", h:"Per document.", cap:true},
+    {id:"awI",  t:"(5)(c) Award / Fellowship — International", h:"Each."},
+    {id:"awN",  t:"(5)(c) Award / Fellowship — National", h:"Each."}
+  ]},
+ {id:"c6", num:"6", ico:"🎤", title:"Invited Lectures · Resource Person · Paper Presentations",
+  sub:"A paper presented and also published in proceedings is counted once. Falls under the cap with 5-b.", auth:false, capAll:true,
+  det:"Evidence: invitation/participation certificates stating level (International abroad / in-country / National / State-University).", items:[
+    {id:"l7", t:"International — abroad", h:"Per seminar / conference."},
+    {id:"l5", t:"International — within the country", h:"Per seminar / conference."},
+    {id:"l3", t:"National level", h:"Per seminar / conference."},
+    {id:"l2", t:"State / University level", h:"Per seminar / conference."}
+  ]}
+];
+
+const CATS13 = [
+ {id:"k1", key:"CI", ico:"📖", title:"Category I — Teaching, Learning &amp; Evaluation Related Activities",
+  sub:"Hours-based model table · maximum 180 · minimum 100 required for promotion.", kind:"cat1"},
+ {id:"k2", key:"CII", ico:"🤝", title:"Category II — Co-curricular, Extension &amp; Professional Development",
+  sub:"Committee-graded and hours-based items · maximum 70 · minimum 20 required.", kind:"cat2"},
+ {id:"k3", key:"IIIA", ico:"🧪", title:"Category III-A — Research Papers (Journals)",
+  sub:"Refereed base + impact-factor augmentation · authorship 60/40 split · capped vs total API claimed.", kind:"IIIA"},
+ {id:"k4", key:"IIIB", ico:"📚", title:"Category III-B — Research Publications (Books, Chapters)",
+  sub:"Publisher-tiered values · authorship 60/40 split · capped vs total API claimed.", kind:"items",
+  det:"Evidence: title/copyright pages with ISBN/ISSN and publisher tier; directory numbers for knowledge-based volumes.", items:[
+    {id:"b50", t:"Text / reference book — International publisher (established peer review)", h:"Per sole-author book.", auth:true},
+    {id:"b25", t:"Subject book — National publisher / State &amp; Central Govt. publication", h:"Per sole-author book, with ISBN/ISSN.", auth:true},
+    {id:"b15", t:"Subject book — other local publisher", h:"Per sole-author book, with ISBN/ISSN.", auth:true},
+    {id:"ch10",t:"Chapter — International publisher", h:"Per chapter · incl. chapters in knowledge-based volumes.", auth:true},
+    {id:"ch5", t:"Chapter — Indian / National publisher", h:"Per chapter · incl. knowledge-based volumes with directory numbers.", auth:true},
+    {id:"ch3", t:"Chapter — other local publisher", h:"Per chapter in edited books.", auth:true}
+  ]},
+ {id:"k5", key:"IIIC", ico:"🔬", title:"Category III-C — Research Projects",
+  sub:"Sponsored, consultancy, quality evaluation and outputs · capped vs total API claimed.", kind:"IIIC"},
+ {id:"k6", key:"IIID", ico:"🎓", title:"Category III-D — Research Guidance",
+  sub:"Degrees awarded / theses submitted · capped vs total API claimed.", kind:"items",
+  det:"Evidence: students' award / submission letters from the university.", items:[
+    {id:"dMph", t:"M.Phil. — degree awarded only", h:"Per candidate."},
+    {id:"dPhA", t:"Ph.D. — degree awarded", h:"Per candidate."},
+    {id:"dPhS", t:"Ph.D. — thesis submitted", h:"Per candidate."}
+  ]},
+ {id:"k7", key:"IIIE", ico:"🎤", title:"Category III-E — Training Courses &amp; Conference / Seminar Papers",
+  sub:"Courses sub-capped within the category · whole category capped vs total API claimed.", kind:"IIIE"}
+];
+
+/* ============================ STATE / UTILS ============================ */
+let fw="f18", faculty="hum", auth18="sole", auth13="sole";
+const V = id => { const el=document.getElementById(id); const n=parseFloat(el&&el.value); return isNaN(n)||n<0?0:n; };
+const fmt = n => { const r=Math.round(n*100)/100; return (r%1===0)?String(r):r.toFixed(r*10%1===0?1:2); };
+const GN={G:"Good",S:"Satisfactory",N:"Not satisfactory"};
+const GRADE_OPTS = '<option value="0">— None —</option><option value="10">Outstanding = 10</option><option value="7">Very good = 7</option><option value="5">Good = 5</option><option value="3">Average = 3</option><option value="1">Modest = 1</option>';
+const AUTH18_M={sole:1.00,first:0.70,joint:0.30};
+function auth13Mult(){
+  if(auth13==="sole") return 1.0;
+  if(auth13==="lead1") return 0.60;
+  if(auth13==="lead2") return 0.30;
+  const n=Math.max(3,V("nAuth")||4);
+  return 0.40/(n-2);
+}
+const P18=id=>FW.f18.items[id];
+const P13=id=>FW.f13.items[id];
+
+/* ============================ RENDER ============================ */
+function rowHTML(item, groupAuth, P){
+  const authTag=(groupAuth||item.auth)?" <b>· authorship multiplier applies</b>":"";
+  if(item.dual){
+    return `<div class="row">
+      <div class="lbl"><div class="t">${item.t}</div><div class="hintline">ⓘ ${item.h}</div></div>
+      <div class="rt dual">
+        <div class="dwrap"><input type="number" min="0" step="1" id="${item.id}_s" placeholder="0" oninput="recalc()" aria-label="${item.t} — sole"><span class="dcap">Sole</span></div>
+        <div class="dwrap"><input type="number" min="0" step="1" id="${item.id}_j" placeholder="0" oninput="recalc()" aria-label="${item.t} — joint"><span class="dcap">${item.dual.cap}</span></div>
+        <span class="unit" id="u_${item.id}"></span>
+        <span class="rowscore zero" id="rs_${item.id}">0</span>
+      </div></div>`;
+  }
+  return `<div class="row">
+    <div class="lbl"><div class="t">${item.t}</div><div class="hintline">ⓘ ${item.h}${authTag}</div></div>
+    <div class="rt">
+      <input type="number" min="0" step="1" id="${item.id}" placeholder="0" oninput="recalc()" aria-label="${item.t}">
+      <span class="unit" id="u_${item.id}"></span>
+      <span class="rowscore zero" id="rs_${item.id}">0</span>
+    </div></div>`;
+}
+function hoursRow(id,t,h){
+  return `<div class="row">
+    <div class="lbl"><div class="t">${t}</div><div class="hintline">ⓘ ${h}</div></div>
+    <div class="rt"><input type="number" min="0" step="1" id="${id}" placeholder="0" oninput="recalc()" aria-label="${t}"><span class="unit">hrs / yr</span></div>
+  </div>`;
+}
+function gradeRow(id,t,h){
+  return `<div class="row">
+    <div class="lbl"><div class="t">${t}</div><div class="hintline">ⓘ ${h}</div></div>
+    <div class="rt"><select id="${id}" onchange="recalc()" aria-label="${t}">${GRADE_OPTS}</select><span class="rowscore zero" id="rs_${id}">0</span></div>
+  </div>`;
+}
+const subtot=(id,l)=>`<div class="subtot">${l}: <b id="${id}">0</b></div>`;
+const detBox=t=>t?`<div class="detline">📋 <b>Determination &amp; evidence:</b> ${t}</div>`:"";
+
+function accShell(c, inner){
+  return `<section class="card acc" id="acc_${c.id}">
+    <button class="acc-head" aria-expanded="false" onclick="toggleAcc('acc_${c.id}',this)">
+      <span class="acc-ico">${c.ico}</span>
+      <span class="acc-title"><h2>${c.title}</h2><p>${c.sub}</p></span>
+      <span class="acc-score"><span id="cat_${c.id}">0</span> <small>pts</small></span>
+      <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="acc-body"><div class="acc-inner">${detBox(c.det)}${inner}</div></div>
+  </section>`;
+}
+function paperRows18(){
+  return Object.keys(FW.f18.aug).map(k=>{
+    const labels={aug0:"Without impact factor",aug1:"Impact factor below 1",aug12:"Impact factor 1 – 2",aug25:"Impact factor 2 – 5",aug510:"Impact factor 5 – 10",aug10p:"Impact factor above 10"};
+    return `<div class="row">
+    <div class="lbl"><div class="t">Papers — ${labels[k]}</div>
+      <div class="hintline">ⓘ Per paper: <b id="pp_${k}"></b> · authorship multiplier applies</div></div>
+    <div class="rt">
+      <input type="number" min="0" step="1" id="${k}" placeholder="0" oninput="recalc()" aria-label="Papers ${labels[k]}">
+      <span class="unit">papers</span>
+      <span class="rowscore zero" id="rs_${k}">0</span>
+    </div></div>`;}).join("")+
+    `<p class="hintline" style="margin-top:10px">ⓘ Impact factor per the Thomson Reuters (Clarivate) list. A paper presented at a seminar/conference and also published as a full paper in proceedings is claimable only once (here or under Category 6).</p>`;
+}
+function buildFW18(){
+  document.getElementById("t2Mount").innerHTML = CATS18.map(c=>accShell(
+    {...c, title:"Category "+c.num+" — "+c.title},
+    c.kind==="papers"? paperRows18() : c.items.map(it=>rowHTML(it,c.auth,P18)).join("")
+  )).join("");
+  document.getElementById("actRows").innerHTML = ACTIVITIES.map(a=>`
+    <div class="row">
+      <div class="lbl"><div class="t">${a.t}</div><div class="hintline">ⓘ ${a.h}</div></div>
+      <div class="rt"><input type="number" min="0" step="1" id="${a.id}" placeholder="0" oninput="recalc()" aria-label="${a.t}"><span class="unit">activities</span></div>
+    </div>`).join("");
+}
+function buildFW13(){
+  const inner={};
+  inner.cat1 = detBox("Hours are computed from the official time-table or actual hours spent in the previous academic year, working days/weeks only; the institution verifies from the Time Table and attendance records. Hours beyond a sub-total cap are credited at the maximum. Graded items (4-A, 4-B) require evidence; the screening committee finalizes the grade.")+`
+    <div class="subhead">1 · Teaching hours</div>
+    ${hoursRow("h1ai","1A(i) Classroom teaching — lectures / seminars, as per allocation","Total hours allocated per time-table for the academic year (working weeks only). Gazette example: 20 hrs/week × 16 weeks = 320 hrs per semester.")}
+    ${hoursRow("h1aii","1A(ii) Classroom teaching in excess of UGC norms","Additional hours beyond the UGC teaching norm for your cadre (e.g., 2 hrs/week × 16 = 32).")}
+    ${hoursRow("h1aiii","1A(iii) Preparation time","Credited as equal to actual teaching hours per the attendance register — enter actual hours taught (e.g., 275).")}
+    ${hoursRow("h1b","1B Tutorials and practicals","Actual hours per attendance register.")}
+    ${hoursRow("h1c","1C Outside-classroom interaction with students","Capped at 0.5 × total 1A hours — the cap is applied automatically.")}
+    ${subtot("st1","Sub-total 1 = hours ÷ 10 (max <span id=cap_s1></span>)")}
+    <div class="subhead">2 · Research supervision</div>
+    ${hoursRow("h2","Research supervision incl. Masters thesis","Max 1 hour per student per working week.")}
+    ${subtot("st2","Sub-total 2 = hours ÷ 10 (max <span id=cap_s2></span>)")}
+    <div class="subhead">3 · Examination duties</div>
+    ${hoursRow("h3a","3A Question-paper setting, moderation &amp; related work","Actual hours.")}
+    ${hoursRow("h3b","3B Invigilation / supervision &amp; related examination duties","Actual hours.")}
+    ${hoursRow("h3c","3C Evaluation of answer scripts &amp; assignments","Internal, external and re-evaluation — max 20 minutes per full script (≈ 3 scripts / hour). Excess beyond the cap is credited at the maximum.")}
+    ${subtot("st3","Sub-total 3 = hours ÷ 10 (max <span id=cap_s3></span>)")}
+    <div class="subhead">4 · Innovation &amp; feedback</div>
+    ${gradeRow("g4a","4A Teaching innovation","Innovative courses and methodologies incl. bilingual/multi-lingual teaching — evidence required; committee-finalized grade (Outstanding 10 → Modest 1).")}
+    ${gradeRow("g4b","4B New teaching-learning material","Translation, bridge material, study packs or similar student resources — committee-finalized grade.")}
+    <div class="row">
+      <div class="lbl"><div class="t">4C Anonymous students' feedback administered</div><div class="hintline">ⓘ Points per course accrue on proof of administering the questionnaire, irrespective of feedback content; comments may not be used against the teacher.</div></div>
+      <div class="rt"><input type="number" min="0" step="1" id="h4c" placeholder="0" oninput="recalc()" aria-label="4C courses"><span class="unit" id="u_h4c"></span><span class="rowscore zero" id="rs_h4c">0</span></div>
+    </div>
+    <div class="gradebar"><span class="gl">Category I total (max 180 · minimum <span id="min_cI"></span> required):</span><span id="cIline" style="font-weight:700;color:var(--navy-800)">0</span></div>`;
+
+  inner.cat2 = detBox("Administrative positions score by TIME under this framework, not by post: only duties requiring regular office hours (Dean, Principal, Chairperson, Convenor, Teacher-in-charge or similar) — actual hours per year ÷ 10, combined 6A+6B cap. Graded items 5A/5B/5C and 7 require evidence; the screening committee finalizes; institutions may further specify criteria.")+`
+    <div class="subhead">5 · Co-curricular, extension &amp; dissemination</div>
+    ${gradeRow("g5a","5A Discipline-related co-curricular activities","Field work, study visits, student seminars, events, career counselling etc. — committee-finalized grade.")}
+    ${gradeRow("g5b","5B Other co-curricular activities","Cultural, sports, NSS, NCC etc. — committee-finalized grade.")}
+    ${gradeRow("g5c","5C Extension and dissemination activities","Public lectures, talks, seminars, popular writings not covered under Category III.")}
+    <div class="subhead">6 · Administration &amp; committees</div>
+    ${hoursRow("h6a","6A Administrative responsibility","Dean, Principal, Chairperson, Convenor, Teacher-in-charge or similar duties requiring regular office hours — actual hours spent.")}
+    ${hoursRow("h6b","6B Participation in Board of Studies, academic &amp; administrative committees","Actual hours spent.")}
+    ${subtot("st6","Sub-total 6 = hours ÷ 10 (max <span id=cap_s6></span>)")}
+    <div class="subhead">7 · Corporate life</div>
+    ${gradeRow("g7","7 Overall contribution to the collective / corporate life of the institution","Including items 5, 6 and any other contribution — committee-finalized grade.")}
+    <div class="gradebar"><span class="gl">Category II total (max 70 · minimum <span id="min_cII"></span> required):</span><span id="cIIline" style="font-weight:700;color:var(--navy-800)">0</span></div>`;
+
+  const tierLbl={pIdx:"Refereed — indexed journal",pI12:"Refereed — impact factor 1 – 2",pI25:"Refereed — impact factor 2 – 5",pI510:"Refereed — impact factor 5 – 10"};
+  inner.IIIA = detBox("Evidence: publication copies with ISSN/ISBN; indexing and impact-factor proof per the Thomson Reuters list. Journal/publisher categorization is assessed and verified by the screening/selection committee until subject-wise lists are notified.")+
+  `<div class="row">
+    <div class="lbl"><div class="t">Refereed journal — not indexed</div><div class="hintline">ⓘ Per paper: <b id="ppl_base"></b> (base, no augmentation) · authorship applies</div></div>
+    <div class="rt"><input type="number" min="0" step="1" id="p15" placeholder="0" oninput="recalc()" aria-label="Refereed not indexed"><span class="unit">papers</span><span class="rowscore zero" id="rs_p15">0</span></div>
+  </div>`+
+  Object.keys(FW.f13.aug).map(k=>`<div class="row">
+    <div class="lbl"><div class="t">${tierLbl[k]}</div><div class="hintline">ⓘ Per paper: <b id="ppl_${k}"></b> · authorship applies</div></div>
+    <div class="rt"><input type="number" min="0" step="1" id="${k}" placeholder="0" oninput="recalc()" aria-label="${tierLbl[k]}"><span class="unit">papers</span><span class="rowscore zero" id="rs_${k}">0</span></div>
+  </div>`).join("")+
+  rowHTML({id:"pNR", t:"Non-refereed but recognized, reputable journals / periodicals", h:"With ISBN/ISSN numbers — authorship applies.", auth:true},false,P13)+
+  rowHTML({id:"pCP", t:"Conference proceedings — full papers", h:"Abstracts not included — authorship applies. A paper presented and published as proceedings accrues here, not under III-E(ii).", auth:true},false,P13);
+
+  inner.IIIC = detBox("Evidence: project sanction letters, utilization and completion certificates from the funding agency; consultancy orders with amounts; patent filing/approval letters or policy-document acceptance.")+`
+    <div class="subhead">III-C(i) · Sponsored projects carried out / ongoing</div>
+    ${rowHTML({id:"prA", t:"Major project — tier (a)", h:'<span class="fdep" data-sci="Grants above ₹30 lakhs" data-hum="Grants above ₹5 lakhs"></span>.'},false,P13)}
+    ${rowHTML({id:"prB", t:"Major project — tier (b)", h:'<span class="fdep" data-sci="₹5 – 30 lakhs" data-hum="₹3 – 5 lakhs"></span>.'},false,P13)}
+    ${rowHTML({id:"prC", t:"Minor project — tier (c)", h:'<span class="fdep" data-sci="₹50,000 – 5 lakhs" data-hum="₹25,000 – 3 lakhs"></span>.'},false,P13)}
+    <div class="subhead">III-C(ii) · Consultancy carried out / ongoing</div>
+    <div class="row">
+      <div class="lbl"><div class="t">Consultancy amount mobilized</div><div class="hintline">ⓘ Points accrue per every <span class="fdep" data-sci="₹10 lakhs (minimum ₹10 lakhs)" data-hum="₹2 lakhs (minimum ₹2 lakhs)"></span> mobilized.</div></div>
+      <div class="rt"><input type="number" min="0" step="0.1" id="consAmt" placeholder="0" oninput="recalc()" aria-label="Consultancy amount in lakhs"><span class="unit">₹ lakhs</span><span class="rowscore zero" id="rs_consAmt">0</span></div>
+    </div>
+    <div class="subhead">III-C(iii) · Completed projects — quality evaluation</div>
+    ${rowHTML({id:"qeMaj", t:"Completed project report — major", h:"Accepted by funding agency."},false,P13)}
+    ${rowHTML({id:"qeMin", t:"Completed project report — minor", h:"Accepted by funding agency."},false,P13)}
+    <div class="subhead">III-C(iv) · Project outcomes / outputs</div>
+    ${rowHTML({id:"outI", t:"Output at International level", h:"Patent / technology transfer / product / process, or major policy document."},false,P13)}
+    ${rowHTML({id:"outN", t:"Output at National level", h:"Patent / technology transfer / product / process, or major policy document of Central / State Govt. bodies."},false,P13)}`;
+
+  inner.IIIE = detBox("Evidence: course completion certificates stating duration; participation/presentation certificates stating level. Papers published as full proceedings shift to III-A.")+`
+    <div class="subhead">III-E(i) · Training courses (sub-category capped)</div>
+    ${rowHTML({id:"tc2w", t:"Refresher / methodology / FDP / soft-skills programme — ≥ 2 weeks", h:"Refresher courses, teaching-learning-evaluation technology programmes, faculty development."},false,P13)}
+    ${rowHTML({id:"tc1w", t:"Programme — one week duration", h:"Each."},false,P13)}
+    ${subtot("stE1","Sub-total III-E(i) (capped at <span id=cap_e1></span>)")}
+    <div class="subhead">III-E(ii) · Papers presented in conferences / seminars / workshops</div>
+    ${rowHTML({id:"ppI", t:"International conference", h:"Participation and presentation (oral/poster). If published as proceedings, claim under III-A instead."},false,P13)}
+    ${rowHTML({id:"ppN", t:"National", h:"Each."},false,P13)}
+    ${rowHTML({id:"ppR", t:"Regional / State level", h:"Each."},false,P13)}
+    ${rowHTML({id:"ppL", t:"Local — University / College level", h:"Each."},false,P13)}
+    <div class="subhead">III-E(iv) · Invited lectures / presentations for conferences / symposia</div>
+    ${rowHTML({id:"ilI", t:"International", h:"Each."},false,P13)}
+    ${rowHTML({id:"ilN", t:"National level", h:"Each."},false,P13)}`;
+
+  document.getElementById("c13Mount").innerHTML = CATS13.map(c=>accShell(c,
+    c.kind==="items" ? detBox(c.det)+c.items.map(it=>rowHTML(it,false,P13)).join("") : inner[c.kind]
+  )).join("");
+}
+
+/* ---------- Rubric Studio ---------- */
+function buildStudio(){
+  const groups={fixed13:"UGC 2013 — Appendix-III scores &amp; caps (gazette-fixed)",weight13:"UGC 2013 — Category I &amp; II internal weightages (adjustable)",minUp:"Minimum required scores &amp; screening targets (may only increase)",adopt18:"UGC 2018 — values (adaptable via university statute / state GR)"};
+  const order=["weight13","minUp","adopt18","fixed13"];
+  let html="";
+  order.forEach(g=>{
+    html+=`<div class="subhead" style="margin-top:18px">${groups[g]}</div>
+    <div class="rgrid"><span class="rh">Item</span><span class="rh" style="text-align:center">Gazette</span><span class="rh" style="text-align:center">Institution</span>`;
+    FIELDS.filter(f=>f[3]===g).forEach(f=>{
+      const [fwk,path,label]=f;
+      const def=getP(DEF[fwk],path);
+      html+=`<span class="rlbl">${label}</span><span class="rdef">${def}</span>
+      <input type="number" min="0" step="0.5" id="rf_${fwk}_${path.replace(/\./g,"_")}" value="${getP(FW[fwk],path)}" data-fw="${fwk}" data-path="${path}" data-guard="${f[3]}" oninput="onRubricEdit(this)" aria-label="${label}">`;
+    });
+    html+=`</div>`;
+  });
+  document.getElementById("studioMount").innerHTML=html;
+}
+function onRubricEdit(inp){
+  const v=parseFloat(inp.value);
+  if(!isNaN(v)&&v>=0) setP(FW[inp.dataset.fw],inp.dataset.path,v);
+  recalc();
+}
+function rubricDeviations(){
+  const dev=[];
+  FIELDS.forEach(([fwk,path,label,guard])=>{
+    const d=getP(DEF[fwk],path), c=getP(FW[fwk],path);
+    if(Math.abs(d-c)>1e-9) dev.push({fwk,path,label,guard,def:d,cur:c});
+  });
+  return dev;
+}
+function compliance(){
+  const dev=rubricDeviations();
+  const panel=document.getElementById("compPanel");
+  const chip=document.getElementById("studioChip");
+  const badge=document.getElementById("rubBadge");
+  document.querySelectorAll("#studioMount input").forEach(i=>{
+    const d=getP(DEF[i.dataset.fw],i.dataset.path), c=parseFloat(i.value);
+    i.classList.remove("dev","viol");
+    if(!isNaN(c)&&Math.abs(c-d)>1e-9){
+      const g=i.dataset.guard;
+      const viol=(g==="fixed13")||(g==="minUp"&&c<d);
+      i.classList.add(viol?"viol":"dev");
+    }
+  });
+  if(!dev.length){
+    panel.innerHTML='<span class="ok">✔ Gazette defaults active — no deviations.</span>';
+    chip.textContent="Gazette defaults";
+    badge.style.display="none";
+    return dev;
+  }
+  const rows=dev.map(d=>{
+    if(d.guard==="fixed13") return `<li class="viol">⛔ ${d.label}: ${d.def} → ${d.cur} — NON-COMPLIANT under Gazette 13-06-2013 cl. 6.0.2 (Appendix-III categories/scores may not be changed).</li>`;
+    if(d.guard==="minUp") return d.cur<d.def
+      ? `<li class="viol">⛔ ${d.label}: ${d.def} → ${d.cur} — NON-COMPLIANT (minimum required scores may only be increased).</li>`
+      : `<li class="permit">✔ ${d.label}: ${d.def} → ${d.cur} — permitted (raised minimum / screening target).</li>`;
+    if(d.guard==="weight13") return `<li class="permit">✔ ${d.label}: ${d.def} → ${d.cur} — permitted weightage adjustment (institution must preserve the category's minimum totals).</li>`;
+    return `<li class="permit">✔ ${d.label}: ${d.def} → ${d.cur} — permitted if adopted through your university's statute / state GR (2018 regime).</li>`;
+  }).join("");
+  const nv=dev.filter(d=>d.guard==="fixed13"||(d.guard==="minUp"&&d.cur<d.def)).length;
+  panel.innerHTML=`<b>${dev.length} deviation(s) from gazette defaults${nv?` — <span class="viol">${nv} non-compliant</span>`:""}.</b><ul>${rows}</ul>`;
+  chip.textContent=dev.length+" custom value"+(dev.length>1?"s":"")+(nv?" · ⛔ "+nv:"");
+  badge.style.display="block";
+  badge.textContent="⚙ CUSTOM RUBRIC: "+(document.getElementById("profName").value||"unnamed profile")+" · "+dev.length+" deviation(s)"+(nv?" · "+nv+" non-compliant":"");
+  return dev;
+}
+function exportProfile(){
+  const dev=rubricDeviations();
+  const profile={
+    type:"academisthan-api-rubric-profile", version:3,
+    name:document.getElementById("profName").value||"Unnamed institution profile",
+    exported:new Date().toISOString(),
+    base:{f18:"UGC Regulations 2018 (Gazette 18-07-2018)",f13:"UGC Regulations 2010, 2nd Amendment (Gazette 13-06-2013)"},
+    overrides:dev.map(d=>({fw:d.fwk,path:d.path,value:d.cur,guard:d.guard})),
+    compliance:dev.filter(d=>d.guard==="fixed13"||(d.guard==="minUp"&&d.cur<d.def)).length===0?"compliant":"contains non-compliant deviations"
+  };
+  const blob=new Blob([JSON.stringify(profile,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=(profile.name.replace(/[^a-z0-9]+/gi,"-").toLowerCase()||"rubric-profile")+".json";
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function importProfile(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const p=JSON.parse(r.result);
+      if(p.type!=="academisthan-api-rubric-profile") throw 0;
+      FW=JSON.parse(JSON.stringify(DEF));
+      (p.overrides||[]).forEach(o=>setP(FW[o.fw],o.path,o.value));
+      document.getElementById("profName").value=p.name||"";
+      buildStudio(); recalc();
+    }catch(e){ alert("Not a valid rubric profile file."); }
+  };
+  r.readAsText(f); ev.target.value="";
+}
+function resetRubric(){
+  if(!confirm("Reset all rubric values to gazette defaults?")) return;
+  FW=JSON.parse(JSON.stringify(DEF));
+  document.getElementById("profName").value="";
+  buildStudio(); recalc();
+}
+
+/* ---------- Teaching rows ---------- */
+let tchN=0;
+function addTeachRow(){
+  tchN++;
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td><input type="text" placeholder="Course / paper ${tchN}" aria-label="Course name"></td>
+    <td><input type="number" min="0" class="tAsg" placeholder="0" oninput="recalc()" aria-label="Classes assigned"></td>
+    <td><input type="number" min="0" class="tTkn" placeholder="0" oninput="recalc()" aria-label="Classes taken"></td>
+    <td class="pc">—</td>
+    <td><button class="del" title="Remove row" onclick="this.closest('tr').remove();recalc()">✕</button></td>`;
+  document.getElementById("tchBody").appendChild(tr);
+}
+
+/* ============================ CALC ============================ */
+function gradePill(el,g){
+  el.textContent=g?GN[g]:"Awaiting input";
+  el.className="gradepill "+(g==="G"?"g-good":g==="S"?"g-sat":g==="N"?"g-not":"g-na");
+}
+function setRS(id,v){
+  const el=document.getElementById("rs_"+id); if(!el)return;
+  el.textContent=fmt(v); el.className="rowscore"+(v>0?"":" zero");
+}
+const setU=(id,pts,unit)=>{const el=document.getElementById("u_"+id); if(el) el.textContent=unit==="credits"?("× "+pts+" / credit"):("× "+pts+" pts");};
+const setT=(id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v;};
+
+function calc18(){
+  const F=FW.f18, base=F.paperBase[faculty], am=AUTH18_M[auth18];
+  setT("multShow18","×"+am.toFixed(2));
+  setT("thG18",F.teachGood); setT("thS18",F.teachSat); setT("thS18b",F.teachGood-1); setT("thAG18",F.actGood); setT("thAS18",1);
+
+  let asg=0,tkn=0;
+  document.querySelectorAll("#tchBody tr").forEach(tr=>{
+    const a=parseFloat(tr.querySelector(".tAsg").value)||0, t=parseFloat(tr.querySelector(".tTkn").value)||0;
+    asg+=a; tkn+=t;
+    tr.querySelector(".pc").textContent = a>0 ? Math.round(Math.min(t/a,1.5)*1000)/10+"%" : "—";
+  });
+  let tg=null,pct=null;
+  if(asg>0){ pct=tkn/asg*100; tg=pct>=F.teachGood?"G":pct>=F.teachSat?"S":"N"; }
+  setT("teachPct",pct===null?"—":(Math.round(pct*10)/10)+"%");
+  gradePill(document.getElementById("teachGrade"),tg);
+  let actN=0; ACTIVITIES.forEach(a=>actN+=V(a.id));
+  const ag=actN>=F.actGood?"G":actN>=1?"S":"N";
+  setT("actCount",actN);
+  gradePill(document.getElementById("actGrade"),ag);
+  let og=null;
+  if(tg!==null){ og=(tg==="G"&&(ag==="G"||ag==="S"))?"G":(tg==="S"&&(ag==="G"||ag==="S"))?"S":"N"; }
+  gradePill(document.getElementById("overallGrade"),og);
+  setT("t1Chip",og?GN[og]:"");
+  setT("sgTeach",tg?GN[tg]:"—"); setT("sgAct",GN[ag]); setT("sgOverall",og?GN[og]:"—");
+
+  const catVals={},capPool={};
+  CATS18.forEach(c=>{
+    let sum=0,cap=0;
+    if(c.kind==="papers"){
+      Object.entries(F.aug).forEach(([k,aug])=>{
+        const per=(base+aug)*am, v=V(k)*per;
+        setT("pp_"+k,fmt(per)+" pts");
+        setRS(k,v); sum+=v;
+      });
+    }else{
+      c.items.forEach(it=>{
+        const pts=F.items[it.id];
+        let v=0;
+        if(it.dual){ v=V(it.id+"_s")*pts+V(it.id+"_j")*pts*it.dual.mult; setU(it.id,pts,it.unit); }
+        else{ v=V(it.id)*pts*((c.auth||it.auth)?am:1); setU(it.id,pts,it.unit); }
+        setRS(it.id,v); sum+=v;
+        if(c.capAll||it.cap) cap+=v;
+      });
+    }
+    catVals[c.id]=sum; capPool[c.id]=cap;
+  });
+  const raw=Object.values(catVals).reduce((a,b)=>a+b,0);
+  const pool=Object.values(capPool).reduce((a,b)=>a+b,0);
+  const rest=raw-pool;
+  const cs=F.capShare/100;
+  const allowed=rest*(cs/(1-cs));
+  const cappedPool=Math.min(pool,allowed);
+  const total=rest+cappedPool;
+  const used=CATS18.filter(c=>catVals[c.id]>0).length;
+  CATS18.forEach(c=>setT("cat_"+c.id,fmt(catVals[c.id])));
+  return {mode:"f18",catVals,total,raw,pool,cappedPool,used,tg,ag,og,pct,actN,base,am,target:F.target};
+}
+
+function calc13(){
+  const F=FW.f13, am=auth13Mult();
+  setT("multShow13","×"+(Math.round(am*10000)/10000));
+  document.querySelectorAll(".fdep").forEach(e=>e.textContent=e.dataset[faculty]);
+  setT("cap_s1",F.sub.s1); setT("cap_s2",F.sub.s2); setT("cap_s3",F.sub.s3); setT("cap_s6",F.sub.s6); setT("cap_e1",F.sub.e1);
+  setT("min_cI",F.min.cI); setT("min_cII",F.min.cII);
+
+  const a1=V("h1ai"),a2=V("h1aii"),a3=V("h1aiii");
+  const c1c=Math.min(V("h1c"),0.5*(a1+a2+a3));
+  const st1=Math.min((a1+a2+a3+V("h1b")+c1c)/10,F.sub.s1);
+  const st2=Math.min(V("h2")/10,F.sub.s2);
+  const st3=Math.min((V("h3a")+V("h3b")+V("h3c"))/10,F.sub.s3);
+  const g4a=V("g4a"),g4b=V("g4b");
+  const h4c=Math.min(V("h4c")*F.items.h4cPer,F.sub.fbMax);
+  setRS("g4a",g4a); setRS("g4b",g4b); setRS("h4c",h4c); setU("h4c",F.items.h4cPer,null);
+  const catI=st1+st2+st3+g4a+g4b+h4c;
+  setT("st1",fmt(st1)); setT("st2",fmt(st2)); setT("st3",fmt(st3)); setT("cIline",fmt(catI));
+
+  const g5a=V("g5a"),g5b=V("g5b"),g5c=V("g5c"),g7=V("g7");
+  ["g5a","g5b","g5c","g7"].forEach(id=>setRS(id,V(id)));
+  const st6=Math.min((V("h6a")+V("h6b"))/10,F.sub.s6);
+  setT("st6",fmt(st6));
+  const catII=g5a+g5b+g5c+st6+g7;
+  setT("cIIline",fmt(catII));
+
+  let IIIA=0;
+  const vBase=V("p15")*F.paperBase*am;
+  setT("ppl_base",fmt(F.paperBase*am)+" pts"); setRS("p15",vBase); IIIA+=vBase;
+  Object.entries(F.aug).forEach(([k,aug])=>{
+    const per=(F.paperBase+aug)*am, v=V(k)*per;
+    setT("ppl_"+k,fmt(per)+" pts"); setRS(k,v); IIIA+=v;
+  });
+  const vNR=V("pNR")*F.items.pNR*am, vCP=V("pCP")*F.items.pCP*am;
+  setRS("pNR",vNR); setRS("pCP",vCP); setU("pNR",F.items.pNR); setU("pCP",F.items.pCP); IIIA+=vNR+vCP;
+
+  let IIIB=0;
+  CATS13.find(c=>c.key==="IIIB").items.forEach(it=>{
+    const v=V(it.id)*F.items[it.id]*am; setU(it.id,F.items[it.id]); setRS(it.id,v); IIIB+=v;
+  });
+
+  const div=F.consultDiv[faculty];
+  const consV=Math.floor(V("consAmt")/div)*F.consultPer;
+  setRS("consAmt",consV);
+  let IIIC=consV;
+  ["prA","prB","prC","qeMaj","qeMin","outI","outN"].forEach(id=>{
+    const v=V(id)*F.items[id]; setU(id,F.items[id]); setRS(id,v); IIIC+=v;
+  });
+
+  let IIID=0;
+  ["dMph","dPhA","dPhS"].forEach(id=>{const v=V(id)*F.items[id]; setU(id,F.items[id]); setRS(id,v); IIID+=v;});
+
+  const e1raw=V("tc2w")*F.items.tc2w+V("tc1w")*F.items.tc1w, e1=Math.min(e1raw,F.sub.e1);
+  setRS("tc2w",V("tc2w")*F.items.tc2w); setRS("tc1w",V("tc1w")*F.items.tc1w);
+  setU("tc2w",F.items.tc2w); setU("tc1w",F.items.tc1w);
+  setT("stE1",fmt(e1));
+  let IIIE=e1;
+  ["ppI","ppN","ppR","ppL","ilI","ilN"].forEach(id=>{const v=V(id)*F.items[id]; setU(id,F.items[id]); setRS(id,v); IIIE+=v;});
+
+  const IIIraw={IIIA,IIIB,IIIC,IIID,IIIE};
+  const grandClaim=catI+catII+IIIA+IIIB+IIIC+IIID+IIIE;
+  const IIIcap={},trims={};
+  Object.entries(IIIraw).forEach(([k,v])=>{
+    const lim=(F.caps[k]/100)*grandClaim;
+    IIIcap[k]=Math.min(v,lim);
+    if(v>lim+0.001) trims[k]=v-lim;
+  });
+  const catIII=Object.values(IIIcap).reduce((a,b)=>a+b,0);
+  const total=catI+catII+catIII;
+  const disp={k1:catI,k2:catII,k3:IIIcap.IIIA,k4:IIIcap.IIIB,k5:IIIcap.IIIC,k6:IIIcap.IIID,k7:IIIcap.IIIE};
+  CATS13.forEach(c=>setT("cat_"+c.id,fmt(disp[c.id])));
+  return {mode:"f13",catI,catII,IIIraw,IIIcap,trims,catIII,total,grandClaim,min:F.min};
+}
+
+function recalc(){
+  const s18=calc18();
+  const s13=calc13();
+  const s = fw==="f18"?s18:s13;
+  renderSidebar(s);
+  compliance();
+  window.__state={s18,s13,active:s};
+}
+
+function renderSidebar(s){
+  const meter=document.getElementById("meterMount"), th=document.getElementById("thMount");
+  const cap=document.getElementById("capNote"), ul=document.getElementById("usedLine");
+  setT("grandTotal",fmt(s.total)); setT("mTotal",fmt(s.total));
+  const chip=(l,ok,val)=>`<div class="thchip ${ok?"pass":"fail"}"><span>${l}</span><b>${val} ${ok?"✓":"✗"}</b></div>`;
+  if(s.mode==="f18"){
+    setT("scoreCap","Academic / Research Score · Table 2");
+    setT("mCap","Research Score (Table 2)");
+    meter.innerHTML=CATS18.map(c=>`
+      <div class="mrow"><span>Cat ${c.num} · ${c.title.replace(/&amp;/g,"&").split("—")[0].slice(0,30)}</span><b>${fmt(s.catVals[c.id])}</b></div>
+      <div class="bar"><div class="fill" style="width:${s.raw>0?(s.catVals[c.id]/s.raw*100):0}%"></div></div>`).join("");
+    th.innerHTML = s.target>0 ? chip("Institution target ≥ "+fmt(s.target), s.total>=s.target, fmt(s.total)) : "";
+    if(s.pool>s.cappedPool+0.001){
+      cap.textContent=FW.f18.capShare+"% cap engaged — 5(b) + Cat 6 trimmed from "+fmt(s.pool)+" to "+fmt(s.cappedPool)+" (raw "+fmt(s.raw)+")";
+      cap.className="capline warn";
+    }else{ cap.textContent="Combined 5(b) + Category 6 within the "+FW.f18.capShare+"% cap"; cap.className="capline"; }
+    ul.textContent=s.used+" of 6 categories used · minimum 3 required";
+    ul.className="usedline"+((s.used>0&&s.used<3)?" warn":"");
+    document.getElementById("gradeCard18").style.display="";
+  }else{
+    setT("scoreCap","Total API Score · Categories I + II + III");
+    setT("mCap","Total API Score");
+    const rows=[["Category I — Teaching",s.catI],["Category II — Co-curricular",s.catII],
+      ["III-A Papers",s.IIIcap.IIIA],["III-B Publications",s.IIIcap.IIIB],["III-C Projects",s.IIIcap.IIIC],
+      ["III-D Guidance",s.IIIcap.IIID],["III-E Training & papers",s.IIIcap.IIIE]];
+    const mx=Math.max(s.total,1);
+    meter.innerHTML=rows.map(([l,v])=>`
+      <div class="mrow"><span>${l}</span><b>${fmt(v)}</b></div>
+      <div class="bar"><div class="fill" style="width:${v/mx*100}%"></div></div>`).join("");
+    th.innerHTML=
+      chip("Category I ≥ "+s.min.cI+" (of 180)", s.catI>=s.min.cI, fmt(s.catI))+
+      chip("Category II ≥ "+s.min.cII+" (of 70)", s.catII>=s.min.cII, fmt(s.catII))+
+      chip("Cat I + II ≥ "+s.min.comb+" (of 250)", (s.catI+s.catII)>=s.min.comb, fmt(s.catI+s.catII));
+    const trimmed=Object.keys(s.trims||{});
+    if(trimmed.length){
+      cap.textContent="Sub-category caps engaged: "+trimmed.map(k=>k+" −"+fmt(s.trims[k])).join(" · ");
+      cap.className="capline warn";
+    }else{ cap.textContent="All Category III sub-caps within limits"; cap.className="capline"; }
+    ul.textContent="Category III minima vary by promotion stage (Tables II–IX of the 2010 Regulations — not part of this notification)";
+    ul.className="usedline";
+    document.getElementById("gradeCard18").style.display="none";
+  }
+}
+
+/* ============================ UI ============================ */
+function toggleAcc(id,btn){
+  const el=document.getElementById(id); el.classList.toggle("open");
+  btn.setAttribute("aria-expanded",el.classList.contains("open"));
+}
+function bindSeg(segId,cb){
+  document.querySelectorAll("#"+segId+" button").forEach(b=>{
+    b.addEventListener("click",()=>{
+      document.querySelectorAll("#"+segId+" button").forEach(x=>{x.classList.remove("on");x.setAttribute("aria-pressed","false")});
+      b.classList.add("on"); b.setAttribute("aria-pressed","true");
+      cb(b.dataset.v); recalc();
+    });
+  });
+}
+function switchFW(v){
+  fw=v;
+  document.getElementById("fw18").style.display = v==="f18"?"":"none";
+  document.getElementById("fw13").style.display = v==="f13"?"":"none";
+  document.getElementById("authWrap18").style.display = v==="f18"?"":"none";
+  document.getElementById("authWrap13").style.display = v==="f13"?"":"none";
+  document.getElementById("heroBadge").textContent = v==="f18"
+    ? "UGC Regulations 2018 · Gazette 18-07-2018 — Current National CAS Framework"
+    : "UGC Regulations 2010 · 2nd Amendment — Gazette 13-06-2013 · Legacy API/PBAS";
+}
+function openModal(){ document.getElementById("rulesOverlay").classList.add("open"); }
+function closeModal(){ document.getElementById("rulesOverlay").classList.remove("open"); }
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
+function resetAll(){
+  if(!confirm("Reset all entered scores across both frameworks? (Rubric values are kept.)")) return;
+  document.querySelectorAll("main input[type=number]:not([id^=rf_])").forEach(i=>{ i.value = i.id==="nAuth" ? 4 : ""; });
+  document.querySelectorAll("main select").forEach(s=>s.value="0");
+  document.getElementById("tchBody").innerHTML=""; tchN=0; addTeachRow();
+  recalc();
+}
+
+/* ============================ EXPORT ============================ */
+function exportPDF(){
+  recalc();
+  const st=window.__state, e=id=>document.getElementById(id).value||"____________________";
+  const dev=rubricDeviations();
+  const devTable = dev.length ? `<div class="sechead">CUSTOM INSTITUTION RUBRIC APPLIED — ${(document.getElementById("profName").value||"unnamed profile")}</div>
+    <table><tr><th>Item</th><th>Gazette value</th><th>Institution value</th><th>Compliance</th></tr>
+    ${dev.map(d=>`<tr><td>${d.label}</td><td class="num">${d.def}</td><td class="num">${d.cur}</td><td>${d.guard==="fixed13"?"NON-COMPLIANT (cl. 6.0.2)":d.guard==="minUp"&&d.cur<d.def?"NON-COMPLIANT (minimum lowered)":"Permitted"}</td></tr>`).join("")}</table>`:"";
+  const head=(sub,badge)=>`
+    <h1>Academic Performance Indicator (API) — Self-Appraisal Summary</h1>
+    <h2>${sub}</h2>
+    <div class="pref">${badge} · Indicative self-assessment — subject to IQAC and Screening-cum-Evaluation / Selection Committee verification · API scores are for screening only</div>
+    <table class="meta"><tr><td><b>Name of the teacher:</b> ${e("apName")}</td><td><b>Academic year:</b> ${e("apYear")}</td></tr>
+    <tr><td><b>University / Institute / College:</b> ${e("apInst")}</td><td><b>Department:</b> ${e("apDept")}</td></tr></table>`;
+  const sig=`<div class="undert"><b>UNDERTAKING:</b> I, ${e("apName")}, undertake that the information provided is correct as per records submitted by me to the Institution and documents enclosed along with the duly filled-in proforma. Copies of certificates, sanction letters and papers are attached wherever necessary.</div>
+    <div class="sig"><div>Signature of the Faculty<br>with Designation · Date · Place</div><div>Signature — Head of Department<br>Date · Place</div><div>Signature — Coordinator, IQAC<br>Verified · Date · Place</div><div>Signature of the Principal / Registrar<br>Seal of the Institution</div></div>
+    <div class="nb">N.B.: The individual proforma duly filled, along with all enclosures, will be verified by the Institution and placed before the Screening-cum-Evaluation Committee or Selection Committee for assessment verification. This computer-generated summary is indicative and self-declared.</div>`;
+  let body="";
+  if(fw==="f18"){
+    const s=st.s18;
+    const catRows=CATS18.map(c=>`<tr><td>${c.num}. ${c.title.replace(/&amp;/g,"&")}</td><td class="num">${fmt(s.catVals[c.id])}</td><td></td><td></td></tr>`).join("");
+    const capRow=s.pool>s.cappedPool+0.001?`<tr><td><i>Less: ${FW.f18.capShare}% cap on combined 5(b) + Category 6</i></td><td class="num">− ${fmt(s.pool-s.cappedPool)}</td><td></td><td></td></tr>`:"";
+    body=head("UGC Regulations 2018 — Career Advancement Scheme","Gazette of India, Extraordinary, Part III Section 4, dated 18 July 2018")+`
+    <div class="sechead">TABLE 1 — TEACHING, LEARNING &amp; EVALUATION AND INVOLVEMENT (GRADED)</div>
+    <table><tr><th style="width:55%">Criteria</th><th>Self-assessment</th><th>Grading</th></tr>
+      <tr><td>1-A Teaching — (classes taught ÷ classes assigned) × 100%</td><td class="num">${s.pct===null?"—":fmt(s.pct)+"%"}</td><td class="num">${s.tg?GN[s.tg]:"—"}</td></tr>
+      <tr><td>2 — Involvement in University / College student-related / research activities</td><td class="num">${s.actN}</td><td class="num">${GN[s.ag]}</td></tr>
+      <tr class="tot"><td>Overall grading (Table 1)</td><td></td><td class="num">${s.og?GN[s.og]:"—"}</td></tr></table>
+    <div class="sechead">SUMMARY OF TABLE 2 — ACADEMIC / RESEARCH SCORE</div>
+    <table><tr><th>Details of academic &amp; research activities</th><th>Self-appraisal score</th><th>Verified by Committee</th><th>Remarks</th></tr>
+      ${catRows}${capRow}
+      <tr class="tot"><td>Grand Total of Table 2</td><td class="num">${fmt(s.total)}</td><td></td><td></td></tr></table>
+    <div style="font-size:10px;font-style:italic">Faculty stream: ${faculty==="sci"?"Sciences / Engineering / Agriculture / Medical / Veterinary":"Languages / Humanities / Social Sciences / Commerce / Management &amp; allied"} · Authorship: ${auth18==="sole"?"Sole ×1.00":auth18==="first"?"First / Principal / Corresponding ×0.70":"Joint co-author ×0.30"} · Categories used: ${s.used} of 6 (minimum three of six).${s.target>0?" · Institution screening target: "+fmt(s.target)+" ("+(s.total>=s.target?"met":"not met")+")":""}</div>`+devTable;
+  }else{
+    const s=st.s13;
+    const r=(l,raw,capped)=>`<tr><td>${l}</td><td class="num">${fmt(raw)}</td><td class="num">${fmt(capped)}</td><td></td></tr>`;
+    body=head("UGC Regulations 2010 — 2nd Amendment (API / PBAS)","Gazette of India, Extraordinary, Part III Section 4 — Notification No. F.1-2/2009(EC/PS) V(i) Vol-II dated 13 June 2013 · Amended Appendix-III Table I")+`
+    <div class="sechead">CATEGORY-WISE API SCORES</div>
+    <table><tr><th>Category</th><th>Self-appraisal (raw)</th><th>After sub-category cap</th><th>Verified by Committee</th></tr>
+      ${r("Category I — Teaching, Learning &amp; Evaluation (max 180)",s.catI,s.catI)}
+      ${r("Category II — Co-curricular, Extension &amp; Professional Development (max 70)",s.catII,s.catII)}
+      ${r("III-A Research papers — journals (cap "+FW.f13.caps.IIIA+"%)",s.IIIraw.IIIA,s.IIIcap.IIIA)}
+      ${r("III-B Research publications (cap "+FW.f13.caps.IIIB+"%)",s.IIIraw.IIIB,s.IIIcap.IIIB)}
+      ${r("III-C Research projects (cap "+FW.f13.caps.IIIC+"%)",s.IIIraw.IIIC,s.IIIcap.IIIC)}
+      ${r("III-D Research guidance (cap "+FW.f13.caps.IIID+"%)",s.IIIraw.IIID,s.IIIcap.IIID)}
+      ${r("III-E Training courses &amp; papers (cap "+FW.f13.caps.IIIE+"%)",s.IIIraw.IIIE,s.IIIcap.IIIE)}
+      <tr class="tot"><td>Total API Score</td><td class="num">${fmt(s.grandClaim)}</td><td class="num">${fmt(s.total)}</td><td></td></tr></table>
+    <div class="sechead">MINIMUM REQUIREMENTS</div>
+    <table><tr><th>Requirement</th><th>Self-assessed</th><th>Status</th></tr>
+      <tr><td>Category I — minimum ${s.min.cI} (of maximum 180)</td><td class="num">${fmt(s.catI)}</td><td class="num">${s.catI>=s.min.cI?"Met":"Not met"}</td></tr>
+      <tr><td>Category II — minimum ${s.min.cII} (of maximum 70)</td><td class="num">${fmt(s.catII)}</td><td class="num">${s.catII>=s.min.cII?"Met":"Not met"}</td></tr>
+      <tr><td>Categories I + II combined — minimum ${s.min.comb} (of 250)</td><td class="num">${fmt(s.catI+s.catII)}</td><td class="num">${(s.catI+s.catII)>=s.min.comb?"Met":"Not met"}</td></tr></table>
+    <div style="font-size:10px;font-style:italic">Faculty column applied: ${faculty==="sci"?"Engineering / Agriculture / Veterinary Science / Sciences / Medical":"Languages / Arts / Humanities / Social Sciences / Library / Physical Education / Management"}. Sub-category caps applied as a percentage of the total API score claimed. Category III stage-wise minima per Tables II–IX of the Principal Regulations.</div>`+devTable;
+  }
+  document.getElementById("printSheet").innerHTML=body+sig;
+  window.print();
+}
+
+/* ============================ INIT ============================ */
+buildFW18();
+buildFW13();
+buildStudio();
+addTeachRow();
+bindSeg("segFW",v=>switchFW(v));
+bindSeg("segFaculty",v=>faculty=v);
+bindSeg("segAuth18",v=>auth18=v);
+bindSeg("segAuth13",v=>{auth13=v; document.getElementById("nAuthWrap").style.display = v==="co"?"":"none";});
+document.getElementById("acc_c1").classList.add("open");
+document.querySelector("#acc_c1 .acc-head").setAttribute("aria-expanded","true");
+document.getElementById("acc_k1").classList.add("open");
+document.querySelector("#acc_k1 .acc-head").setAttribute("aria-expanded","true");
+recalc();
+</script>
+</body>
+</html>

@@ -12,6 +12,7 @@ export interface APIScoreCertificateData {
   cat3Score: number;
   cat3Max: number;
   designation?: string;
+  department?: string;
   institution?: string;
   date: string;
 }
@@ -101,11 +102,11 @@ export function generateAPIScoreCertificate(data: APIScoreCertificateData): jsPD
 
   // === Designation & Institution ===
   let yPos = 86;
-  if (data.designation || data.institution) {
+  if (data.designation || data.department || data.institution) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(100, 90, 80);
-    const parts = [data.designation, data.institution].filter(Boolean).join(', ');
+    const parts = [data.designation, data.department, data.institution].filter(Boolean).join(', ');
     doc.text(parts, cx, yPos, { align: 'center' });
     yPos += 6;
   }

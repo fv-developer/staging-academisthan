@@ -95,7 +95,7 @@ export default function ForgotPassword() {
               <div className="w-20 h-20 rounded-2xl bg-gold/10 flex items-center justify-center mx-auto mb-6">
                 <Mail className="w-10 h-10 text-gold" />
               </div>
-              <h1 className="font-serif text-3xl font-bold text-foreground mb-3">Check Your Email</h1>
+              <h1 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-3">Check Your Email</h1>
               <p className="text-muted-foreground text-sm mb-2 max-w-sm mx-auto">
                 We've sent a password reset link to <span className="font-medium text-foreground">{email}</span>.
               </p>
@@ -124,7 +124,7 @@ export default function ForgotPassword() {
           ) : (
             <>
               <div className="mb-8">
-                <h1 className="font-serif text-3xl font-bold text-foreground mb-2">
+                <h1 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-2">
                   Forgot Password
                 </h1>
                 <p className="text-muted-foreground text-sm">

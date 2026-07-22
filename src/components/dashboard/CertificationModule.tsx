@@ -86,6 +86,7 @@ export default function CertificationModule() {
           cat3Score: catScores.other || 0,
           cat3Max: 50,
           designation: profile?.designation || undefined,
+          department: profile?.department || undefined,
           institution: profile?.institution || undefined,
           date: issuedAt,
         };
@@ -114,7 +115,7 @@ export default function CertificationModule() {
       certificateNumber: certNum,
       issuedAt: issuedAt,
       certificateType: 'Certification',
-    }, action);
+    }, action, item?.template_snapshot);
 
     toast({
       title: action === 'view' ? '✓ Opening Preview' : '✓ Downloading Certificate',

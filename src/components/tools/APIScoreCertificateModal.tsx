@@ -58,6 +58,7 @@ export function APIScoreCertificateModal({
       cat2Score, cat2Max,
       cat3Score, cat3Max,
       designation: (profile as any).designation || undefined,
+      department: (profile as any).department || undefined,
       institution: (profile as any).institution || undefined,
       date: new Date().toISOString(),
     };

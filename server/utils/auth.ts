@@ -51,7 +51,7 @@ export function verifyToken(token: string): AuthUser | null {
 }
 
 // Authentication middleware
-export function authenticate(req: AuthRequest, res: Response, next: NextFunction) {
+export async function authenticate(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     // Get token from Authorization header or cookie
     let token = req.headers.authorization?.replace('Bearer ', '');
@@ -59,16 +59,22 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
     if (!token && req.cookies?.token) {
       token = req.cookies.token;
     }
-
+ 
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
     }
-
+ 
     const user = verifyToken(token);
     if (!user) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
-
+ 
+    // Verify user exists in database
+    const [dbUsers]: any = await pool.execute('SELECT id FROM users WHERE id = ?', [user.id]);
+    if (dbUsers.length === 0) {
+      return res.status(401).json({ error: 'User account no longer exists' });
+    }
+ 
     req.user = user;
     next();
   } catch (error) {

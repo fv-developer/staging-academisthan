@@ -64,7 +64,7 @@ export function MyCertificates() {
       certificateNumber: cert.certificate_number,
       issuedAt: cert.issued_at,
       certificateType: cert.certificate_type,
-    });
+    }, 'download', cert.template_snapshot);
   };
 
   if (loading) return null;

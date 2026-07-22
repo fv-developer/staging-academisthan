@@ -199,7 +199,13 @@ router.get('/institutions/:id', authenticate, isAdmin, async (req: AuthRequest, 
       }
     }
 
-    res.json({ institution: inst, changeRequest });
+    // Query leadership profiles
+    const [leadership] = await pool.execute(
+      'SELECT * FROM institution_leadership WHERE institution_id = ?',
+      [req.params.id]
+    );
+
+    res.json({ institution: inst, changeRequest, leadership: leadership || [] });
   } catch (error) {
     console.error('Get institution details error:', error);
     res.status(500).json({ error: 'Failed to get institution' });
@@ -717,6 +723,33 @@ router.get('/institutions/:id/logs', authenticate, isAdmin, async (req: AuthRequ
   }
 });
 
+// Auto-migrate admin_verified column in institution_leadership table if missing
+(async () => {
+  try {
+    await pool.execute('ALTER TABLE institution_leadership ADD COLUMN admin_verified TINYINT(1) DEFAULT 0').catch(() => {});
+  } catch (err) {
+    console.error('Leadership verification schema migration error:', err);
+  }
+})();
+
+// Verify a leadership profile
+router.put('/institutions/:id/leadership/:leaderId/verify', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, leaderId } = req.params;
+    const { verified } = req.body; // boolean
+
+    await pool.execute(
+      'UPDATE institution_leadership SET admin_verified = ? WHERE id = ? AND institution_id = ?',
+      [verified ? 1 : 0, leaderId, id]
+    );
+
+    res.json({ message: 'Leadership verification status updated successfully' });
+  } catch (error) {
+    console.error('Update leadership verification error:', error);
+    res.status(500).json({ error: 'Failed to update leadership verification status' });
+  }
+});
+
 // Approve Change Request
 router.put('/institutions/:id/change-requests/approve', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
   try {
@@ -941,6 +974,7 @@ router.get('/stats', authenticate, isAdmin, async (req: AuthRequest, res: Respon
       totalFellows: (fellows as any)[0].count,
       totalInstitutions: (institutions as any)[0].count,
       pendingInstitutions: (pending as any)[0].count,
+      pendingInstitutionApprovals: (pending as any)[0].count,
       approvedInstitutions: (approved as any)[0].count,
       rejectedInstitutions: (rejected as any)[0].count,
       suspendedInstitutions: (suspended as any)[0].count,
@@ -1160,7 +1194,7 @@ router.post('/users/:id/notifications', authenticate, isAdmin, async (req: AuthR
 router.get('/tool-results', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const [results] = await pool.execute(`
-      SELECT tr.*, p.full_name, p.email, p.membership_id, p.designation, p.institution
+      SELECT tr.*, p.full_name, p.email, p.membership_id, p.designation, p.department, p.institution
       FROM tool_results tr
       LEFT JOIN profiles p ON tr.user_id = p.id
       ORDER BY tr.created_at DESC
@@ -1529,14 +1563,62 @@ router.post('/notifications/bulk-delete', authenticate, isAdmin, async (req: Aut
   }
 });
 
-// Delete single notification (permanent deletion)
-router.delete('/notifications/:id', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+// --- Dynamic Certificate Management Routes ---
+(async () => {
   try {
-    await pool.execute('DELETE FROM notifications WHERE id = ?', [req.params.id]);
-    res.json({ success: true, message: 'Notification deleted successfully' });
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS certificate_templates (
+        id VARCHAR(255) PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        background_image_url TEXT,
+        field_positions LONGTEXT,
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await pool.execute(`
+      ALTER TABLE certificates ADD COLUMN IF NOT EXISTS template_snapshot LONGTEXT
+    `).catch(() => {});
+  } catch (err) {
+    console.error('Certificate templates DB init error:', err);
+  }
+})();
+
+router.get('/certificate-templates', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const [rows]: any = await pool.execute('SELECT * FROM certificate_templates ORDER BY created_at DESC');
+    res.json(rows);
   } catch (error) {
-    console.error('Delete notification error:', error);
-    res.status(500).json({ error: 'Failed to delete notification' });
+    console.error('Get certificate templates error:', error);
+    res.status(500).json({ error: 'Failed to fetch certificate templates' });
+  }
+});
+
+router.post('/certificate-templates', authenticate, isAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, title, background_image_url, field_positions, is_active } = req.body;
+    const templateId = id || uuidv4();
+    const fieldPositionsJson = typeof field_positions === 'string' ? field_positions : JSON.stringify(field_positions || {});
+
+    if (is_active) {
+      await pool.execute('UPDATE certificate_templates SET is_active = 0');
+    }
+
+    await pool.execute(
+      `INSERT INTO certificate_templates (id, title, background_image_url, field_positions, is_active)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         title = VALUES(title),
+         background_image_url = VALUES(background_image_url),
+         field_positions = VALUES(field_positions),
+         is_active = VALUES(is_active)`,
+      [templateId, title || 'Default A4 Certificate', background_image_url || '', fieldPositionsJson, is_active ? 1 : 0]
+    );
+
+    res.json({ success: true, message: 'Certificate template saved successfully', templateId });
+  } catch (error) {
+    console.error('Save certificate template error:', error);
+    res.status(500).json({ error: 'Failed to save certificate template' });
   }
 });
 

@@ -131,6 +131,7 @@ export function ProgramManager() {
   const [questionText, setQuestionText] = useState('');
   const [options, setOptions] = useState(['', '', '', '']);
   const [correctAnswerIdx, setCorrectAnswerIdx] = useState(0); // 0 for A, 1 for B, 2 for C, 3 for D
+  const [editingQuestionIdx, setEditingQuestionIdx] = useState<number | null>(null);
 
   // Drag and Drop States
   const [draggedModuleIdx, setDraggedModuleIdx] = useState<number | null>(null);
@@ -398,15 +399,46 @@ export function ProgramManager() {
       correct_answer: correctVal
     };
 
-    setQuizQuestions(prev => [...prev, newQ]);
+    if (editingQuestionIdx !== null) {
+      setQuizQuestions(prev => {
+        const next = [...prev];
+        next[editingQuestionIdx] = newQ;
+        return next;
+      });
+      setEditingQuestionIdx(null);
+      toast({ title: 'Question updated successfully!' });
+    } else {
+      setQuizQuestions(prev => [...prev, newQ]);
+      toast({ title: 'Question added to list!' });
+    }
     setQuestionText('');
     setOptions(['', '', '', '']);
     setCorrectAnswerIdx(0);
-    toast({ title: 'Question added to list!' });
+  };
+
+  const handleEditQuestion = (idx: number) => {
+    const q = quizQuestions[idx];
+    setQuestionText(q.question || q.questionText || '');
+    setOptions([...(q.options || ['', '', '', ''])]);
+    const correctIdx = (q.options || []).indexOf(q.correct_answer || '');
+    setCorrectAnswerIdx(correctIdx >= 0 ? correctIdx : 0);
+    setEditingQuestionIdx(idx);
+  };
+
+  const handleCancelEdit = () => {
+    setQuestionText('');
+    setOptions(['', '', '', '']);
+    setCorrectAnswerIdx(0);
+    setEditingQuestionIdx(null);
   };
 
   const handleRemoveQuestion = (idx: number) => {
     setQuizQuestions(prev => prev.filter((_, i) => i !== idx));
+    if (editingQuestionIdx === idx) {
+      handleCancelEdit();
+    } else if (editingQuestionIdx !== null && editingQuestionIdx > idx) {
+      setEditingQuestionIdx(editingQuestionIdx - 1);
+    }
   };
 
   const handleSaveQuiz = async () => {
@@ -445,6 +477,10 @@ export function ProgramManager() {
 
   const handleGoBackToBuilder = () => {
     setView('program_builder');
+    setQuestionText('');
+    setOptions(['', '', '', '']);
+    setCorrectAnswerIdx(0);
+    setEditingQuestionIdx(null);
   };
 
   if (loading && programs.length === 0) {
@@ -897,6 +933,10 @@ export function ProgramManager() {
                                       qList = typeof step.quiz_questions === 'string' ? JSON.parse(step.quiz_questions) : (step.quiz_questions || []);
                                     } catch (e) {}
                                     setQuizQuestions(qList);
+                                    setQuestionText('');
+                                    setOptions(['', '', '', '']);
+                                    setCorrectAnswerIdx(0);
+                                    setEditingQuestionIdx(null);
                                     setView('quiz_builder');
                                   } else {
                                     setStepForm({
@@ -1002,6 +1042,10 @@ export function ProgramManager() {
                           setQuizName(stepForm.title || `${selectedModule.chapter} Quiz`);
                           setPassingMarks(60);
                           setQuizQuestions([]);
+                          setQuestionText('');
+                          setOptions(['', '', '', '']);
+                          setCorrectAnswerIdx(0);
+                          setEditingQuestionIdx(null);
                           setView('quiz_builder');
                         } else {
                           setStepForm({ ...stepForm, content_type: type.value as any });
@@ -1161,27 +1205,37 @@ export function ProgramManager() {
                 <div key={idx} className="border border-slate-200 rounded-2xl p-4 flex justify-between items-start gap-3 bg-slate-50/20 group">
                   <div className="space-y-1">
                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Question {idx + 1}</span>
-                    <p className="text-xs font-semibold text-slate-800">{q.questionText}</p>
+                    <p className="text-xs font-semibold text-slate-800">{q.question || q.questionText}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 pt-1">
-                      {q.options.map((opt: string, oIdx: number) => (
+                      {(q.options || []).map((opt: string, oIdx: number) => (
                         <div key={oIdx} className="text-[11px] flex items-center gap-1.5 text-slate-500">
                           <span className={cn(
                             "w-1.5 h-1.5 rounded-full shrink-0",
-                            q.correctAnswerIdx === oIdx ? "bg-emerald-500" : "bg-slate-300"
+                            q.correct_answer === opt ? "bg-emerald-500" : "bg-slate-300"
                           )} />
-                          <span className={q.correctAnswerIdx === oIdx ? "font-semibold text-emerald-600" : ""}>
+                          <span className={q.correct_answer === opt ? "font-semibold text-emerald-600" : ""}>
                             {opt}
                           </span>
                         </div>
                       ))}
                     </div>
                   </div>
-                  <Button
-                    onClick={() => handleRemoveQuestion(idx)}
-                    className="btn-danger btn-xs"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      onClick={() => handleEditQuestion(idx)}
+                      className="btn-warning btn-xs"
+                      type="button"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      onClick={() => handleRemoveQuestion(idx)}
+                      className="btn-danger btn-xs"
+                      type="button"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
               ))}
               {quizQuestions.length === 0 && (
@@ -1194,8 +1248,12 @@ export function ProgramManager() {
             {/* MCQ Creator Card Widget - styled exactly like mockup Slide 3 Screen 5 */}
             <div className="border border-slate-200 rounded-2xl bg-white p-5 space-y-4 shadow-sm w-full">
               <div className="flex justify-between items-center border-b pb-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">New Question Builder</span>
-                <span className="text-[9px] text-slate-400 font-semibold select-none">Question {quizQuestions.length + 1}</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  {editingQuestionIdx !== null ? 'Edit Question Builder' : 'New Question Builder'}
+                </span>
+                <span className="text-[9px] text-slate-400 font-semibold select-none">
+                  {editingQuestionIdx !== null ? `Editing Question ${editingQuestionIdx + 1}` : `Question ${quizQuestions.length + 1}`}
+                </span>
               </div>
               
               <div className="space-y-1.5">
@@ -1241,13 +1299,30 @@ export function ProgramManager() {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-1">
+              <div className="flex justify-end items-center gap-2 pt-1">
+                {editingQuestionIdx !== null && (
+                  <Button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="btn-outline text-slate-500 hover:text-slate-800"
+                  >
+                    Cancel Edit
+                  </Button>
+                )}
                 <Button
                   type="button"
                   onClick={handleAddQuestion}
                   className="btn-primary"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Add Question
+                  {editingQuestionIdx !== null ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" /> Update Question
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-3.5 h-3.5" /> Add Question
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
