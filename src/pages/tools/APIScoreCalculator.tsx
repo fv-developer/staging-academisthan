@@ -617,7 +617,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
             <div className="absolute bottom-10 left-20 w-96 h-96 bg-gold/10 rounded-full blur-[120px]" />
           </div>
         )}
-        <div className="max-w-4xl mx-auto space-y-3.5 px-4 relative z-10">
+        <div className="max-w-4xl mx-auto space-y-3.5 px-[15px] relative z-10">
           <div className={cn("inline-flex items-center gap-2 rounded-full px-4 py-1.5", embedded ? "bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs font-bold uppercase tracking-widest" : "bg-accent/10 border border-accent/20 text-accent text-sm font-medium")}>
             <Award className="h-4 w-4" />
             <span>India-Wide · UGC CAS Assessment Frameworks · Institution-Customizable</span>
@@ -636,7 +636,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
 
 
       {/* Main Content Wrap */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid lg:grid-cols-3 gap-8 items-start">
+      <div className="max-w-7xl mx-auto px-[15px] py-8 grid lg:grid-cols-3 gap-4 items-start">
         {/* Left Column: Form & Calculator */}
         <div className="lg:col-span-2 space-y-6">
           {/* Framework & Global Config */}
