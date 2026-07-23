@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Calculator, BookOpen, FlaskConical, Award, ChevronDown, ChevronUp,
-  Info, RotateCcw, CheckCircle2, AlertTriangle, Sparkles, Download, Printer, Settings, Upload, FileText, ShieldCheck, X, FileCheck, Layers, Scale
+  Info, RotateCcw, CheckCircle2, AlertTriangle, Sparkles, Download, Printer, Settings, Upload, FileText, ShieldCheck, X, FileCheck, Layers, Scale,
+  Users, Presentation, BookMarked
 } from 'lucide-react';
 import { APIScoreCertificateModal } from '@/components/tools/APIScoreCertificateModal';
 import { useToolResultSaver } from '@/hooks/useToolResultSaver';
@@ -294,6 +295,32 @@ const fmt = (n: number) => {
   const r = Math.round(n * 100) / 100;
   return (r % 1 === 0) ? String(r) : r.toFixed(r * 10 % 1 === 0 ? 1 : 2);
 };
+
+const renderIcon = (emoji: string) => {
+  switch (emoji) {
+    case "📖":
+      return <BookOpen className="w-5 h-5 text-amber-300" />;
+    case "🤝":
+      return <Users className="w-5 h-5 text-amber-300" />;
+    case "🧪":
+      return <FileText className="w-5 h-5 text-amber-300" />;
+    case "📚":
+      return <BookMarked className="w-5 h-5 text-amber-300" />;
+    case "💻":
+      return <Layers className="w-5 h-5 text-amber-300" />;
+    case "🎓":
+      return <GraduationCap className="w-5 h-5 text-amber-300" />;
+    case "🔬":
+      return <FlaskConical className="w-5 h-5 text-amber-300" />;
+    case "🏅":
+      return <Award className="w-5 h-5 text-amber-300" />;
+    case "🎤":
+      return <Presentation className="w-5 h-5 text-amber-300" />;
+    default:
+      return <span className="text-base">{emoji}</span>;
+  }
+};
+
 const GN: Record<string, string> = { G: "Good", S: "Satisfactory", N: "Not satisfactory" };
 
 interface APIScoreCalculatorProps {
@@ -996,7 +1023,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                     className="w-full p-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100/80 transition-colors text-left"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center font-bold">{c.ico}</div>
+                      <div className="w-9 h-9 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center font-bold">{renderIcon(c.ico)}</div>
                       <div>
                         <h3 className="font-serif font-bold text-slate-900 text-base">Category {c.num} — {c.title}</h3>
                         <p className="text-xs text-slate-500">{c.sub}</p>
@@ -1124,7 +1151,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                     className="w-full p-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100/80 transition-colors text-left"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center font-bold">{c.ico}</div>
+                      <div className="w-9 h-9 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center font-bold">{renderIcon(c.ico)}</div>
                       <div>
                         <h3 className="font-serif font-bold text-slate-900 text-base">{c.title}</h3>
                         <p className="text-xs text-slate-500">{c.sub}</p>
@@ -1168,7 +1195,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">hrs / yr</span>
                               </div>
                             </div>
 
@@ -1186,7 +1213,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">hrs / yr</span>
                               </div>
                             </div>
 
@@ -1204,7 +1231,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">hrs / yr</span>
                               </div>
                             </div>
 
@@ -1222,7 +1249,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">hrs / yr</span>
                               </div>
                             </div>
 
@@ -1240,7 +1267,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">hrs / yr</span>
                               </div>
                             </div>
 
@@ -1265,7 +1292,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">hrs / yr</span>
                               </div>
                             </div>
 
@@ -1290,7 +1317,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">hrs / yr</span>
                               </div>
                             </div>
 
@@ -1308,7 +1335,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">hrs / yr</span>
                               </div>
                             </div>
 
@@ -1326,7 +1353,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">hrs / yr</span>
                               </div>
                             </div>
 
@@ -1395,7 +1422,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">courses</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">courses</span>
                                 <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(Math.min(V("h4c") * FW.f13.items.h4cPer, FW.f13.sub.fbMax))}</span>
                               </div>
                             </div>
@@ -1502,7 +1529,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">hrs / yr</span>
                               </div>
                             </div>
 
@@ -1520,7 +1547,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">hrs / yr</span>
                               </div>
                             </div>
 
@@ -1582,7 +1609,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                 placeholder="0"
                                 className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                               />
-                              <span className="text-[10px] text-slate-400 font-semibold">papers</span>
+                              <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">papers</span>
                               <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("p15") * FW.f13.paperBase * auth13Mult)}</span>
                             </div>
                           </div>
@@ -1613,7 +1640,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                     placeholder="0"
                                     className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                   />
-                                  <span className="text-[10px] text-slate-400 font-semibold">papers</span>
+                                  <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">papers</span>
                                   <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(score)}</span>
                                 </div>
                               </div>
@@ -1634,7 +1661,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                 placeholder="0"
                                 className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                               />
-                              <span className="text-[10px] text-slate-400 font-semibold">papers</span>
+                              <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">papers</span>
                               <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("pNR") * FW.f13.items.pNR * auth13Mult)}</span>
                             </div>
                           </div>
@@ -1653,7 +1680,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                 placeholder="0"
                                 className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                               />
-                              <span className="text-[10px] text-slate-400 font-semibold">papers</span>
+                              <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">papers</span>
                               <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("pCP") * FW.f13.items.pCP * auth13Mult)}</span>
                             </div>
                           </div>
@@ -1685,7 +1712,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                 placeholder="0"
                                 className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                               />
-                              <span className="text-[10px] text-slate-400 font-semibold">projects</span>
+                              <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">projects</span>
                               <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("prA") * FW.f13.items.prA)}</span>
                             </div>
                           </div>
@@ -1706,7 +1733,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                 placeholder="0"
                                 className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                               />
-                              <span className="text-[10px] text-slate-400 font-semibold">projects</span>
+                              <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">projects</span>
                               <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("prB") * FW.f13.items.prB)}</span>
                             </div>
                           </div>
@@ -1727,7 +1754,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                 placeholder="0"
                                 className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                               />
-                              <span className="text-[10px] text-slate-400 font-semibold">projects</span>
+                              <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">projects</span>
                               <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("prC") * FW.f13.items.prC)}</span>
                             </div>
                           </div>
@@ -1751,7 +1778,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                 placeholder="0"
                                 className="w-18 h-9 text-center font-bold rounded-xl bg-white"
                               />
-                              <span className="text-[10px] text-slate-400 font-semibold">₹ lakhs</span>
+                              <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">₹ lakhs</span>
                               <span className="font-bold text-amber-700 min-w-[45px] text-right">
                                 {fmt(Math.floor(V("consAmt") / FW.f13.consultDiv[faculty]) * FW.f13.consultPer)}
                               </span>
@@ -1774,7 +1801,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                 placeholder="0"
                                 className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                               />
-                              <span className="text-[10px] text-slate-400 font-semibold">projects</span>
+                              <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">projects</span>
                               <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("qeMaj") * FW.f13.items.qeMaj)}</span>
                             </div>
                           </div>
@@ -1793,7 +1820,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                 placeholder="0"
                                 className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                               />
-                              <span className="text-[10px] text-slate-400 font-semibold">projects</span>
+                              <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">projects</span>
                               <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("qeMin") * FW.f13.items.qeMin)}</span>
                             </div>
                           </div>
@@ -1814,7 +1841,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                 placeholder="0"
                                 className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                               />
-                              <span className="text-[10px] text-slate-400 font-semibold">outcomes</span>
+                              <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">outcomes</span>
                               <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("outI") * FW.f13.items.outI)}</span>
                             </div>
                           </div>
@@ -1833,7 +1860,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                 placeholder="0"
                                 className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                               />
-                              <span className="text-[10px] text-slate-400 font-semibold">outcomes</span>
+                              <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">outcomes</span>
                               <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("outN") * FW.f13.items.outN)}</span>
                             </div>
                           </div>
@@ -1866,7 +1893,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">courses</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">courses</span>
                                 <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("tc2w") * FW.f13.items.tc2w)}</span>
                               </div>
                             </div>
@@ -1885,7 +1912,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">courses</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">courses</span>
                                 <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("tc1w") * FW.f13.items.tc1w)}</span>
                               </div>
                             </div>
@@ -1911,7 +1938,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">papers</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">papers</span>
                                 <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ppI") * FW.f13.items.ppI)}</span>
                               </div>
                             </div>
@@ -1930,7 +1957,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">papers</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">papers</span>
                                 <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ppN") * FW.f13.items.ppN)}</span>
                               </div>
                             </div>
@@ -1949,7 +1976,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">papers</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">papers</span>
                                 <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ppR") * FW.f13.items.ppR)}</span>
                               </div>
                             </div>
@@ -1968,7 +1995,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">papers</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">papers</span>
                                 <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ppL") * FW.f13.items.ppL)}</span>
                               </div>
                             </div>
@@ -1989,7 +2016,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">lectures</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">lectures</span>
                                 <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ilI") * FW.f13.items.ilI)}</span>
                               </div>
                             </div>
@@ -2008,7 +2035,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                                   placeholder="0"
                                   className="w-16 h-9 text-center font-bold rounded-xl bg-white"
                                 />
-                                <span className="text-[10px] text-slate-400 font-semibold">lectures</span>
+                                <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap shrink-0">lectures</span>
                                 <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ilN") * FW.f13.items.ilN)}</span>
                               </div>
                             </div>
