@@ -814,7 +814,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                   <Settings className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-serif font-bold text-slate-900 text-base">Rubric Studio — Institution Customization</h3>
+                  <h3 className="font-sans font-semibold text-slate-900 text-[15px]">Rubric Studio — Institution Customization</h3>
                   <p className="text-xs text-slate-500">Adapt weightages, minima and values to your university statutes.</p>
                 </div>
               </div>
@@ -914,7 +914,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] flex items-center justify-center font-bold">{renderIcon("📖")}</div>
                     <div>
-                      <h3 className="font-serif font-bold text-slate-900 text-base">Table 1 — Teaching, Learning & Involvement</h3>
+                      <h3 className="font-sans font-semibold text-slate-900 text-[15px]">Table 1 — Teaching, Learning & Involvement</h3>
                       <p className="text-xs text-slate-500">Graded assessment (Good / Satisfactory / Not satisfactory)</p>
                     </div>
                   </div>
@@ -1025,7 +1025,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] flex items-center justify-center font-bold">{renderIcon(c.ico)}</div>
                       <div>
-                        <h3 className="font-serif font-bold text-slate-900 text-base">Category {c.num} — {c.title}</h3>
+                        <h3 className="font-sans font-semibold text-slate-900 text-[15px]">Category {c.num} — {c.title}</h3>
                         <p className="text-xs text-slate-500">{c.sub}</p>
                       </div>
                     </div>
@@ -1153,7 +1153,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] flex items-center justify-center font-bold">{renderIcon(c.ico)}</div>
                       <div>
-                        <h3 className="font-serif font-bold text-slate-900 text-base">{c.title}</h3>
+                        <h3 className="font-sans font-semibold text-slate-900 text-[15px]">{c.title}</h3>
                         <p className="text-xs text-slate-500">{c.sub}</p>
                       </div>
                     </div>
