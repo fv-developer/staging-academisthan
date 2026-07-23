@@ -810,7 +810,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
               className="w-full p-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100/80 transition-colors text-left"
             >
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] flex items-center justify-center font-bold">
+                <div className="hidden sm:flex w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] items-center justify-center font-bold shrink-0">
                   <Settings className="w-5 h-5" />
                 </div>
                 <div>
@@ -912,7 +912,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                   className="w-full p-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100/80 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] flex items-center justify-center font-bold">{renderIcon("📖")}</div>
+                    <div className="hidden sm:flex w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] items-center justify-center font-bold shrink-0">{renderIcon("📖")}</div>
                     <div>
                       <h3 className="font-sans font-semibold text-slate-900 text-[15px]">Table 1 — Teaching, Learning & Involvement</h3>
                       <p className="text-xs text-slate-500">Graded assessment (Good / Satisfactory / Not satisfactory)</p>
@@ -1023,7 +1023,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                     className="w-full p-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100/80 transition-colors text-left"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] flex items-center justify-center font-bold">{renderIcon(c.ico)}</div>
+                      <div className="hidden sm:flex w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] items-center justify-center font-bold shrink-0">{renderIcon(c.ico)}</div>
                       <div>
                         <h3 className="font-sans font-semibold text-slate-900 text-[15px]">Category {c.num} — {c.title}</h3>
                         <p className="text-xs text-slate-500">{c.sub}</p>
@@ -1151,7 +1151,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                     className="w-full p-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100/80 transition-colors text-left"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] flex items-center justify-center font-bold">{renderIcon(c.ico)}</div>
+                      <div className="hidden sm:flex w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] items-center justify-center font-bold shrink-0">{renderIcon(c.ico)}</div>
                       <div>
                         <h3 className="font-sans font-semibold text-slate-900 text-[15px]">{c.title}</h3>
                         <p className="text-xs text-slate-500">{c.sub}</p>
@@ -2177,17 +2177,23 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
             {/* Threshold chips/messages for f13 */}
             {fw === 'f13' && (
               <div className="space-y-2 pt-2 text-[11px]">
-                <div className={cn("p-2 rounded-lg flex justify-between font-semibold", s13.catI >= s13.min.cI ? "bg-emerald-950/40 text-emerald-400 border border-emerald-500/20" : "bg-rose-950/40 text-rose-400 border border-rose-500/20")}>
+                <div className={cn("p-2 rounded-lg flex justify-between font-semibold border", s13.catI >= s13.min.cI ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/20" : "bg-slate-900/40 text-slate-400 border-slate-800")}>
                   <span>Category I ≥ {s13.min.cI} (of 180)</span>
-                  <span>{s13.catI >= s13.min.cI ? "PASSED ✓" : "FAIL ✗"}</span>
+                  <span className={s13.catI >= s13.min.cI ? "text-emerald-400" : "text-[#cfa459] font-bold"}>
+                    {s13.catI} {s13.catI >= s13.min.cI ? "✓" : "✗"}
+                  </span>
                 </div>
-                <div className={cn("p-2 rounded-lg flex justify-between font-semibold", s13.catII >= s13.min.cII ? "bg-emerald-950/40 text-emerald-400 border border-emerald-500/20" : "bg-rose-950/40 text-rose-400 border border-rose-500/20")}>
+                <div className={cn("p-2 rounded-lg flex justify-between font-semibold border", s13.catII >= s13.min.cII ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/20" : "bg-slate-900/40 text-slate-400 border-slate-800")}>
                   <span>Category II ≥ {s13.min.cII} (of 70)</span>
-                  <span>{s13.catII >= s13.min.cII ? "PASSED ✓" : "FAIL ✗"}</span>
+                  <span className={s13.catII >= s13.min.cII ? "text-emerald-400" : "text-[#cfa459] font-bold"}>
+                    {s13.catII} {s13.catII >= s13.min.cII ? "✓" : "✗"}
+                  </span>
                 </div>
-                <div className={cn("p-2 rounded-lg flex justify-between font-semibold", (s13.catI + s13.catII) >= s13.min.comb ? "bg-emerald-950/40 text-emerald-400 border border-emerald-500/20" : "bg-rose-950/40 text-rose-400 border border-rose-500/20")}>
+                <div className={cn("p-2 rounded-lg flex justify-between font-semibold border", (s13.catI + s13.catII) >= s13.min.comb ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/20" : "bg-slate-900/40 text-slate-400 border-slate-800")}>
                   <span>Cat I + II ≥ {s13.min.comb} (of 250)</span>
-                  <span>{(s13.catI + s13.catII) >= s13.min.comb ? "PASSED ✓" : "FAIL ✗"}</span>
+                  <span className={(s13.catI + s13.catII) >= s13.min.comb ? "text-emerald-400" : "text-[#cfa459] font-bold"}>
+                    {s13.catI + s13.catII} {(s13.catI + s13.catII) >= s13.min.comb ? "✓" : "✗"}
+                  </span>
                 </div>
               </div>
             )}
@@ -2203,9 +2209,11 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
 
             {/* Threshold Chip */}
             {fw === 'f18' && s18.target > 0 && (
-              <div className={cn("p-2.5 rounded-xl border text-xs flex justify-between font-bold", s18.total >= s18.target ? "bg-emerald-950/60 border-emerald-500/40 text-emerald-300" : "bg-amber-950/60 border-amber-500/40 text-amber-300")}>
+              <div className={cn("p-2.5 rounded-xl border text-xs flex justify-between font-bold", s18.total >= s18.target ? "bg-emerald-950/60 border-emerald-500/40 text-emerald-300" : "bg-slate-900/40 border-slate-800 text-slate-400")}>
                 <span>Institution Target ≥ {s18.target}</span>
-                <span>{s18.total >= s18.target ? "PASSED ✓" : "FAIL ✗"}</span>
+                <span className={s18.total >= s18.target ? "text-emerald-300" : "text-[#cfa459] font-bold"}>
+                  {s18.total} {s18.total >= s18.target ? "✓" : "✗"}
+                </span>
               </div>
             )}
           </div>
