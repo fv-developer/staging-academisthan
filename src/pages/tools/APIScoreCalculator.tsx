@@ -1141,413 +1141,425 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                   {openAccs[c.id] && (
                     <div className="p-6 border-t border-slate-100 space-y-4">
                       {/* Render custom Category I (cat1) */}
-                      {c.kind === "cat1" && (
-                        <div className="space-y-4">
-                          <p className="text-[11px] text-slate-500 italic bg-amber-50/40 p-3 rounded-xl border border-amber-100/50">
-                            ⓘ Hours are computed from the official time-table or actual hours spent in the previous academic year, working days/weeks only; the institution verifies from the Time Table and attendance records. Hours beyond a sub-total cap are credited at the maximum. Graded items (4-A, 4-B) require evidence; the screening committee finalizes the grade.
-                          </p>
+                      {c.kind === "cat1" && (() => {
+                        const st1 = Math.min((V("h1ai") + V("h1aii") + V("h1aiii") + V("h1b") + Math.min(V("h1c"), 0.5 * (V("h1ai") + V("h1aii") + V("h1aiii")))) / 10, FW.f13.sub.s1);
+                        const st2 = Math.min(V("h2") / 10, FW.f13.sub.s2);
+                        const st3 = Math.min((V("h3a") + V("h3b") + V("h3c")) / 10, FW.f13.sub.s3);
 
-                          <div className="text-xs font-serif font-bold text-slate-800 border-b border-slate-100 pb-1">1 · Teaching hours</div>
-                          
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">1A(i) Classroom teaching — lectures / seminars, as per allocation</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Total hours allocated per time-table for the academic year (working weeks only). Gazette example: 20 hrs/week × 16 weeks = 320 hrs per semester.</span>
+                        return (
+                          <div className="space-y-4">
+                            <p className="text-[11px] text-slate-500 italic bg-amber-50/40 p-3 rounded-xl border border-amber-100/50">
+                              📋 <b>Determination & evidence:</b> Hours are computed from the official time-table or actual hours spent in the previous academic year, working days/weeks only; the institution verifies from the Time Table and attendance records. Hours beyond a sub-total cap are credited at the maximum. Graded items (4-A, 4-B) require evidence; the screening committee finalizes the grade.
+                            </p>
+
+                            <div className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-100 pb-1.5 uppercase mt-6 first:mt-0">1 · TEACHING HOURS</div>
+                            
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">1A(i) Classroom teaching — lectures / seminars, as per allocation</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Total hours allocated per time-table for the academic year (working weeks only). Gazette example: 20 hrs/week × 16 weeks = 320 hrs per semester.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("h1ai") || ''}
+                                  onChange={e => handleInputChange("h1ai", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("h1ai") || ''}
-                                onChange={e => handleInputChange("h1ai", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">1A(ii) Classroom teaching in excess of UGC norms</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Additional hours beyond the UGC teaching norm for your cadre (e.g., 2 hrs/week × 16 = 32).</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("h1aii") || ''}
+                                  onChange={e => handleInputChange("h1aii", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">1A(iii) Preparation time</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Credited as equal to actual teaching hours per the attendance register — enter actual hours taught (e.g., 275).</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("h1aiii") || ''}
+                                  onChange={e => handleInputChange("h1aiii", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">1B Tutorials and practicals</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Actual hours per attendance register.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("h1b") || ''}
+                                  onChange={e => handleInputChange("h1b", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">1C Outside-classroom interaction with students</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Capped at 0.5 × total 1A hours — the cap is applied automatically.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("h1c") || ''}
+                                  onChange={e => handleInputChange("h1c", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 items-center py-2 text-[12.5px] text-slate-500 font-semibold border-t border-slate-100 mt-2">
+                              <span>Sub-total 1 = hours ÷ 10 (max {FW.f13.sub.s1}):</span>
+                              <span className="font-bold text-slate-900 text-sm">{fmt(st1)}</span>
+                            </div>
+
+                            <div className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-100 pb-1.5 uppercase mt-6">2 · RESEARCH SUPERVISION</div>
+                            
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">Research supervision incl. Masters thesis</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Max 1 hour per student per working week.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("h2") || ''}
+                                  onChange={e => handleInputChange("h2", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 items-center py-2 text-[12.5px] text-slate-500 font-semibold border-t border-slate-100 mt-2">
+                              <span>Sub-total 2 = hours ÷ 10 (max {FW.f13.sub.s2}):</span>
+                              <span className="font-bold text-slate-900 text-sm">{fmt(st2)}</span>
+                            </div>
+
+                            <div className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-100 pb-1.5 uppercase mt-6">3 · EXAMINATION DUTIES</div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">3A Question-paper setting, moderation & related work</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Actual hours.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("h3a") || ''}
+                                  onChange={e => handleInputChange("h3a", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">3B Invigilation / supervision & related examination duties</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Actual hours.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("h3b") || ''}
+                                  onChange={e => handleInputChange("h3b", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">3C Evaluation of answer scripts & assignments</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Internal, external and re-evaluation — max 20 minutes per full script (≈ 3 scripts / hour). Excess beyond the cap is credited at the maximum.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("h3c") || ''}
+                                  onChange={e => handleInputChange("h3c", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 items-center py-2 text-[12.5px] text-slate-500 font-semibold border-t border-slate-100 mt-2">
+                              <span>Sub-total 3 = hours ÷ 10 (max {FW.f13.sub.s3}):</span>
+                              <span className="font-bold text-slate-900 text-sm">{fmt(st3)}</span>
+                            </div>
+
+                            <div className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-100 pb-1.5 uppercase mt-6">4 · INNOVATION & FEEDBACK</div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">4A Teaching innovation</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Innovative courses and methodologies incl. bilingual/multi-lingual teaching — evidence required; committee-finalized grade.</span>
+                              </div>
+                              <div className="flex items-center gap-3 w-40 justify-end">
+                                <select
+                                  value={V("g4a")}
+                                  onChange={e => handleInputChange("g4a", e.target.value)}
+                                  className="w-28 h-9 px-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                >
+                                  <option value="0">— None —</option>
+                                  <option value="10">Outstanding = 10</option>
+                                  <option value="7">Very good = 7</option>
+                                  <option value="5">Good = 5</option>
+                                  <option value="3">Average = 3</option>
+                                  <option value="1">Modest = 1</option>
+                                </select>
+                                <span className="font-bold text-amber-700 w-10 text-right">{fmt(V("g4a"))}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">4B New teaching-learning material</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Translation, bridge material, study packs or similar student resources — committee-finalized grade.</span>
+                              </div>
+                              <div className="flex items-center gap-3 w-40 justify-end">
+                                <select
+                                  value={V("g4b")}
+                                  onChange={e => handleInputChange("g4b", e.target.value)}
+                                  className="w-28 h-9 px-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                >
+                                  <option value="0">— None —</option>
+                                  <option value="10">Outstanding = 10</option>
+                                  <option value="7">Very good = 7</option>
+                                  <option value="5">Good = 5</option>
+                                  <option value="3">Average = 3</option>
+                                  <option value="1">Modest = 1</option>
+                                </select>
+                                <span className="font-bold text-amber-700 w-10 text-right">{fmt(V("g4b"))}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">4C Anonymous students' feedback administered</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Points per course accrue on proof of administering the questionnaire, irrespective of feedback content; comments may not be used against the teacher.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("h4c") || ''}
+                                  onChange={e => handleInputChange("h4c", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">courses</span>
+                                <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(Math.min(V("h4c") * FW.f13.items.h4cPer, FW.f13.sub.fbMax))}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap justify-between items-center gap-2 mt-6 p-4 bg-[#FBFAF6] border border-[#E8E3D9] rounded-xl text-xs font-semibold">
+                              <span className="text-slate-600">Category I total (max 180 · minimum {FW.f13.min.cI} required):</span>
+                              <span className="font-serif font-bold text-base text-[#1E293B]">{fmt(s13.catI)}</span>
                             </div>
                           </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">1A(ii) Classroom teaching in excess of UGC norms</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Additional hours beyond the UGC teaching norm for your cadre (e.g., 2 hrs/week × 16 = 32).</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("h1aii") || ''}
-                                onChange={e => handleInputChange("h1aii", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">1A(iii) Preparation time</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Credited as equal to actual teaching hours per the attendance register — enter actual hours taught (e.g., 275).</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("h1aiii") || ''}
-                                onChange={e => handleInputChange("h1aiii", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">1B Tutorials and practicals</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Actual hours per attendance register.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("h1b") || ''}
-                                onChange={e => handleInputChange("h1b", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">1C Outside-classroom interaction with students</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Capped at 0.5 × total 1A hours — the cap is applied automatically.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("h1c") || ''}
-                                onChange={e => handleInputChange("h1c", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-center p-3 bg-amber-50/50 border border-amber-200/50 rounded-xl text-xs font-serif font-bold text-slate-900">
-                            <span>Sub-total 1 = hours ÷ 10</span>
-                            <span className="font-sans font-bold text-amber-800 text-sm">
-                              {fmt(Math.min((V("h1ai") + V("h1aii") + V("h1aiii") + V("h1b") + Math.min(V("h1c"), 0.5 * (V("h1ai") + V("h1aii") + V("h1aiii")))) / 10, FW.f13.sub.s1))} pts <span className="text-[10px] text-slate-400 font-sans">(max {FW.f13.sub.s1})</span>
-                            </span>
-                          </div>
-
-                          <div className="text-xs font-serif font-bold text-slate-800 border-b border-slate-100 pb-1 pt-2">2 · Research supervision</div>
-                          
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">Research supervision incl. Masters thesis</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Max 1 hour per student per working week.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("h2") || ''}
-                                onChange={e => handleInputChange("h2", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-center p-3 bg-amber-50/50 border border-amber-200/50 rounded-xl text-xs font-serif font-bold text-slate-900">
-                            <span>Sub-total 2 = hours ÷ 10</span>
-                            <span className="font-sans font-bold text-amber-800 text-sm">
-                              {fmt(Math.min(V("h2") / 10, FW.f13.sub.s2))} pts <span className="text-[10px] text-slate-400 font-sans">(max {FW.f13.sub.s2})</span>
-                            </span>
-                          </div>
-
-                          <div className="text-xs font-serif font-bold text-slate-800 border-b border-slate-100 pb-1 pt-2">3 · Examination duties</div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">3A Question-paper setting, moderation & related work</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Actual hours.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("h3a") || ''}
-                                onChange={e => handleInputChange("h3a", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">3B Invigilation / supervision & related examination duties</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Actual hours.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("h3b") || ''}
-                                onChange={e => handleInputChange("h3b", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">3C Evaluation of answer scripts & assignments</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Internal, external and re-evaluation — max 20 minutes per full script (≈ 3 scripts / hour). Excess beyond the cap is credited at the maximum.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("h3c") || ''}
-                                onChange={e => handleInputChange("h3c", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-center p-3 bg-amber-50/50 border border-amber-200/50 rounded-xl text-xs font-serif font-bold text-slate-900">
-                            <span>Sub-total 3 = hours ÷ 10</span>
-                            <span className="font-sans font-bold text-amber-800 text-sm">
-                              {fmt(Math.min((V("h3a") + V("h3b") + V("h3c")) / 10, FW.f13.sub.s3))} pts <span className="text-[10px] text-slate-400 font-sans">(max {FW.f13.sub.s3})</span>
-                            </span>
-                          </div>
-
-                          <div className="text-xs font-serif font-bold text-slate-800 border-b border-slate-100 pb-1 pt-2">4 · Innovation & feedback</div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">4A Teaching innovation</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Innovative courses and methodologies incl. bilingual/multi-lingual teaching — evidence required; committee-finalized grade.</span>
-                            </div>
-                            <div className="flex items-center gap-3 w-40 justify-end">
-                              <select
-                                value={V("g4a")}
-                                onChange={e => handleInputChange("g4a", e.target.value)}
-                                className="w-28 h-9 px-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                              >
-                                <option value="0">— None —</option>
-                                <option value="10">Outstanding = 10</option>
-                                <option value="7">Very good = 7</option>
-                                <option value="5">Good = 5</option>
-                                <option value="3">Average = 3</option>
-                                <option value="1">Modest = 1</option>
-                              </select>
-                              <span className="font-bold text-amber-700 w-10 text-right">{fmt(V("g4a"))}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">4B New teaching-learning material</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Translation, bridge material, study packs or similar student resources — committee-finalized grade.</span>
-                            </div>
-                            <div className="flex items-center gap-3 w-40 justify-end">
-                              <select
-                                value={V("g4b")}
-                                onChange={e => handleInputChange("g4b", e.target.value)}
-                                className="w-28 h-9 px-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                              >
-                                <option value="0">— None —</option>
-                                <option value="10">Outstanding = 10</option>
-                                <option value="7">Very good = 7</option>
-                                <option value="5">Good = 5</option>
-                                <option value="3">Average = 3</option>
-                                <option value="1">Modest = 1</option>
-                              </select>
-                              <span className="font-bold text-amber-700 w-10 text-right">{fmt(V("g4b"))}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">4C Anonymous students' feedback administered</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Points per course accrue on proof of administering the questionnaire, irrespective of feedback content; comments may not be used against the teacher.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("h4c") || ''}
-                                onChange={e => handleInputChange("h4c", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">courses</span>
-                              <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(Math.min(V("h4c") * FW.f13.items.h4cPer, FW.f13.sub.fbMax))}</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* Render custom Category II (cat2) */}
-                      {c.kind === "cat2" && (
-                        <div className="space-y-4">
-                          <p className="text-[11px] text-slate-500 italic bg-amber-50/40 p-3 rounded-xl border border-amber-100/50">
-                            ⓘ Administrative positions score by TIME under this framework, not by post: only duties requiring regular office hours (Dean, Principal, Chairperson, Convenor, Teacher-in-charge or similar) — actual hours per year ÷ 10, combined 6A+6B cap. Graded items 5A/5B/5C and 7 require evidence; the screening committee finalizes; institutions may further specify criteria.
-                          </p>
+                      {c.kind === "cat2" && (() => {
+                        const st6 = Math.min((V("h6a") + V("h6b")) / 10, FW.f13.sub.s6);
 
-                          <div className="text-xs font-serif font-bold text-slate-800 border-b border-slate-100 pb-1">5 · Co-curricular, extension & dissemination</div>
+                        return (
+                          <div className="space-y-4">
+                            <p className="text-[11px] text-slate-500 italic bg-amber-50/40 p-3 rounded-xl border border-amber-100/50">
+                              ⓘ Administrative positions score by TIME under this framework, not by post: only duties requiring regular office hours (Dean, Principal, Chairperson, Convenor, Teacher-in-charge or similar) — actual hours per year ÷ 10, combined 6A+6B cap. Graded items 5A/5B/5C and 7 require evidence; the screening committee finalizes; institutions may further specify criteria.
+                            </p>
 
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">5A Discipline-related co-curricular activities</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Field work, study visits, student seminars, events, career counselling etc. — committee-finalized grade.</span>
+                            <div className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-100 pb-1.5 uppercase mt-6 first:mt-0">5 · CO-CURRICULAR, EXTENSION & DISSEMINATION</div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">5A Discipline-related co-curricular activities</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Field work, study visits, student seminars, events, career counselling etc. — committee-finalized grade.</span>
+                              </div>
+                              <div className="flex items-center gap-3 w-40 justify-end">
+                                <select
+                                  value={V("g5a")}
+                                  onChange={e => handleInputChange("g5a", e.target.value)}
+                                  className="w-28 h-9 px-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                >
+                                  <option value="0">— None —</option>
+                                  <option value="10">Outstanding = 10</option>
+                                  <option value="7">Very good = 7</option>
+                                  <option value="5">Good = 5</option>
+                                  <option value="3">Average = 3</option>
+                                  <option value="1">Modest = 1</option>
+                                </select>
+                                <span className="font-bold text-amber-700 w-10 text-right">{fmt(V("g5a"))}</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-3 w-40 justify-end">
-                              <select
-                                value={V("g5a")}
-                                onChange={e => handleInputChange("g5a", e.target.value)}
-                                className="w-28 h-9 px-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                              >
-                                <option value="0">— None —</option>
-                                <option value="10">Outstanding = 10</option>
-                                <option value="7">Very good = 7</option>
-                                <option value="5">Good = 5</option>
-                                <option value="3">Average = 3</option>
-                                <option value="1">Modest = 1</option>
-                              </select>
-                              <span className="font-bold text-amber-700 w-10 text-right">{fmt(V("g5a"))}</span>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">5B Other co-curricular activities</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Cultural, sports, NSS, NCC etc. — committee-finalized grade.</span>
+                              </div>
+                              <div className="flex items-center gap-3 w-40 justify-end">
+                                <select
+                                  value={V("g5b")}
+                                  onChange={e => handleInputChange("g5b", e.target.value)}
+                                  className="w-28 h-9 px-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                >
+                                  <option value="0">— None —</option>
+                                  <option value="10">Outstanding = 10</option>
+                                  <option value="7">Very good = 7</option>
+                                  <option value="5">Good = 5</option>
+                                  <option value="3">Average = 3</option>
+                                  <option value="1">Modest = 1</option>
+                                </select>
+                                <span className="font-bold text-amber-700 w-10 text-right">{fmt(V("g5b"))}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">5C Extension and dissemination activities</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Public lectures, talks, seminars, popular writings not covered under Category III.</span>
+                              </div>
+                              <div className="flex items-center gap-3 w-40 justify-end">
+                                <select
+                                  value={V("g5c")}
+                                  onChange={e => handleInputChange("g5c", e.target.value)}
+                                  className="w-28 h-9 px-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                >
+                                  <option value="0">— None —</option>
+                                  <option value="10">Outstanding = 10</option>
+                                  <option value="7">Very good = 7</option>
+                                  <option value="5">Good = 5</option>
+                                  <option value="3">Average = 3</option>
+                                  <option value="1">Modest = 1</option>
+                                </select>
+                                <span className="font-bold text-amber-700 w-10 text-right">{fmt(V("g5c"))}</span>
+                              </div>
+                            </div>
+
+                            <div className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-100 pb-1.5 uppercase mt-6">6 · ADMINISTRATION & COMMITTEES</div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">6A Administrative responsibility</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Dean, Principal, Chairperson, Convenor, Teacher-in-charge or similar duties requiring regular office hours — actual hours spent.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("h6a") || ''}
+                                  onChange={e => handleInputChange("h6a", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">6B Participation in Board of Studies, academic & administrative committees</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Actual hours spent.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("h6b") || ''}
+                                  onChange={e => handleInputChange("h6b", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 items-center py-2 text-[12.5px] text-slate-500 font-semibold border-t border-slate-100 mt-2">
+                              <span>Sub-total 6 = hours ÷ 10 (max {FW.f13.sub.s6}):</span>
+                              <span className="font-bold text-slate-900 text-sm">{fmt(st6)}</span>
+                            </div>
+
+                            <div className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-100 pb-1.5 uppercase mt-6">7 · CORPORATE LIFE</div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">7 Overall contribution to the collective / corporate life of the institution</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Including items 5, 6 and any other contribution — committee-finalized grade.</span>
+                              </div>
+                              <div className="flex items-center gap-3 w-40 justify-end">
+                                <select
+                                  value={V("g7")}
+                                  onChange={e => handleInputChange("g7", e.target.value)}
+                                  className="w-28 h-9 px-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                >
+                                  <option value="0">— None —</option>
+                                  <option value="10">Outstanding = 10</option>
+                                  <option value="7">Very good = 7</option>
+                                  <option value="5">Good = 5</option>
+                                  <option value="3">Average = 3</option>
+                                  <option value="1">Modest = 1</option>
+                                </select>
+                                <span className="font-bold text-amber-700 w-10 text-right">{fmt(V("g7"))}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap justify-between items-center gap-2 mt-6 p-4 bg-[#FBFAF6] border border-[#E8E3D9] rounded-xl text-xs font-semibold">
+                              <span className="text-slate-600">Category II total (max 70 · minimum {FW.f13.min.cII} required):</span>
+                              <span className="font-serif font-bold text-base text-[#1E293B]">{fmt(s13.catII)}</span>
                             </div>
                           </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">5B Other co-curricular activities</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Cultural, sports, NSS, NCC etc. — committee-finalized grade.</span>
-                            </div>
-                            <div className="flex items-center gap-3 w-40 justify-end">
-                              <select
-                                value={V("g5b")}
-                                onChange={e => handleInputChange("g5b", e.target.value)}
-                                className="w-28 h-9 px-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                              >
-                                <option value="0">— None —</option>
-                                <option value="10">Outstanding = 10</option>
-                                <option value="7">Very good = 7</option>
-                                <option value="5">Good = 5</option>
-                                <option value="3">Average = 3</option>
-                                <option value="1">Modest = 1</option>
-                              </select>
-                              <span className="font-bold text-amber-700 w-10 text-right">{fmt(V("g5b"))}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">5C Extension and dissemination activities</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Public lectures, talks, seminars, popular writings not covered under Category III.</span>
-                            </div>
-                            <div className="flex items-center gap-3 w-40 justify-end">
-                              <select
-                                value={V("g5c")}
-                                onChange={e => handleInputChange("g5c", e.target.value)}
-                                className="w-28 h-9 px-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                              >
-                                <option value="0">— None —</option>
-                                <option value="10">Outstanding = 10</option>
-                                <option value="7">Very good = 7</option>
-                                <option value="5">Good = 5</option>
-                                <option value="3">Average = 3</option>
-                                <option value="1">Modest = 1</option>
-                              </select>
-                              <span className="font-bold text-amber-700 w-10 text-right">{fmt(V("g5c"))}</span>
-                            </div>
-                          </div>
-
-                          <div className="text-xs font-serif font-bold text-slate-800 border-b border-slate-100 pb-1 pt-2">6 · Administration & committees</div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">6A Administrative responsibility</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Dean, Principal, Chairperson, Convenor, Teacher-in-charge or similar duties requiring regular office hours — actual hours spent.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("h6a") || ''}
-                                onChange={e => handleInputChange("h6a", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">6B Participation in Board of Studies, academic & administrative committees</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Actual hours spent.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("h6b") || ''}
-                                onChange={e => handleInputChange("h6b", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">hrs / yr</span>
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-center p-3 bg-amber-50/50 border border-amber-200/50 rounded-xl text-xs font-serif font-bold text-slate-900">
-                            <span>Sub-total 6 = hours ÷ 10</span>
-                            <span className="font-sans font-bold text-amber-800 text-sm">
-                              {fmt(Math.min((V("h6a") + V("h6b")) / 10, FW.f13.sub.s6))} pts <span className="text-[10px] text-slate-400 font-sans">(max {FW.f13.sub.s6})</span>
-                            </span>
-                          </div>
-
-                          <div className="text-xs font-serif font-bold text-slate-800 border-b border-slate-100 pb-1 pt-2">7 · Corporate life</div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">7 Overall contribution to the collective / corporate life of the institution</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Including items 5, 6 and any other contribution — committee-finalized grade.</span>
-                            </div>
-                            <div className="flex items-center gap-3 w-40 justify-end">
-                              <select
-                                value={V("g7")}
-                                onChange={e => handleInputChange("g7", e.target.value)}
-                                className="w-28 h-9 px-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
-                              >
-                                <option value="0">— None —</option>
-                                <option value="10">Outstanding = 10</option>
-                                <option value="7">Very good = 7</option>
-                                <option value="5">Good = 5</option>
-                                <option value="3">Average = 3</option>
-                                <option value="1">Modest = 1</option>
-                              </select>
-                              <span className="font-bold text-amber-700 w-10 text-right">{fmt(V("g7"))}</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* Render custom Category III-A (IIIA) */}
                       {c.kind === "IIIA" && (
@@ -1559,7 +1571,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                           <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
                             <div className="min-w-0">
                               <span className="font-bold text-slate-900 block">Refereed journal — not indexed</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Per paper: {fmt(FW.f13.paperBase * auth13Mult)} pts (base, no IF) · authorship multiplier applies</span>
+                              <span className="text-[11px] text-slate-500 block leading-normal">Per paper: {fmt(FW.f13.paperBase * auth13Mult)} pts (base, no augmentation) · authorship applies</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <Input
@@ -1590,7 +1602,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                               <div key={k} className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
                                 <div className="min-w-0">
                                   <span className="font-bold text-slate-900 block">{labels[k]}</span>
-                                  <span className="text-[11px] text-slate-500 block leading-normal">Per paper: {fmt(perVal)} pts · authorship multiplier applies</span>
+                                  <span className="text-[11px] text-slate-500 block leading-normal">Per paper: {fmt(perVal)} pts · authorship applies</span>
                                 </div>
                                 <div className="flex items-center gap-3">
                                   <Input
@@ -1611,7 +1623,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                           <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
                             <div className="min-w-0">
                               <span className="font-bold text-slate-900 block">Non-refereed but recognized, reputable journals / periodicals</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">With ISBN/ISSN numbers — Per paper: {fmt(FW.f13.items.pNR * auth13Mult)} pts · authorship multiplier applies.</span>
+                              <span className="text-[11px] text-slate-500 block leading-normal">With ISBN/ISSN numbers — authorship applies.</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <Input
@@ -1630,7 +1642,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                           <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
                             <div className="min-w-0">
                               <span className="font-bold text-slate-900 block">Conference proceedings — full papers</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Abstracts not included — Per paper: {fmt(FW.f13.items.pCP * auth13Mult)} pts · authorship multiplier applies. A paper presented and published as proceedings accrues here, not under III-E(ii).</span>
+                              <span className="text-[11px] text-slate-500 block leading-normal">Abstracts not included — authorship applies. A paper presented and published as proceedings accrues here, not under III-E(ii).</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <Input
@@ -1655,13 +1667,13 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                             ⓘ Evidence: project sanction letters, utilization and completion certificates from the funding agency; consultancy orders with amounts; patent filing/approval letters or policy-document acceptance.
                           </p>
 
-                          <div className="text-xs font-serif font-bold text-slate-800 border-b border-slate-100 pb-1">III-C(i) · Sponsored projects carried out / ongoing</div>
+                          <div className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-100 pb-1.5 uppercase mt-6 first:mt-0">III-C(i) · Sponsored projects carried out / ongoing</div>
 
                           <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
                             <div className="min-w-0">
                               <span className="font-bold text-slate-900 block">Major project — tier (a)</span>
                               <span className="text-[11px] text-slate-500 block leading-normal">
-                                {faculty === "sci" ? "Grants above ₹30 lakhs" : "Grants above ₹5 lakhs"} · Per project: {FW.f13.items.prA} pts.
+                                {faculty === "sci" ? "Grants above ₹30 lakhs" : "Grants above ₹5 lakhs"}.
                               </span>
                             </div>
                             <div className="flex items-center gap-3">
@@ -1682,7 +1694,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                             <div className="min-w-0">
                               <span className="font-bold text-slate-900 block">Major project — tier (b)</span>
                               <span className="text-[11px] text-slate-500 block leading-normal">
-                                {faculty === "sci" ? "₹5 – 30 lakhs" : "₹3 – 5 lakhs"} · Per project: {FW.f13.items.prB} pts.
+                                {faculty === "sci" ? "₹5 – 30 lakhs" : "₹3 – 5 lakhs"}.
                               </span>
                             </div>
                             <div className="flex items-center gap-3">
@@ -1703,7 +1715,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                             <div className="min-w-0">
                               <span className="font-bold text-slate-900 block">Minor project — tier (c)</span>
                               <span className="text-[11px] text-slate-500 block leading-normal">
-                                {faculty === "sci" ? "₹50,000 – 5 lakhs" : "₹25,000 – 3 lakhs"} · Per project: {FW.f13.items.prC} pts.
+                                {faculty === "sci" ? "₹50,000 – 5 lakhs" : "₹25,000 – 3 lakhs"}.
                               </span>
                             </div>
                             <div className="flex items-center gap-3">
@@ -1720,13 +1732,13 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                             </div>
                           </div>
 
-                          <div className="text-xs font-serif font-bold text-slate-800 border-b border-slate-100 pb-1 pt-2">III-C(ii) · Consultancy carried out / ongoing</div>
+                          <div className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-100 pb-1.5 uppercase mt-6">III-C(ii) · Consultancy carried out / ongoing</div>
 
                           <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
                             <div className="min-w-0">
                               <span className="font-bold text-slate-900 block">Consultancy amount mobilized</span>
                               <span className="text-[11px] text-slate-500 block leading-normal">
-                                Points accrue per every {faculty === "sci" ? "₹10 lakhs (minimum ₹10 lakhs)" : "₹2 lakhs (minimum ₹2 lakhs)"} mobilized · {FW.f13.consultPer} pts per unit.
+                                Points accrue per every {faculty === "sci" ? "₹10 lakhs (minimum ₹10 lakhs)" : "₹2 lakhs (minimum ₹2 lakhs)"} mobilized.
                               </span>
                             </div>
                             <div className="flex items-center gap-3">
@@ -1746,12 +1758,12 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                             </div>
                           </div>
 
-                          <div className="text-xs font-serif font-bold text-slate-800 border-b border-slate-100 pb-1 pt-2">III-C(iii) · Completed projects — quality evaluation</div>
+                          <div className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-100 pb-1.5 uppercase mt-6">III-C(iii) · Completed projects — quality evaluation</div>
 
                           <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
                             <div className="min-w-0">
                               <span className="font-bold text-slate-900 block">Completed project report — major</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Accepted by funding agency · Per project: {FW.f13.items.qeMaj} pts.</span>
+                              <span className="text-[11px] text-slate-500 block leading-normal">Accepted by funding agency.</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <Input
@@ -1770,7 +1782,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                           <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
                             <div className="min-w-0">
                               <span className="font-bold text-slate-900 block">Completed project report — minor</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Accepted by funding agency · Per project: {FW.f13.items.qeMin} pts.</span>
+                              <span className="text-[11px] text-slate-500 block leading-normal">Accepted by funding agency.</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <Input
@@ -1786,12 +1798,12 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                             </div>
                           </div>
 
-                          <div className="text-xs font-serif font-bold text-slate-800 border-b border-slate-100 pb-1 pt-2">III-C(iv) · Project outcomes / outputs</div>
+                          <div className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-100 pb-1.5 uppercase mt-6">III-C(iv) · Project outcomes / outputs</div>
 
                           <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
                             <div className="min-w-0">
                               <span className="font-bold text-slate-900 block">Output at International level</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Patent / technology transfer / product / process, or major policy document · Per outcome: {FW.f13.items.outI} pts.</span>
+                              <span className="text-[11px] text-slate-500 block leading-normal">Patent / technology transfer / product / process, or major policy document.</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <Input
@@ -1810,7 +1822,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                           <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
                             <div className="min-w-0">
                               <span className="font-bold text-slate-900 block">Output at National level</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Patent / technology transfer / product / process, or major policy document of Central / State Govt. bodies · Per outcome: {FW.f13.items.outN} pts.</span>
+                              <span className="text-[11px] text-slate-500 block leading-normal">Patent / technology transfer / product / process, or major policy document of Central / State Govt. bodies.</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <Input
@@ -1829,178 +1841,180 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                       )}
 
                       {/* Render custom Category III-E (IIIE) */}
-                      {c.kind === "IIIE" && (
-                        <div className="space-y-4">
-                          <p className="text-[11px] text-slate-500 italic bg-amber-50/40 p-3 rounded-xl border border-amber-100/50">
-                            ⓘ Evidence: course completion certificates stating duration; participation/presentation certificates stating level. Papers published as full proceedings shift to III-A.
-                          </p>
+                      {c.kind === "IIIE" && (() => {
+                        const stE1 = Math.min(V("tc2w") * FW.f13.items.tc2w + V("tc1w") * FW.f13.items.tc1w, FW.f13.sub.e1);
 
-                          <div className="text-xs font-serif font-bold text-slate-800 border-b border-slate-100 pb-1">III-E(i) · Training courses (sub-category capped)</div>
+                        return (
+                          <div className="space-y-4">
+                            <p className="text-[11px] text-slate-500 italic bg-amber-50/40 p-3 rounded-xl border border-amber-100/50">
+                              ⓘ Evidence: course completion certificates stating duration; participation/presentation certificates stating level. Papers published as full proceedings shift to III-A.
+                            </p>
 
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">Refresher / methodology / FDP / soft-skills programme — ≥ 2 weeks</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Refresher courses, teaching-learning-evaluation technology programmes, faculty development · Per course: {FW.f13.items.tc2w} pts.</span>
+                            <div className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-100 pb-1.5 uppercase mt-6 first:mt-0">III-E(i) · Training courses (sub-category capped)</div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">Refresher / methodology / FDP / soft-skills programme — ≥ 2 weeks</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Refresher courses, teaching-learning-evaluation technology programmes, faculty development.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("tc2w") || ''}
+                                  onChange={e => handleInputChange("tc2w", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">courses</span>
+                                <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("tc2w") * FW.f13.items.tc2w)}</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("tc2w") || ''}
-                                onChange={e => handleInputChange("tc2w", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">courses</span>
-                              <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("tc2w") * FW.f13.items.tc2w)}</span>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">Programme — one week duration</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Each.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("tc1w") || ''}
+                                  onChange={e => handleInputChange("tc1w", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">courses</span>
+                                <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("tc1w") * FW.f13.items.tc1w)}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 items-center py-2 text-[12.5px] text-slate-500 font-semibold border-t border-slate-100 mt-2">
+                              <span>Sub-total III-E(i) (capped at {FW.f13.sub.e1}):</span>
+                              <span className="font-bold text-slate-900 text-sm">{fmt(stE1)}</span>
+                            </div>
+
+                            <div className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-100 pb-1.5 uppercase mt-6">III-E(ii) · Papers presented in conferences / seminars / workshops</div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">International conference</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Participation and presentation (oral/poster). If published as proceedings, claim under III-A instead.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("ppI") || ''}
+                                  onChange={e => handleInputChange("ppI", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">papers</span>
+                                <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ppI") * FW.f13.items.ppI)}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">National</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Each.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("ppN") || ''}
+                                  onChange={e => handleInputChange("ppN", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">papers</span>
+                                <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ppN") * FW.f13.items.ppN)}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">Regional / State level</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Each.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("ppR") || ''}
+                                  onChange={e => handleInputChange("ppR", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">papers</span>
+                                <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ppR") * FW.f13.items.ppR)}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">Local — University / College level</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Each.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("ppL") || ''}
+                                  onChange={e => handleInputChange("ppL", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">papers</span>
+                                <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ppL") * FW.f13.items.ppL)}</span>
+                              </div>
+                            </div>
+
+                            <div className="text-[11px] font-bold text-slate-400 tracking-wider border-b border-slate-100 pb-1.5 uppercase mt-6">III-E(iv) · Invited lectures / presentations for conferences / symposia</div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">International</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Each.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("ilI") || ''}
+                                  onChange={e => handleInputChange("ilI", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">lectures</span>
+                                <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ilI") * FW.f13.items.ilI)}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block">National level</span>
+                                <span className="text-[11px] text-slate-500 block leading-normal">Each.</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={V("ilN") || ''}
+                                  onChange={e => handleInputChange("ilN", e.target.value)}
+                                  placeholder="0"
+                                  className="w-16 h-9 text-center font-bold rounded-xl bg-white"
+                                />
+                                <span className="text-[10px] text-slate-400 font-semibold">lectures</span>
+                                <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ilN") * FW.f13.items.ilN)}</span>
+                              </div>
                             </div>
                           </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">Programme — one week duration</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Each course: {FW.f13.items.tc1w} pts.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("tc1w") || ''}
-                                onChange={e => handleInputChange("tc1w", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">courses</span>
-                              <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("tc1w") * FW.f13.items.tc1w)}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-center p-3 bg-amber-50/50 border border-amber-200/50 rounded-xl text-xs font-serif font-bold text-slate-900">
-                            <span>Sub-total III-E(i) (training courses)</span>
-                            <span className="font-sans font-bold text-amber-800 text-sm">
-                              {fmt(Math.min(V("tc2w") * FW.f13.items.tc2w + V("tc1w") * FW.f13.items.tc1w, FW.f13.sub.e1))} pts <span className="text-[10px] text-slate-400 font-sans">(max {FW.f13.sub.e1})</span>
-                            </span>
-                          </div>
-
-                          <div className="text-xs font-serif font-bold text-slate-800 border-b border-slate-100 pb-1 pt-2">III-E(ii) · Papers presented in conferences / seminars / workshops</div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">International conference</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Participation and presentation (oral/poster). If published as proceedings, claim under III-A instead · Per paper: {FW.f13.items.ppI} pts.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("ppI") || ''}
-                                onChange={e => handleInputChange("ppI", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">papers</span>
-                              <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ppI") * FW.f13.items.ppI)}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">National</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Per paper: {FW.f13.items.ppN} pts.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("ppN") || ''}
-                                onChange={e => handleInputChange("ppN", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">papers</span>
-                              <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ppN") * FW.f13.items.ppN)}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">Regional / State level</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Per paper: {FW.f13.items.ppR} pts.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("ppR") || ''}
-                                onChange={e => handleInputChange("ppR", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">papers</span>
-                              <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ppR") * FW.f13.items.ppR)}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">Local — University / College level</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Per paper: {FW.f13.items.ppL} pts.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("ppL") || ''}
-                                onChange={e => handleInputChange("ppL", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">papers</span>
-                              <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ppL") * FW.f13.items.ppL)}</span>
-                            </div>
-                          </div>
-
-                          <div className="text-xs font-serif font-bold text-slate-800 border-b border-slate-100 pb-1 pt-2">III-E(iv) · Invited lectures / presentations for conferences / symposia</div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">International</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Per lecture: {FW.f13.items.ilI} pts.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("ilI") || ''}
-                                onChange={e => handleInputChange("ilI", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">lectures</span>
-                              <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ilI") * FW.f13.items.ilI)}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 border border-slate-150 rounded-xl text-xs">
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block">National level</span>
-                              <span className="text-[11px] text-slate-500 block leading-normal">Per lecture: {FW.f13.items.ilN} pts.</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={V("ilN") || ''}
-                                onChange={e => handleInputChange("ilN", e.target.value)}
-                                placeholder="0"
-                                className="w-16 h-9 text-center font-bold rounded-xl bg-white"
-                              />
-                              <span className="text-[10px] text-slate-400 font-semibold">lectures</span>
-                              <span className="font-bold text-amber-700 min-w-[45px] text-right">{fmt(V("ilN") * FW.f13.items.ilN)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* Render standard items-mapping block for kind === "items" (Category III-B and III-D) */}
                       {c.kind === "items" && (
