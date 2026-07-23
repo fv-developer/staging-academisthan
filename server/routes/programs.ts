@@ -122,7 +122,7 @@ router.post('/upload-cover', authenticate, isAdmin, async (req: AuthRequest, res
 
     fs.writeFileSync(filepath, dataBuffer);
 
-    const coverImageUrl = `/uploads/${filename}`;
+    const coverImageUrl = `/api/uploads/${filename}`;
  
     res.json({ coverImageUrl });
   } catch (error) {

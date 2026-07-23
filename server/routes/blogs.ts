@@ -895,7 +895,7 @@ router.post('/upload-cover', authenticate, async (req: AuthRequest, res: Respons
 
     fs.writeFileSync(filepath, dataBuffer);
 
-    const coverImageUrl = `/uploads/${filename}`;
+    const coverImageUrl = `/api/uploads/${filename}`;
  
     res.json({ coverImageUrl });
   } catch (error) {

@@ -60,7 +60,7 @@ router.post('/upload-avatar', authenticate, async (req: AuthRequest, res: Respon
 
     fs.writeFileSync(filepath, dataBuffer);
 
-    const avatarUrl = `/uploads/${filename}`;
+    const avatarUrl = `/api/uploads/${filename}`;
  
     res.json({ avatarUrl });
   } catch (error) {

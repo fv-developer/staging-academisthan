@@ -657,7 +657,7 @@ router.post('/upload-document', authenticate, async (req: AuthRequest, res: Resp
 
     fs.writeFileSync(filepath, dataBuffer);
 
-    const documentUrl = `/uploads/${safeFilename}`;
+    const documentUrl = `/api/uploads/${safeFilename}`;
  
     res.json({ documentUrl });
   } catch (error) {
