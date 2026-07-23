@@ -37,7 +37,7 @@ import BlogModule from '@/components/dashboard/BlogModule';
 import ConnectionsModule from '@/components/dashboard/ConnectionsModule';
 import ProgramDetail from '@/pages/ProgramDetail';
 import { countries, Country, stateCities, getMaxPhoneLength, getMaxPinLength, getExpectedPhoneLabel, getExpectedPinLabel } from '@/utils/countryData';
-import { cn } from '@/lib/utils';
+import { cn, getBustUrl } from '@/lib/utils';
 
 /* ─── Membership Card ─── */
 function MembershipCard({ profile }: { profile: any }) {
@@ -68,7 +68,7 @@ function MembershipCard({ profile }: { profile: any }) {
           <div className="relative group shrink-0">
             <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-gold/30 bg-gold/5 flex items-center justify-center relative shadow-inner">
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                <img src={getBustUrl(profile.avatar_url)} alt="Profile" className="w-full h-full object-cover" />
               ) : (
                 <User className="w-7 h-7 text-gold/60" />
               )}

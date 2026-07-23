@@ -17,7 +17,7 @@ import {
   Upload, Check, Shield, AlertCircle, Edit3, ArrowLeft, ArrowRight, Loader2, Eye, ExternalLink, ChevronsUpDown, Calendar, Plus, Trash2, Video, Users
 } from 'lucide-react';
 import { countries, Country, stateCities, getMaxPhoneLength } from '@/utils/countryData';
-import { cn } from '@/lib/utils';
+import { cn, getBustUrl } from '@/lib/utils';
 
 const INSTITUTION_TYPES = [
   { value: 'college', label: 'College (Affiliated)' },
@@ -1001,7 +1001,7 @@ export default function InstituteModule() {
               <DialogHeader className="border-b border-border pb-3">
                 <div className="flex items-center gap-3">
                   {viewingInst.logo_url ? (
-                    <img src={viewingInst.logo_url} alt="Logo" className="w-10 h-10 rounded-xl object-cover border border-border shrink-0" />
+                    <img src={getBustUrl(viewingInst.logo_url)} alt="Logo" className="w-10 h-10 rounded-xl object-cover border border-border shrink-0" />
                   ) : (
                     <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center border border-gold/20 shrink-0">
                       <Building2 className="w-5 h-5 text-gold" />
@@ -1126,7 +1126,7 @@ export default function InstituteModule() {
                 {viewingInst.document_url && (
                   <div className="sm:col-span-2 pt-2 border-t border-border flex justify-between items-center">
                     <span className="text-[10px] text-muted-foreground font-medium">Submitted Verification Document</span>
-                    <a href={viewingInst.document_url} target="_blank" rel="noopener noreferrer">
+                    <a href={getBustUrl(viewingInst.document_url)} target="_blank" rel="noopener noreferrer">
                       <Button size="sm" variant="outline" className="rounded-xl h-8 gap-1 text-xs text-gold border-gold/25 hover:bg-gold/15">
                         <ExternalLink className="w-3.5 h-3.5" /> View Document File
                       </Button>

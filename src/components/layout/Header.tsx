@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { getBustUrl } from '@/lib/utils';
 
 interface Notification {
   id: string;
@@ -283,7 +284,7 @@ export function Header({ onMenuClick, showSearch = false }: HeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 gap-2 px-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'User'} />
+                  <AvatarImage src={profile?.avatar_url ? getBustUrl(profile.avatar_url) : undefined} alt={profile?.full_name || 'User'} />
                   <AvatarFallback className="bg-gradient-to-br from-amber-500 to-orange-600 text-white text-sm">
                     {userInitials}
                   </AvatarFallback>
@@ -302,7 +303,7 @@ export function Header({ onMenuClick, showSearch = false }: HeaderProps) {
               <DropdownMenuLabel>
                 <div className="flex items-start gap-3">
                   <Avatar className="h-12 w-12">
-                    <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'User'} />
+                    <AvatarImage src={profile?.avatar_url ? getBustUrl(profile.avatar_url) : undefined} alt={profile?.full_name || 'User'} />
                     <AvatarFallback className="bg-gradient-to-br from-amber-500 to-orange-600 text-white">
                       {userInitials}
                     </AvatarFallback>

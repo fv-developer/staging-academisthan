@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { cn, getBustUrl } from '@/lib/utils';
 import api, { institutions as instApi } from '@/lib/api-client';
 import { DataTable, ColumnDef } from '@/components/admin/DataTable';
 import { ConnectionsManager } from '@/components/admin/ConnectionsManager';
@@ -1722,7 +1722,7 @@ export default function AdminDashboard() {
                       </div>
                       <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-gold/30 bg-gold/5 flex items-center justify-center shrink-0">
                         {profile?.avatar_url ? (
-                          <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                          <img src={getBustUrl(profile.avatar_url)} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
                           <Shield className="w-7 h-7 text-gold/60" />
                         )}
@@ -2815,7 +2815,7 @@ export default function AdminDashboard() {
             {/* Profile Summary Hero */}
             <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-4 shrink-0 bg-white">
               {viewingFellow.avatar_url ? (
-                <img src={viewingFellow.avatar_url} alt="Profile" className="w-14 h-14 rounded-full object-cover border border-slate-200 shadow-sm" />
+                <img src={getBustUrl(viewingFellow.avatar_url)} alt="Profile" className="w-14 h-14 rounded-full object-cover border border-slate-200 shadow-sm" />
               ) : (
                 <div className="w-14 h-14 rounded-full bg-gold/15 flex items-center justify-center text-gold font-bold text-xl">
                   {viewingFellow.full_name?.charAt(0) || 'F'}
@@ -3063,7 +3063,7 @@ export default function AdminDashboard() {
                             <p className="text-[10px] text-slate-400">Uploaded user profile avatar photo</p>
                           </div>
                         </div>
-                        <a href={viewingFellow.avatar_url} target="_blank" rel="noreferrer">
+                        <a href={getBustUrl(viewingFellow.avatar_url)} target="_blank" rel="noreferrer">
                           <Button size="sm" className="rounded-lg text-xs gap-1.5 px-4 h-8 bg-[#8B1538] hover:bg-[#720E2C] text-white font-semibold shadow-sm border-0">
                             <Download className="w-3.5 h-3.5" /> View
                           </Button>
@@ -3431,7 +3431,7 @@ export default function AdminDashboard() {
                       <p className="text-[10px] text-slate-400">PDF / Image upload for credential check</p>
                     </div>
                   </div>
-                  <a href={viewingInst.document_url} target="_blank" rel="noreferrer">
+                  <a href={getBustUrl(viewingInst.document_url)} target="_blank" rel="noreferrer">
                     <Button size="sm" className="rounded-lg text-xs gap-1.5 px-4 h-8 bg-[#8B1538] hover:bg-[#720E2C] text-white font-semibold shadow-sm border-0">
                       <Download className="w-3.5 h-3.5" /> View / Download
                     </Button>
