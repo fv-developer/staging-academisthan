@@ -299,23 +299,23 @@ const fmt = (n: number) => {
 const renderIcon = (emoji: string) => {
   switch (emoji) {
     case "📖":
-      return <BookOpen className="w-5 h-5 text-amber-300" />;
+      return <BookOpen className="w-5 h-5" />;
     case "🤝":
-      return <Users className="w-5 h-5 text-amber-300" />;
+      return <Users className="w-5 h-5" />;
     case "🧪":
-      return <FileText className="w-5 h-5 text-amber-300" />;
+      return <FileText className="w-5 h-5" />;
     case "📚":
-      return <BookMarked className="w-5 h-5 text-amber-300" />;
+      return <BookMarked className="w-5 h-5" />;
     case "💻":
-      return <Layers className="w-5 h-5 text-amber-300" />;
+      return <Layers className="w-5 h-5" />;
     case "🎓":
-      return <GraduationCap className="w-5 h-5 text-amber-300" />;
+      return <GraduationCap className="w-5 h-5" />;
     case "🔬":
-      return <FlaskConical className="w-5 h-5 text-amber-300" />;
+      return <FlaskConical className="w-5 h-5" />;
     case "🏅":
-      return <Award className="w-5 h-5 text-amber-300" />;
+      return <Award className="w-5 h-5" />;
     case "🎤":
-      return <Presentation className="w-5 h-5 text-amber-300" />;
+      return <Presentation className="w-5 h-5" />;
     default:
       return <span className="text-base">{emoji}</span>;
   }
@@ -810,7 +810,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
               className="w-full p-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100/80 transition-colors text-left"
             >
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center font-bold">
+                <div className="w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] flex items-center justify-center font-bold">
                   <Settings className="w-5 h-5" />
                 </div>
                 <div>
@@ -912,7 +912,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                   className="w-full p-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100/80 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center font-bold">📖</div>
+                    <div className="w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] flex items-center justify-center font-bold">{renderIcon("📖")}</div>
                     <div>
                       <h3 className="font-serif font-bold text-slate-900 text-base">Table 1 — Teaching, Learning & Involvement</h3>
                       <p className="text-xs text-slate-500">Graded assessment (Good / Satisfactory / Not satisfactory)</p>
@@ -1023,7 +1023,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                     className="w-full p-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100/80 transition-colors text-left"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center font-bold">{renderIcon(c.ico)}</div>
+                      <div className="w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] flex items-center justify-center font-bold">{renderIcon(c.ico)}</div>
                       <div>
                         <h3 className="font-serif font-bold text-slate-900 text-base">Category {c.num} — {c.title}</h3>
                         <p className="text-xs text-slate-500">{c.sub}</p>
@@ -1151,7 +1151,7 @@ export function APIScoreCalculator({ embedded = false }: APIScoreCalculatorProps
                     className="w-full p-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100/80 transition-colors text-left"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center font-bold">{renderIcon(c.ico)}</div>
+                      <div className="w-9 h-9 rounded-xl bg-slate-900 text-[#cfa459] flex items-center justify-center font-bold">{renderIcon(c.ico)}</div>
                       <div>
                         <h3 className="font-serif font-bold text-slate-900 text-base">{c.title}</h3>
                         <p className="text-xs text-slate-500">{c.sub}</p>
