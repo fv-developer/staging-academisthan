@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import {
   Calculator, BookOpen, FlaskConical, Award, ChevronDown, ChevronUp,
   Info, RotateCcw, CheckCircle2, AlertTriangle, Sparkles, Download, Printer, Settings, Upload, FileText, ShieldCheck, X, FileCheck, Layers, Scale,
-  Users, Presentation, BookMarked
+  Users, Presentation, BookMarked, GraduationCap
 } from 'lucide-react';
 import { APIScoreCertificateModal } from '@/components/tools/APIScoreCertificateModal';
 import { useToolResultSaver } from '@/hooks/useToolResultSaver';
